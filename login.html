@@ -362,6 +362,15 @@
                         Sign In
                     </button>
 
+                    <button
+                        type="button"
+                        class="btn btn-outline"
+                        id="debugBtn"
+                        style="margin-top: 1rem; width: 100%"
+                    >
+                        🔍 Debug Auth State
+                    </button>
+
                     <div class="forgot-password">
                         <a href="#" id="forgotPasswordLink"
                             >Forgot your password?</a
@@ -452,6 +461,68 @@
                     loginForm.dispatchEvent(new Event("submit"));
                 }
             });
+
+            // Debug button functionality
+            document
+                .getElementById("debugBtn")
+                .addEventListener("click", function () {
+                    const debugInfo = {
+                        isAuthenticated: Utils.isAuthenticated(),
+                        hasAccessToken: !!localStorage.getItem(
+                            CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+                        ),
+                        hasIdToken: !!localStorage.getItem(
+                            CONFIG.STORAGE_KEYS.ID_TOKEN,
+                        ),
+                        accessTokenPreview: localStorage.getItem(
+                            CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+                        )
+                            ? localStorage
+                                  .getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN)
+                                  .substring(0, 30) + "..."
+                            : "NONE",
+                        idTokenPreview: localStorage.getItem(
+                            CONFIG.STORAGE_KEYS.ID_TOKEN,
+                        )
+                            ? localStorage
+                                  .getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)
+                                  .substring(0, 30) + "..."
+                            : "NONE",
+                        userFromToken: Utils.getUserFromToken(),
+                        currentPage: window.location.pathname.split("/").pop(),
+                        allStorageKeys: Object.keys(localStorage).filter(
+                            (key) => key.includes("localGigs"),
+                        ),
+                        cognitoConfig: {
+                            clientId: CONFIG.COGNITO.CLIENT_ID,
+                            userPoolId: CONFIG.COGNITO.USER_POOL_ID,
+                            identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
+                            region: CONFIG.COGNITO.REGION,
+                        },
+                    };
+
+                    console.log("🔍 DEBUG AUTH STATE:", debugInfo);
+
+                    messagesDiv.innerHTML = `
+                    <div class="message info" style="text-align: left; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                        <strong>🔍 Debug Authentication State:</strong><br><br>
+                        <strong>Authentication Status:</strong> ${debugInfo.isAuthenticated ? "✅ TRUE" : "❌ FALSE"}<br>
+                        <strong>Has Access Token:</strong> ${debugInfo.hasAccessToken ? "✅ YES" : "❌ NO"}<br>
+                        <strong>Has ID Token:</strong> ${debugInfo.hasIdToken ? "✅ YES" : "❌ NO"}<br><br>
+                        <strong>Access Token Preview:</strong> ${debugInfo.accessTokenPreview}<br>
+                        <strong>ID Token Preview:</strong> ${debugInfo.idTokenPreview}<br><br>
+                        <strong>User from Token:</strong> ${JSON.stringify(debugInfo.userFromToken, null, 2)}<br><br>
+                        <strong>Current Page:</strong> ${debugInfo.currentPage}<br>
+                        <strong>Storage Keys:</strong> ${debugInfo.allStorageKeys.join(", ")}<br><br>
+                        <strong>Cognito Config:</strong><br>
+                        - Client ID: ${debugInfo.cognitoConfig.clientId}<br>
+                        - User Pool: ${debugInfo.cognitoConfig.userPoolId}<br>
+                        - Identity Pool: ${debugInfo.cognitoConfig.identityPoolId}<br>
+                        - Region: ${debugInfo.cognitoConfig.region}<br><br>
+                        <em>Check browser console for full details</em>
+                    </div>
+                `;
+                });
 
             // Check if user is already logged in
             document.addEventListener("DOMContentLoaded", function () {

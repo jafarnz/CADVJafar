@@ -28,6 +28,16 @@ const Auth = {
       currentPage: currentPage,
       accessToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
       idToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
+      userFromToken: Utils.getUserFromToken(),
+      allStorageKeys: Object.keys(localStorage),
+      relevantStorage: {
+        accessToken: localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN)
+          ? `${localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN).substring(0, 20)}...`
+          : null,
+        idToken: localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)
+          ? `${localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN).substring(0, 20)}...`
+          : null,
+      },
     });
 
     // Redirect logic based on auth state and current page
@@ -57,17 +67,36 @@ const Auth = {
 
   // Check if user has completed profile setup
   checkProfileSetup: async function () {
+    console.log("🏁 checkProfileSetup() called");
+    console.log("🔍 Current authentication state:", {
+      isAuthenticated: Utils.isAuthenticated(),
+      hasAccessToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
+      hasIdToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
+    });
+
     try {
       const user = Utils.getUserFromToken();
       console.log("👤 checkProfileSetup - User from token:", user);
 
       if (!user) {
         console.log("❌ No user found in token, redirecting to login");
+        console.log("🔍 Token details:", {
+          idToken: localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)
+            ? "EXISTS"
+            : "MISSING",
+          tokenLength:
+            localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)?.length || 0,
+        });
         window.location.href = "login.html";
         return;
       }
 
       console.log("🔍 Checking user profile in backend...");
+      console.log(
+        "📡 Making API call to:",
+        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
+      );
+
       // Check if user profile exists in backend
       const response = await Utils.apiCall(
         CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
@@ -79,16 +108,24 @@ const Auth = {
       if (response && response.preferences) {
         // Profile exists, redirect to dashboard
         console.log("✅ Profile exists, redirecting to dashboard");
+        console.log("🚀 Redirecting to dashboard.html...");
         window.location.href = "dashboard.html";
       } else {
         // Profile doesn't exist, redirect to profile setup
         console.log("📝 Profile missing, redirecting to profile setup");
+        console.log("🚀 Redirecting to profile-setup.html...");
         window.location.href = "profile-setup.html";
       }
     } catch (error) {
       console.error("❌ Error checking profile setup:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        status: error.status,
+      });
       // If error (like 404), assume profile needs to be set up
       console.log("📝 Error occurred, redirecting to profile setup");
+      console.log("🚀 Redirecting to profile-setup.html due to error...");
       window.location.href = "profile-setup.html";
     }
   },
@@ -168,6 +205,11 @@ const Auth = {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("❌ Login API failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+        });
         throw new Error(data.error || "Login failed");
       }
 
@@ -193,20 +235,47 @@ const Auth = {
         data.IdToken ||
         (data.AuthenticationResult && data.AuthenticationResult.IdToken);
 
+      console.log("🔍 Token extraction results:", {
+        accessToken: accessToken
+          ? `${accessToken.substring(0, 20)}...`
+          : "MISSING",
+        idToken: idToken ? `${idToken.substring(0, 20)}...` : "MISSING",
+        accessTokenLength: accessToken ? accessToken.length : 0,
+        idTokenLength: idToken ? idToken.length : 0,
+      });
+
       if (!accessToken || !idToken) {
         console.error("❌ Missing tokens in response:", data);
         throw new Error("Login response missing required tokens");
       }
 
+      // Store tokens
+      console.log("💾 Storing tokens in localStorage...");
       localStorage.setItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN, accessToken);
       localStorage.setItem(CONFIG.STORAGE_KEYS.ID_TOKEN, idToken);
 
-      console.log("💾 Tokens stored in localStorage:", {
-        accessTokenStored: !!localStorage.getItem(
-          CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
-        ),
-        idTokenStored: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
-        isAuthenticatedCheck: Utils.isAuthenticated(),
+      // Verify storage immediately
+      const storedAccessToken = localStorage.getItem(
+        CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+      );
+      const storedIdToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+
+      console.log("💾 Token storage verification:", {
+        accessTokenStored: !!storedAccessToken,
+        idTokenStored: !!storedIdToken,
+        accessTokenMatches: storedAccessToken === accessToken,
+        idTokenMatches: storedIdToken === idToken,
+        storageKeys: {
+          accessKey: CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+          idKey: CONFIG.STORAGE_KEYS.ID_TOKEN,
+        },
+      });
+
+      // Test authentication immediately after storage
+      const isAuthNow = Utils.isAuthenticated();
+      console.log("🔐 Authentication test after token storage:", {
+        isAuthenticated: isAuthNow,
+        userFromToken: Utils.getUserFromToken(),
       });
 
       Utils.showSuccess("Login successful! Redirecting...", "loginMessages");
@@ -214,7 +283,15 @@ const Auth = {
       // Check profile setup after successful login
       console.log("⏱️ Starting profile setup check in 1 second...");
       setTimeout(() => {
-        console.log("🔄 Calling checkProfileSetup()...");
+        console.log("🔄 About to call checkProfileSetup()...");
+        console.log("🔄 Current auth state before profile check:", {
+          isAuthenticated: Utils.isAuthenticated(),
+          hasAccessToken: !!localStorage.getItem(
+            CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+          ),
+          hasIdToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
+          userFromToken: Utils.getUserFromToken(),
+        });
         this.checkProfileSetup();
       }, 1000);
     } catch (error) {

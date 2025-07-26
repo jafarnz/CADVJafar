@@ -1049,5 +1049,18 @@
                 }
             }
         </style>
+
+        <script>
+            // Initialize modules when DOM is loaded
+            document.addEventListener("DOMContentLoaded", function () {
+                // Initialize Auth module
+                Auth.init();
+
+                // Initialize Profile module if it exists
+                if (typeof ProfilePage !== "undefined") {
+                    ProfilePage.init();
+                }
+            });
+        </script>
     </body>
 </html>

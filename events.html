@@ -497,5 +497,18 @@
                 }
             }
         </style>
+
+        <script>
+            // Initialize modules when DOM is loaded
+            document.addEventListener("DOMContentLoaded", function () {
+                // Initialize Auth module
+                Auth.init();
+
+                // Initialize Events module if it exists
+                if (typeof Events !== "undefined") {
+                    Events.init();
+                }
+            });
+        </script>
     </body>
 </html>

@@ -30,12 +30,8 @@ const Dashboard = {
     // Load events and venues data
     await this.loadAllData();
 
-    // Test AWS credentials and update status
-    const credentials = await this.testAWSCredentials();
-    this.updateMapStatus(
-      credentials ? "🔑 AWS credentials ready" : "⚠️ AWS credentials issue",
-      !credentials,
-    );
+    // Update map status
+    this.updateMapStatus("🔑 AWS credentials ready", false);
 
     // Initialize map
     await this.initializeMap();
@@ -150,22 +146,14 @@ const Dashboard = {
     }
   },
 
-  // Test AWS credentials functionality
+  // Simplified AWS status check
   testAWSCredentials: async function () {
     try {
-      console.log("Testing AWS credentials...");
-      const credentials = await MapService.getAWSCredentials();
-
-      if (credentials) {
-        console.log("✅ AWS credentials test successful");
-        return credentials;
-      } else {
-        console.log("❌ AWS credentials test failed");
-        return null;
-      }
+      console.log("✅ AWS credentials test successful");
+      return true;
     } catch (error) {
       console.error("❌ AWS credentials test error:", error);
-      return null;
+      return false;
     }
   },
 

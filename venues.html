@@ -581,5 +581,18 @@
                 }
             }
         </style>
+
+        <script>
+            // Initialize modules when DOM is loaded
+            document.addEventListener("DOMContentLoaded", function () {
+                // Initialize Auth module
+                Auth.init();
+
+                // Initialize Venues module if it exists
+                if (typeof Venues !== "undefined") {
+                    Venues.init();
+                }
+            });
+        </script>
     </body>
 </html>
