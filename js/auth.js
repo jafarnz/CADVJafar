@@ -105,14 +105,14 @@ const Auth = {
 
             console.log("📡 Profile check response:", response);
 
-            if (response && response.preferences) {
-                // Profile exists, redirect to dashboard
-                console.log("✅ Profile exists, redirecting to dashboard");
+            if (response && response.preferences && response.profileSetupComplete) {
+                // Profile exists and setup is complete, redirect to dashboard
+                console.log("✅ Profile setup complete, redirecting to dashboard");
                 console.log("🚀 Redirecting to dashboard.html...");
                 window.location.href = "dashboard.html";
             } else {
-                // Profile doesn't exist, redirect to profile setup
-                console.log("📝 Profile missing, redirecting to profile setup");
+                // Profile doesn't exist or setup not complete, redirect to profile setup
+                console.log("📝 Profile setup incomplete, redirecting to profile setup");
                 console.log("🚀 Redirecting to profile-setup.html...");
                 window.location.href = "profile-setup.html";
             }
@@ -548,11 +548,22 @@ const Auth = {
             console.log("Starting API call...");
             Utils.showLoading(submitBtn, "Setting up profile...");
 
+            // Check if there's an existing profile to preserve data
+            let existingProfile = null;
+            try {
+                const checkUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub);
+                existingProfile = await Utils.apiCall(checkUrl, { method: "GET" });
+                console.log("Existing profile found:", existingProfile);
+            } catch (error) {
+                console.log("No existing profile found, creating new one");
+            }
+
             // Create user profile
             const profileData = {
                 userID: user.sub,
                 email: user.email,
                 name: name,
+                profileSetupComplete: true,
                 preferences: {
                     genre: selectedGenre,
                     notifications: notifications,
@@ -560,13 +571,36 @@ const Auth = {
                 },
             };
 
+            // Preserve any existing data not covered in setup
+            if (existingProfile) {
+                // Preserve any additional fields that might exist
+                Object.keys(existingProfile).forEach(key => {
+                    if (!profileData.hasOwnProperty(key) && key !== 'preferences') {
+                        profileData[key] = existingProfile[key];
+                    }
+                });
+
+                // Merge preferences, preserving any existing ones not in setup
+                if (existingProfile.preferences) {
+                    Object.keys(existingProfile.preferences).forEach(key => {
+                        if (!profileData.preferences.hasOwnProperty(key)) {
+                            profileData.preferences[key] = existingProfile.preferences[key];
+                        }
+                    });
+                }
+            }
+
             console.log("Profile data to send:", profileData);
 
             const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
             console.log("API URL:", apiUrl);
 
+            // Use PUT if updating existing profile, POST if creating new
+            const method = existingProfile ? "PUT" : "POST";
+            console.log("Using HTTP method:", method);
+
             const response = await Utils.apiCall(apiUrl, {
-                method: "POST",
+                method: method,
                 body: JSON.stringify(profileData),
             });
 

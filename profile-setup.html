@@ -390,9 +390,20 @@
                 const name = document.getElementById('name').value;
                 const selectedGenre = document.querySelector('.genre-option.selected')?.dataset.genre;
                 const notifications = document.getElementById('notifications').checked;
+                const weeklyDigest = document.getElementById('weeklyDigest').checked;
+                const eventReminders = document.getElementById('eventReminders').checked;
                 const shareLocation = document.getElementById('shareLocation').checked;
 
                 let profilePictureUrl = null;
+
+                // Check if there's an existing profile to preserve data
+                let existingProfile = null;
+                try {
+                    const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, currentUser.sub);
+                    existingProfile = await Utils.apiCall(apiUrl, { method: 'GET' });
+                } catch (error) {
+                    console.log('No existing profile found');
+                }
 
                 // Upload profile picture if selected
                 if (selectedProfilePicture) {
@@ -403,29 +414,56 @@
                         console.error('Profile picture upload failed:', uploadError);
                         // Continue without profile picture
                     }
+                } else if (existingProfile && existingProfile.profilePictureUrl) {
+                    // Keep existing profile picture if no new one uploaded
+                    profilePictureUrl = existingProfile.profilePictureUrl;
                 }
 
-                // Prepare profile data
+                // Prepare profile data, preserving existing data where applicable
                 const profileData = {
                     userID: currentUser.sub,
                     name: name,
                     email: currentUser.email,
+                    profileSetupComplete: true,
                     preferences: {
                         genre: selectedGenre || 'rock',
                         notifications: notifications,
+                        weeklyDigest: weeklyDigest,
+                        eventReminders: eventReminders,
                         shareLocation: shareLocation
                     }
                 };
 
-                // Add profile picture URL if uploaded
+                // Preserve any existing data not covered in setup
+                if (existingProfile) {
+                    // Preserve any additional fields that might exist
+                    Object.keys(existingProfile).forEach(key => {
+                        if (!profileData.hasOwnProperty(key) && key !== 'preferences') {
+                            profileData[key] = existingProfile[key];
+                        }
+                    });
+
+                    // Merge preferences, preserving any existing ones not in setup
+                    if (existingProfile.preferences) {
+                        Object.keys(existingProfile.preferences).forEach(key => {
+                            if (!profileData.preferences.hasOwnProperty(key)) {
+                                profileData.preferences[key] = existingProfile.preferences[key];
+                            }
+                        });
+                    }
+                }
+
+                // Add profile picture URL if uploaded or preserved
                 if (profilePictureUrl) {
                     profileData.profilePictureUrl = profilePictureUrl;
                 }
 
-                // Save to backend
+                // Save to backend (use PUT if updating, POST if creating)
                 const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                const method = existingProfile ? 'PUT' : 'POST';
+                
                 await Utils.apiCall(url, {
-                    method: 'POST',
+                    method: method,
                     headers: CONFIG.getAuthHeaders(),
                     body: JSON.stringify(profileData)
                 });
@@ -457,11 +495,8 @@
                 return;
             }
 
-            // Get user info to pre-fill name if needed
-            const user = Utils.getUserFromToken();
-            if (user && user.preferredUsername) {
-                document.getElementById('name').value = user.preferredUsername;
-            }
+            // Load existing profile data if available
+            loadExistingProfile();
 
             // Setup genre options
             setupGenreOptions();
@@ -473,6 +508,70 @@
             updateProgress();
         });
 
+        async function loadExistingProfile() {
+            try {
+                const user = Utils.getUserFromToken();
+                if (!user) return;
+
+                // Try to get existing profile data
+                const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub);
+                const existingProfile = await Utils.apiCall(apiUrl, { method: 'GET' });
+
+                if (existingProfile) {
+                    console.log('Loading existing profile data:', existingProfile);
+
+                    // Pre-fill name
+                    if (existingProfile.name) {
+                        document.getElementById('name').value = existingProfile.name;
+                    }
+
+                    // Pre-fill preferences if they exist
+                    if (existingProfile.preferences) {
+                        // Set notifications
+                        if (typeof existingProfile.preferences.notifications === 'boolean') {
+                            document.getElementById('notifications').checked = existingProfile.preferences.notifications;
+                        }
+
+                        // Set weekly digest
+                        if (typeof existingProfile.preferences.weeklyDigest === 'boolean') {
+                            document.getElementById('weeklyDigest').checked = existingProfile.preferences.weeklyDigest;
+                        }
+
+                        // Set event reminders
+                        if (typeof existingProfile.preferences.eventReminders === 'boolean') {
+                            document.getElementById('eventReminders').checked = existingProfile.preferences.eventReminders;
+                        }
+
+                        // Set location sharing
+                        if (typeof existingProfile.preferences.shareLocation === 'boolean') {
+                            document.getElementById('shareLocation').checked = existingProfile.preferences.shareLocation;
+                        }
+                    }
+
+                    // Show existing profile picture if available
+                    if (existingProfile.profilePictureUrl) {
+                        const profilePreview = document.getElementById('profilePreview');
+                        const placeholder = document.getElementById('uploadPlaceholder');
+                        const removeBtn = document.getElementById('removePhotoBtn');
+                        
+                        profilePreview.src = existingProfile.profilePictureUrl;
+                        profilePreview.style.display = 'block';
+                        placeholder.style.display = 'none';
+                        removeBtn.style.display = 'inline-block';
+                    }
+                }
+            } catch (error) {
+                console.log('No existing profile found or error loading:', error);
+                // Continue with empty form if no profile exists
+            }
+
+            // Get user info to pre-fill name if not already set
+            const user = Utils.getUserFromToken();
+            if (user && user.preferredUsername && !document.getElementById('name').value) {
+                document.getElementById('name').value = user.preferredUsername;
+            }
+        }
+
         function setupGenreOptions() {
             const genreContainer = document.getElementById('genreOptions');
             if (!genreContainer) return;
@@ -482,6 +581,7 @@
             CONFIG.PREFERENCES.GENRES.forEach((genre) => {
                 const genreOption = document.createElement('div');
                 genreOption.className = 'genre-option';
+                genreOption.dataset.genre = genre;
                 genreOption.innerHTML = `
                     <input type="radio" name="genre" value="${genre}" id="genre-${genre}" hidden>
                     <div class="genre-content">
@@ -505,6 +605,27 @@
 
                 genreContainer.appendChild(genreOption);
             });
+
+            // Pre-select genre if loading existing profile
+            setTimeout(async () => {
+                try {
+                    const user = Utils.getUserFromToken();
+                    if (!user) return;
+
+                    const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub);
+                    const existingProfile = await Utils.apiCall(apiUrl, { method: 'GET' });
+
+                    if (existingProfile && existingProfile.preferences && existingProfile.preferences.genre) {
+                        const selectedGenre = existingProfile.preferences.genre;
+                        const genreOption = document.querySelector(`.genre-option[data-genre="${selectedGenre}"]`);
+                        if (genreOption) {
+                            genreOption.click();
+                        }
+                    }
+                } catch (error) {
+                    console.log('Error pre-selecting genre:', error);
+                }
+            }, 100);
         }
 
         function getGenreEmoji(genre) {

@@ -89,8 +89,8 @@ const MapService = {
                 transformRequest: (url, resourceType) => {
                     console.log("🔄 Transform request for:", url);
                     
-                    // For AWS Location Service requests, add API key
-                    if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
+                    // For AWS Location Service requests that don't already have API key
+                    if ((url.includes('amazonaws.com') || url.includes('maps.geo.')) && !url.includes('key=')) {
                         console.log("🔐 Adding API key to AWS request");
                         
                         // Check if URL already has query parameters
@@ -101,6 +101,8 @@ const MapService = {
                         return { url: authenticatedUrl };
                     }
                     
+                    // Don't modify URLs that already have the API key
+                    console.log("🔄 URL already has key or not AWS, passing through:", url);
                     return { url };
                 }
             };
