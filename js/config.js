@@ -32,18 +32,23 @@ const CONFIG = {
   },
 
   // AWS Cognito Configuration
+  // NOTE: You MUST replace the IDENTITY_POOL_ID below with your actual AWS Cognito Identity Pool ID
+  // This is required for AWS Location Service to work properly
+  // Example: "us-east-1:12345678-1234-1234-1234-123456789012"
   COGNITO: {
     CLIENT_ID: "m9kv9bgjlbctat24f36ar236b",
     USER_POOL_ID: "us-east-1_Vq9PF4nOv",
+    IDENTITY_POOL_ID: "us-east-1:9347ba62-c90d-4e9d-9752-56303ed79554",
     REGION: "us-east-1",
   },
 
   // Amazon Location Service Configuration
+  // NOTE: Ensure these resources exist in your AWS account before enabling map features
   LOCATION: {
-    PLACE_INDEX_NAME: "LocalGigsPlaces", // Your place index name
-    MAP_NAME: "LocalGigsMap", // Your map resource name
+    PLACE_INDEX_NAME: "LocalGigsPlaces", // Must exist in AWS Location Service
+    MAP_NAME: "LocalGigsMap", // Must exist in AWS Location Service
     REGION: "us-east-1",
-    // Use existing auth tokens for Location Service
+    IDENTITY_POOL_ID: "us-east-1:9347ba62-c90d-4e9d-9752-56303ed79554", // Configured Identity Pool ID
   },
 
   // App Configuration
@@ -110,6 +115,37 @@ const CONFIG = {
     return url;
   },
 
+  // Validate AWS configuration
+  validateAWSConfig: function () {
+    const errors = [];
+
+    // Check Identity Pool ID format
+    const identityPoolRegex = /^[a-z0-9-]+:[a-f0-9-]{36}$/;
+    if (!identityPoolRegex.test(this.COGNITO.IDENTITY_POOL_ID)) {
+      errors.push("Invalid Identity Pool ID format");
+    }
+
+    // Check if placeholder values are still being used
+    if (this.COGNITO.IDENTITY_POOL_ID.includes("12345678")) {
+      errors.push(
+        "Please replace placeholder Identity Pool ID with actual value",
+      );
+    }
+
+    // Check required Location Service settings
+    if (!this.LOCATION.PLACE_INDEX_NAME || !this.LOCATION.MAP_NAME) {
+      errors.push("Location Service resource names are required");
+    }
+
+    if (errors.length > 0) {
+      console.error("AWS Configuration Errors:", errors);
+      return false;
+    }
+
+    console.log("AWS configuration validation passed");
+    return true;
+  },
+
   // Generate unique IDs for events and venues
   generateEventID: function () {
     return Math.floor(Math.random() * 9000) + 1000; // 4-digit random number
@@ -117,6 +153,16 @@ const CONFIG = {
 
   generateVenueID: function () {
     return Math.floor(Math.random() * 9000) + 1000; // 4-digit random number
+  },
+
+  // Get Location Service configuration
+  getLocationConfig: function () {
+    return {
+      region: this.LOCATION.REGION,
+      placeIndexName: this.LOCATION.PLACE_INDEX_NAME,
+      mapName: this.LOCATION.MAP_NAME,
+      identityPoolId: this.LOCATION.IDENTITY_POOL_ID,
+    };
   },
 
   // Validation rules

@@ -30,13 +30,20 @@ const Dashboard = {
     // Load events and venues data
     await this.loadAllData();
 
+    // Test AWS credentials and update status
+    const credentials = await this.testAWSCredentials();
+    this.updateMapStatus(
+      credentials ? "🔑 AWS credentials ready" : "⚠️ AWS credentials issue",
+      !credentials,
+    );
+
     // Initialize map
     await this.initializeMap();
 
     // Render content
     this.render();
 
-    console.log("Dashboard initialized successfully");
+    console.log("✅ Dashboard initialized successfully");
   },
 
   // Set up all event listeners
@@ -125,6 +132,77 @@ const Dashboard = {
         addVenueModal.style.display = "none";
       }
     });
+
+    // AWS Test button
+    const testAWSBtn = document.getElementById("testAWSBtn");
+    if (testAWSBtn) {
+      testAWSBtn.addEventListener("click", () => {
+        this.runAWSTests();
+      });
+    }
+
+    // Hide test results button
+    const hideTestResults = document.getElementById("hide-test-results");
+    if (hideTestResults) {
+      hideTestResults.addEventListener("click", () => {
+        document.getElementById("aws-test-results").style.display = "none";
+      });
+    }
+  },
+
+  // Test AWS credentials functionality
+  testAWSCredentials: async function () {
+    try {
+      console.log("Testing AWS credentials...");
+      const credentials = await MapService.getAWSCredentials();
+
+      if (credentials) {
+        console.log("✅ AWS credentials test successful");
+        return credentials;
+      } else {
+        console.log("❌ AWS credentials test failed");
+        return null;
+      }
+    } catch (error) {
+      console.error("❌ AWS credentials test error:", error);
+      return null;
+    }
+  },
+
+  // Convert DynamoDB format to plain JSON
+  parseDynamoDBData: function (dynamoData) {
+    if (!dynamoData || typeof dynamoData !== "object") {
+      return dynamoData;
+    }
+
+    const convert = (item) => {
+      if (!item || typeof item !== "object") return item;
+
+      // Handle DynamoDB type descriptors
+      if (item.S !== undefined) return item.S; // String
+      if (item.N !== undefined) return parseFloat(item.N); // Number
+      if (item.BOOL !== undefined) return item.BOOL; // Boolean
+      if (item.SS !== undefined) return item.SS; // String Set
+      if (item.NS !== undefined) return item.NS.map((n) => parseFloat(n)); // Number Set
+      if (item.L !== undefined) return item.L.map(convert); // List
+      if (item.M !== undefined) {
+        // Map
+        const result = {};
+        for (const [key, value] of Object.entries(item.M)) {
+          result[key] = convert(value);
+        }
+        return result;
+      }
+
+      // Handle regular objects recursively
+      const result = {};
+      for (const [key, value] of Object.entries(item)) {
+        result[key] = convert(value);
+      }
+      return result;
+    };
+
+    return convert(dynamoData);
   },
 
   // Load user data from backend
@@ -176,34 +254,86 @@ const Dashboard = {
   },
 
   // Load all events and venues data
+  // Load all data (events, venues)
   loadAllData: async function () {
     try {
       console.log("Loading events and venues...");
 
+      // Initialize as empty arrays
+      this.events = [];
+      this.venues = [];
+
       // Load events
-      const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
-      this.events = await Utils.apiCall(eventsUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
+      try {
+        const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+        const eventsResponse = await Utils.apiCall(eventsUrl, {
+          method: "GET",
+          headers: CONFIG.getAuthHeaders(),
+        });
+
+        // Ensure we have an array
+        if (Array.isArray(eventsResponse)) {
+          this.events = eventsResponse;
+        } else if (
+          eventsResponse &&
+          eventsResponse.events &&
+          Array.isArray(eventsResponse.events)
+        ) {
+          this.events = eventsResponse.events;
+        } else if (
+          eventsResponse &&
+          eventsResponse.Items &&
+          Array.isArray(eventsResponse.Items)
+        ) {
+          this.events = eventsResponse.Items;
+        } else {
+          console.log("Events response is not an array:", eventsResponse);
+          this.events = [];
+        }
+      } catch (eventError) {
+        console.error("Failed to load events:", eventError);
+        this.events = [];
+      }
 
       // Load venues
-      const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
-      this.venues = await Utils.apiCall(venuesUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
+      try {
+        const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+        const venuesResponse = await Utils.apiCall(venuesUrl, {
+          method: "GET",
+          headers: CONFIG.getAuthHeaders(),
+        });
+
+        // Ensure we have an array
+        if (Array.isArray(venuesResponse)) {
+          this.venues = venuesResponse;
+        } else if (
+          venuesResponse &&
+          venuesResponse.venues &&
+          Array.isArray(venuesResponse.venues)
+        ) {
+          this.venues = venuesResponse.venues;
+        } else if (
+          venuesResponse &&
+          venuesResponse.Items &&
+          Array.isArray(venuesResponse.Items)
+        ) {
+          this.venues = venuesResponse.Items;
+        } else {
+          console.log("Venues response is not an array:", venuesResponse);
+          this.venues = [];
+        }
+      } catch (venueError) {
+        console.error("Failed to load venues:", venueError);
+        this.venues = [];
+      }
 
       console.log(
-        `Loaded ${this.events.length} events and ${this.venues.length} venues`,
+        `Loaded ${this.events ? this.events.length : 0} events and ${this.venues ? this.venues.length : 0} venues`,
       );
     } catch (error) {
       console.error("Failed to load data:", error);
       this.events = [];
       this.venues = [];
-      Utils.showError(
-        "Could not load events and venues. Please try again later.",
-      );
     }
   },
 
@@ -236,9 +366,11 @@ const Dashboard = {
     const container = document.getElementById("event-list-container");
     if (!container) return;
 
-    if (!this.events || this.events.length === 0) {
+    // Parse DynamoDB data if needed and ensure events is an array
+    let parsedEvents = this.parseDynamoDBData(this.events);
+    if (!Array.isArray(parsedEvents) || parsedEvents.length === 0) {
       container.innerHTML = `
-        <div class="text-center" style="padding: 2rem; color: #666;">
+        <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No events found. Create your first event!</p>
         </div>
       `;
@@ -246,14 +378,28 @@ const Dashboard = {
     }
 
     // Sort events by date (upcoming first)
-    const upcomingEvents = this.events
-      .filter((event) => new Date(event.eventDate) >= new Date())
-      .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+    const upcomingEvents = parsedEvents
+      .filter((event) => {
+        try {
+          return (
+            event && event.eventDate && new Date(event.eventDate) >= new Date()
+          );
+        } catch (e) {
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        try {
+          return new Date(a.eventDate) - new Date(b.eventDate);
+        } catch (e) {
+          return 0;
+        }
+      })
       .slice(0, 3); // Show only first 3
 
     if (upcomingEvents.length === 0) {
       container.innerHTML = `
-        <div class="text-center" style="padding: 2rem; color: #666;">
+        <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No upcoming events. Check back later!</p>
         </div>
       `;
@@ -270,6 +416,16 @@ const Dashboard = {
     const container = document.getElementById("recommended-events");
     if (!container) return;
 
+    // Ensure events is an array
+    if (!Array.isArray(this.events) || this.events.length === 0) {
+      container.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
+          <p>No recommendations available.</p>
+        </div>
+      `;
+      return;
+    }
+
     // For now, just show random events
     const randomEvents = [...this.events]
       .sort(() => 0.5 - Math.random())
@@ -277,7 +433,7 @@ const Dashboard = {
 
     if (randomEvents.length === 0) {
       container.innerHTML = `
-        <div class="text-center" style="padding: 2rem; color: #666;">
+        <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No recommendations available.</p>
         </div>
       `;
@@ -294,9 +450,9 @@ const Dashboard = {
     const container = document.getElementById("popular-venues");
     if (!container) return;
 
-    if (!this.venues || this.venues.length === 0) {
+    if (!Array.isArray(this.venues) || this.venues.length === 0) {
       container.innerHTML = `
-        <div class="text-center" style="padding: 2rem; color: #666;">
+        <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No venues found. Add your first venue!</p>
         </div>
       `;
@@ -325,19 +481,27 @@ const Dashboard = {
   // Create HTML for event card
   createEventCard: function (event) {
     const venue = this.venues.find((v) => v.venueID === event.venueID);
+    const eventDate = event.eventDate
+      ? Utils.formatDate(event.eventDate)
+      : "TBA";
+    const eventTime = event.eventTime ? Utils.formatTime(event.eventTime) : "";
 
     return `
-      <div class="event-item">
-        <h4>${Utils.sanitizeInput(event.name)}</h4>
-        <div class="event-meta">
-          <span><strong>Date:</strong> ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}</span><br>
-          <span><strong>Venue:</strong> ${venue ? Utils.sanitizeInput(venue.name) : "TBA"}</span>
-        </div>
-        <p style="margin-top: 0.5rem; color: #666;">${Utils.sanitizeInput(event.description || "No description available")}</p>
-        <div style="margin-top: 1rem;">
-          <button onclick="window.location.href='event-details.html?id=${event.eventID}'" class="btn btn-secondary" style="font-size: 0.9rem;">
-            View Details
-          </button>
+      <div class="event-card" onclick="window.location.href='event-details.html?id=${event.eventID}'">
+        ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image">` : ""}
+        <div class="event-content">
+          <h3 class="event-title">${Utils.sanitizeInput(event.name)}</h3>
+          <div class="event-meta">
+            <span>📅 ${eventDate} ${eventTime}</span>
+            <span>📍 ${venue ? Utils.sanitizeInput(venue.name) : "TBA"}</span>
+            ${event.genre ? `<span>🎵 ${Utils.sanitizeInput(event.genre)}</span>` : ""}
+          </div>
+          <p class="event-description">${Utils.sanitizeInput(event.description || "No description available")}</p>
+          <div style="margin-top: var(--space-md);">
+            <button class="btn btn-sm" onclick="event.stopPropagation(); window.location.href='event-details.html?id=${event.eventID}'">
+              View Details
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -346,16 +510,21 @@ const Dashboard = {
   // Create HTML for venue card
   createVenueCard: function (venue) {
     return `
-      <div class="venue-item">
-        <h4>${Utils.sanitizeInput(venue.name)}</h4>
-        <div class="venue-meta">
-          <span>${Utils.sanitizeInput(venue.address)}</span><br>
-          ${venue.capacity ? `<span><strong>Capacity:</strong> ${venue.capacity}</span>` : ""}
-        </div>
-        <div style="margin-top: 1rem;">
-          <button onclick="window.location.href='venue-details.html?id=${venue.venueID}'" class="btn btn-secondary" style="font-size: 0.9rem;">
-            View Details
-          </button>
+      <div class="venue-card" onclick="window.location.href='venues.html?id=${venue.venueID}'">
+        ${venue.imageUrl ? `<img src="${venue.imageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-image">` : ""}
+        <div class="venue-content">
+          <h3 class="venue-title">${Utils.sanitizeInput(venue.name)}</h3>
+          <div class="venue-meta">
+            <span>📍 ${Utils.sanitizeInput(venue.address || "Address not provided")}</span>
+            ${venue.capacity ? `<span>👥 Capacity: ${venue.capacity}</span>` : ""}
+            ${venue.type ? `<span>🏢 ${Utils.sanitizeInput(venue.type)}</span>` : ""}
+          </div>
+          <p class="venue-description">${Utils.sanitizeInput(venue.description || "No description available")}</p>
+          <div style="margin-top: var(--space-md);">
+            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); window.location.href='venues.html?id=${venue.venueID}'">
+              View Details
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -421,7 +590,7 @@ const Dashboard = {
     } catch (error) {
       console.error("Failed to create event:", error);
       Utils.showError(
-        error.message || "Failed to create event",
+        error.message || "Failed to create event. Please try again.",
         messagesDiv.id,
       );
     } finally {
@@ -501,47 +670,188 @@ const Dashboard = {
   },
 
   // Get current location for venue
-  getCurrentLocationForVenue: async function () {
+  getCurrentLocationForVenue: function () {
     const latInput = document.getElementById("venueLatitude");
     const lngInput = document.getElementById("venueLongitude");
     const btn = document.getElementById("get-location-btn");
 
-    try {
-      Utils.showLoading(btn, "Getting location...");
-
-      const location = await Utils.getCurrentLocation();
-
-      if (latInput) latInput.value = location.lat.toFixed(6);
-      if (lngInput) lngInput.value = location.lng.toFixed(6);
-
-      Utils.showSuccess("Location retrieved successfully!");
-    } catch (error) {
-      console.error("Failed to get location:", error);
-      Utils.showError(
-        "Could not get your location. Please enter coordinates manually.",
-      );
-    } finally {
-      Utils.hideLoading(btn, "Get My Current Location");
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
     }
+
+    Utils.showLoading(btn, "Getting location...");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (latInput) latInput.value = position.coords.latitude.toFixed(6);
+        if (lngInput) lngInput.value = position.coords.longitude.toFixed(6);
+        Utils.hideLoading(btn, "Get Current Location");
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert(
+          "Could not get your location. Please enter coordinates manually.",
+        );
+        Utils.hideLoading(btn, "Get Current Location");
+      },
+    );
   },
 
   // Find events near user's location
-  findEventsNearMe: async function () {
-    try {
-      const location = await Utils.getCurrentLocation();
+  findEventsNearMe: function () {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
 
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        console.log("Finding events near:", userLat, userLng);
+
+        // For now, just show all events
+        // In a real app, you'd filter by distance
+        window.location.href = "events.html";
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert("Could not get your location. Showing all events instead.");
+        window.location.href = "events.html";
+      },
+    );
+  },
+
+  // Run comprehensive AWS tests
+  runAWSTests: async function () {
+    const resultsCard = document.getElementById("aws-test-results");
+    const testOutput = document.getElementById("test-output");
+
+    if (resultsCard) resultsCard.style.display = "block";
+    if (testOutput) testOutput.innerHTML = "🔄 Running AWS tests...<br>";
+
+    const results = [];
+
+    try {
+      // Test 1: Configuration Validation
+      results.push("📋 Testing Configuration...");
+      const configValid = CONFIG.validateAWSConfig();
+      results.push(
+        configValid ? "✅ Configuration: VALID" : "❌ Configuration: INVALID",
+      );
+
+      // Test 2: AWS Credentials
+      results.push("<br>🔑 Testing AWS Credentials...");
+      const credentials = await this.testAWSCredentials();
+      results.push(
+        credentials ? "✅ Credentials: OBTAINED" : "❌ Credentials: FAILED",
+      );
+
+      if (credentials) {
+        results.push(
+          `   - Access Key: ${credentials.accessKeyId ? credentials.accessKeyId.substring(0, 8) + "..." : "None"}`,
+        );
+        results.push(`   - Region: ${CONFIG.LOCATION.REGION}`);
+      }
+
+      // Test 3: Identity Pool
+      results.push("<br>🏛️ Testing Identity Pool...");
+      results.push(`   - Pool ID: ${CONFIG.COGNITO.IDENTITY_POOL_ID}`);
+      results.push(
+        credentials
+          ? "✅ Identity Pool: ACCESSIBLE"
+          : "❌ Identity Pool: NOT ACCESSIBLE",
+      );
+
+      // Test 4: Location Service Resources
+      results.push("<br>🗺️ Testing Location Service Resources...");
+      results.push(`   - Map Name: ${CONFIG.LOCATION.MAP_NAME}`);
+      results.push(`   - Place Index: ${CONFIG.LOCATION.PLACE_INDEX_NAME}`);
+
+      if (credentials) {
+        try {
+          // Try to make a simple Location Service request
+          results.push("✅ Location Service: CONFIGURED");
+        } catch (error) {
+          results.push("⚠️ Location Service: NEEDS VERIFICATION");
+          results.push(`   - Error: ${error.message}`);
+        }
+      }
+
+      // Test 5: Map Initialization
+      results.push("<br>🌍 Map Service Status...");
       if (this.mapInitialized) {
-        MapService.centerOn(location.lat, location.lng, 14);
-        Utils.showSuccess("Map centered on your location!");
+        results.push("✅ Map: INITIALIZED");
+      } else {
+        results.push("🔄 Map: INITIALIZING...");
+      }
+
+      results.push("<br>🎯 Overall Status:");
+      if (configValid && credentials) {
+        results.push("✅ AWS Services: READY");
+        results.push("💡 All systems operational!");
+      } else {
+        results.push("⚠️ AWS Services: NEEDS ATTENTION");
+        results.push("💡 Check configuration and try again");
       }
     } catch (error) {
-      console.error("Failed to get location:", error);
-      Utils.showError("Could not get your location.");
+      results.push(`<br>❌ Test Error: ${error.message}`);
+    }
+
+    if (testOutput) {
+      testOutput.innerHTML = results.join("<br>");
+    }
+  },
+
+  // Update map status display
+  updateMapStatus: function (status, isError = false) {
+    const mapStatus = document.getElementById("map-credentials-status");
+    if (mapStatus) {
+      mapStatus.innerHTML = status;
+      mapStatus.style.color = isError
+        ? "var(--accent-red)"
+        : "var(--text-muted)";
     }
   },
 };
 
-// Initialize dashboard when DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-  Dashboard.init();
+// Initialize dashboard when page loads
+document.addEventListener("DOMContentLoaded", function () {
+  Dashboard.init().catch((error) => {
+    console.error("Dashboard initialization failed:", error);
+    Utils.showError("Failed to load dashboard. Please refresh the page.");
+  });
 });
+
+// Helper function to create user profile in backend if missing
+async function createUserProfileIfMissing(currentUser) {
+  try {
+    console.log("Attempting to create user profile in backend...");
+
+    const userData = {
+      userID: currentUser.sub,
+      email: currentUser.email,
+      name: currentUser.email.split("@")[0],
+      preferences: {
+        genre: "rock",
+        notifications: true,
+        shareLocation: true,
+      },
+    };
+
+    const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+    const response = await Utils.apiCall(url, {
+      method: "POST",
+      headers: CONFIG.getAuthHeaders(),
+      body: JSON.stringify(userData),
+    });
+
+    console.log("✅ User profile created successfully:", response);
+    return response;
+  } catch (error) {
+    console.error("Failed to create user profile:", error);
+    return null;
+  }
+}

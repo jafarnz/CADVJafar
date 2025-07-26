@@ -15,6 +15,17 @@ const MapService = {
         return false;
       }
 
+      // Validate AWS configuration before proceeding
+      if (!CONFIG.validateAWSConfig()) {
+        throw new Error(
+          "AWS configuration validation failed. Check console for details.",
+        );
+      }
+
+      console.log(
+        "Starting map initialization with validated AWS configuration...",
+      );
+
       // Load required SDKs from CDN
       await this.loadMapLibreSDK();
       await this.loadAwsSDK();
@@ -35,7 +46,18 @@ const MapService = {
       );
 
       // Wait for map to be fully loaded
-      await new Promise((resolve) => this.map.on("load", resolve));
+      await new Promise((resolve) => {
+        this.map.on("load", () => {
+          console.log("Map tiles loaded successfully");
+          this.updateMapContainer("map-container", "Map loaded successfully!");
+          resolve();
+        });
+
+        this.map.on("error", (e) => {
+          console.error("Map loading error:", e);
+          this.showMapError("map-container", "Failed to load map tiles");
+        });
+      });
 
       this.isInitialized = true;
       console.log("Map initialized with Amazon Location Service");
@@ -86,20 +108,26 @@ const MapService = {
   // Initialize with Amazon Location Service
   initializeWithLocationService: async function (containerId) {
     try {
+      console.log("Initializing Amazon Location Service...");
+
       // Get AWS credentials from token
       const credentials = await this.getAWSCredentials();
 
       if (!credentials) {
         throw new Error(
-          "Amazon Location Service requires additional configuration",
+          "Failed to obtain AWS credentials. Please check your authentication and Identity Pool configuration.",
         );
       }
+
+      console.log("AWS credentials obtained successfully");
 
       // Configure AWS SDK
       AWS.config.update({
         region: CONFIG.LOCATION.REGION,
         credentials: credentials,
       });
+
+      console.log(`Creating map with style: maps/${CONFIG.LOCATION.MAP_NAME}`);
 
       // Create the map with AWS Location Service
       this.map = new maplibregl.Map({
@@ -119,8 +147,32 @@ const MapService = {
           return { url };
         },
       });
+
+      // Add additional event listeners for better feedback
+      this.map.on("styledata", () => {
+        console.log("Map style loaded successfully");
+      });
+
+      this.map.on("sourcedata", (e) => {
+        if (e.isSourceLoaded) {
+          console.log("Map source data loaded");
+        }
+      });
+
+      console.log("Map created successfully with Amazon Location Service");
     } catch (error) {
       console.error("Failed to initialize Amazon Location Service:", error);
+      if (
+        error.message.includes("NetworkingError") ||
+        error.message.includes("403")
+      ) {
+        console.error(
+          "This might be due to missing permissions or incorrect resource names",
+        );
+        console.error("Please verify your Location Service resources exist:");
+        console.error(`- Map: ${CONFIG.LOCATION.MAP_NAME}`);
+        console.error(`- Place Index: ${CONFIG.LOCATION.PLACE_INDEX_NAME}`);
+      }
       throw error;
     }
   },
@@ -128,14 +180,18 @@ const MapService = {
   // Get AWS credentials from Cognito token
   getAWSCredentials: async function () {
     try {
+      console.log("Retrieving AWS credentials from Cognito...");
       const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
       const accessToken = localStorage.getItem(
         CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
       );
 
       if (!idToken || !accessToken) {
+        console.error("Authentication tokens not found in localStorage");
         throw new Error("No authentication tokens found");
       }
+
+      console.log("Tokens found, configuring Cognito Identity client...");
 
       // Create credentials using Cognito Identity
       const cognitoIdentity = new AWS.CognitoIdentity({
@@ -143,7 +199,7 @@ const MapService = {
       });
 
       const params = {
-        IdentityPoolId: CONFIG.COGNITO.USER_POOL_ID,
+        IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
         Logins: {
           [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
             idToken,
@@ -158,13 +214,18 @@ const MapService = {
         })
         .promise();
 
+      console.log("AWS credentials retrieved successfully");
       return {
         accessKeyId: credentialsResult.Credentials.AccessKeyId,
         secretAccessKey: credentialsResult.Credentials.SecretKey,
         sessionToken: credentialsResult.Credentials.SessionToken,
       };
     } catch (error) {
-      console.error("Failed to get AWS credentials:", error);
+      console.error("Failed to get AWS credentials:", error.message);
+      console.error("Error details:", error);
+      if (error.code === "ValidationException") {
+        console.error("Check your Identity Pool ID configuration in config.js");
+      }
       return null;
     }
   },
@@ -193,8 +254,26 @@ const MapService = {
     return urlObj.toString();
   },
 
+  // Update map container with success message
+  updateMapContainer: function (containerId, message) {
+    const container = document.getElementById(containerId);
+    if (container) {
+      // Only update if it's showing a loading message
+      const currentContent = container.innerHTML;
+      if (
+        currentContent.includes("Loading") ||
+        currentContent.includes("loading")
+      ) {
+        console.log("Map container updated:", message);
+        // Don't replace the actual map, just log success
+        return;
+      }
+    }
+  },
+
   // Show a user-friendly error message in the map container
   showMapError: function (containerId, errorMessage) {
+    console.log("Displaying map error:", errorMessage);
     const container = document.getElementById(containerId);
     if (container) {
       container.innerHTML = `

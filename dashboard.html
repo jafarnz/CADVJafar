@@ -34,7 +34,8 @@
                         <span id="user-display-name">Music Lover</span>!
                     </h1>
                     <p>
-                        Discover amazing local music events happening around you
+                        Discover amazing local music events with our refreshed
+                        modern interface
                     </p>
                 </div>
 
@@ -58,6 +59,34 @@
                         <button id="findEventsBtn" class="btn btn-secondary">
                             Find Events Near Me
                         </button>
+                        <button id="testAWSBtn" class="btn btn-outline">
+                            🔧 Test AWS Services
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AWS Test Results -->
+                <div class="card" id="aws-test-results" style="display: none">
+                    <h2>AWS Services Status</h2>
+                    <div
+                        id="aws-test-content"
+                        style="
+                            font-family: monospace;
+                            background: var(--bg-secondary);
+                            padding: 1rem;
+                            border-radius: var(--radius-md);
+                            margin-top: 1rem;
+                        "
+                    >
+                        <div id="test-output">Ready to test...</div>
+                    </div>
+                    <div style="margin-top: 1rem">
+                        <button
+                            id="hide-test-results"
+                            class="btn btn-secondary btn-sm"
+                        >
+                            Hide Results
+                        </button>
                     </div>
                 </div>
 
@@ -67,15 +96,25 @@
                     <div class="map-container">
                         <div id="map-container">
                             <div
+                                id="map-status"
                                 style="
                                     display: flex;
                                     align-items: center;
                                     justify-content: center;
                                     height: 100%;
-                                    color: #666;
+                                    color: var(--text-muted);
+                                    flex-direction: column;
+                                    gap: 1rem;
                                 "
                             >
-                                <p>Loading map...</p>
+                                <p>Loading interactive map...</p>
+                                <div
+                                    id="map-credentials-status"
+                                    style="
+                                        font-size: 0.875rem;
+                                        color: var(--text-muted);
+                                    "
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -99,7 +138,11 @@
                             >
                         </div>
                         <div id="event-list-container">
-                            <div class="loading-placeholder">
+                            <div
+                                class="loading"
+                                style="padding: 2rem; text-align: center"
+                            >
+                                <div class="spinner"></div>
                                 <p>Loading events...</p>
                             </div>
                         </div>
@@ -119,7 +162,11 @@
                             <span id="user-genre" class="genre-tag"></span>
                         </div>
                         <div id="recommended-events">
-                            <div class="loading-placeholder">
+                            <div
+                                class="loading"
+                                style="padding: 2rem; text-align: center"
+                            >
+                                <div class="spinner"></div>
                                 <p>Loading recommendations...</p>
                             </div>
                         </div>
@@ -141,7 +188,11 @@
                             >
                         </div>
                         <div id="popular-venues">
-                            <div class="loading-placeholder">
+                            <div
+                                class="loading"
+                                style="padding: 2rem; text-align: center"
+                            >
+                                <div class="spinner"></div>
                                 <p>Loading venues...</p>
                             </div>
                         </div>
