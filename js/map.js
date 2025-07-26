@@ -328,7 +328,42 @@ const MapService = {
 
             console.log("🗺️ Creating map with Amazon Location Service...");
 
-            // Create the map with proper authentication - handle legacy services
+            // Use AWS Location Service SDK to get the style URL with proper authentication
+            console.log("🔐 Creating AWS Location client with credentials...");
+            const location = new AWS.Location({
+                region: CONFIG.LOCATION.REGION,
+                credentials: AWS.config.credentials
+            });
+
+            // Get a properly signed style URL using the AWS SDK
+            let signedStyleUrl;
+            try {
+                console.log("🔗 Getting signed style URL from AWS Location Service...");
+                
+                // Create a request to get the map style
+                const request = location.getMapStyleDescriptor({
+                    MapName: CONFIG.LOCATION.MAP_NAME
+                });
+
+                // Get the signed URL from the request
+                const httpRequest = request.build();
+                signedStyleUrl = httpRequest.endpoint.href + httpRequest.pathname;
+                
+                // Add query parameters if any
+                if (httpRequest.search) {
+                    signedStyleUrl += httpRequest.search;
+                }
+                
+                console.log("✅ Generated signed style URL:", signedStyleUrl);
+                
+            } catch (error) {
+                console.warn("⚠️ Failed to generate signed style URL, falling back to manual approach:", error.message);
+                
+                // Fallback to the original approach
+                signedStyleUrl = `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`;
+            }
+
+            // Create the map with proper authentication
             const mapConfig = {
                 container: containerId,
                 center: [
@@ -336,80 +371,41 @@ const MapService = {
                     CONFIG.APP.DEFAULT_COORDINATES.LAT,
                 ],
                 zoom: CONFIG.APP.MAP_ZOOM,
+                style: signedStyleUrl
             };
 
-            // Try different approaches for the map style URL
-            const styleUrls = [
-                `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`,
-                `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
-            ];
-
-            let mapCreated = false;
-            let lastError = null;
-
-            for (let i = 0; i < styleUrls.length && !mapCreated; i++) {
-                try {
-                    console.log(`📍 Trying style URL ${i + 1}:`, styleUrls[i]);
+            // Use a simple transform request that relies on the AWS SDK
+            mapConfig.transformRequest = (url, resourceType) => {
+                console.log("🔄 SDK-based transform request for:", url, "Type:", resourceType);
+                
+                // For AWS Location Service requests, let the AWS SDK handle authentication
+                if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
+                    console.log("🔐 AWS Location Service request detected");
                     
-                    mapConfig.style = styleUrls[i];
-
-                    // Add transform request for authentication
-                    if (this.authHelper && this.authHelper.transformRequest) {
-                        mapConfig.transformRequest = this.authHelper.transformRequest;
-                    } else {
-                        // Enhanced fallback transform request
-                        mapConfig.transformRequest = (url, resourceType) => {
-                            console.log("🔄 Enhanced fallback transform request for:", url, "Type:", resourceType);
-                            
-                            if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
-                                // Add session token to URL for AWS Location Service
-                                if (AWS.config.credentials && AWS.config.credentials.sessionToken) {
-                                    const urlObj = new URL(url);
-                                    urlObj.searchParams.set('X-Amz-Security-Token', AWS.config.credentials.sessionToken);
-                                    
-                                    const now = new Date();
-                                    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-                                    urlObj.searchParams.set('X-Amz-Date', amzDate);
-                                    
-                                    console.log("🔑 Enhanced URL with session token:", urlObj.toString());
-                                    return { url: urlObj.toString() };
-                                }
-                            }
-                            
-                            return { url };
+                    // If we have credentials, add the session token to headers
+                    if (AWS.config.credentials && AWS.config.credentials.sessionToken) {
+                        const headers = {
+                            'X-Amz-Security-Token': AWS.config.credentials.sessionToken
                         };
-                    }
-
-                    console.log("📍 Map configuration:", {
-                        region: CONFIG.LOCATION.REGION,
-                        mapName: CONFIG.LOCATION.MAP_NAME,
-                        center: mapConfig.center,
-                        zoom: mapConfig.zoom,
-                        styleUrl: mapConfig.style
-                    });
-
-                    this.map = new maplibregl.Map(mapConfig);
-                    mapCreated = true;
-                    console.log(`✅ Map created successfully with style URL ${i + 1}`);
-                    
-                } catch (error) {
-                    console.warn(`⚠️ Failed to create map with style URL ${i + 1}:`, error.message);
-                    lastError = error;
-                    
-                    if (this.map) {
-                        try {
-                            this.map.remove();
-                        } catch (e) {
-                            // Ignore cleanup errors
-                        }
-                        this.map = null;
+                        
+                        console.log("🎫 Added session token to headers");
+                        return { url, headers };
                     }
                 }
-            }
+                
+                return { url };
+            };
 
-            if (!mapCreated) {
-                throw lastError || new Error("Failed to create map with any style URL");
-            }
+            console.log("📍 Map configuration:", {
+                region: CONFIG.LOCATION.REGION,
+                mapName: CONFIG.LOCATION.MAP_NAME,
+                center: mapConfig.center,
+                zoom: mapConfig.zoom,
+                styleUrl: mapConfig.style
+            });
+
+            this.map = new maplibregl.Map(mapConfig);
+            console.log("✅ Map created successfully with AWS SDK signed URL");
 
             // Add map controls
             this.map.addControl(new maplibregl.NavigationControl(), "top-left");

@@ -65,6 +65,20 @@
                     resultsDiv.innerHTML += `<pre>${JSON.stringify(mapResult, null, 2)}</pre>`;
                 } catch (mapError) {
                     resultsDiv.innerHTML += `<p style="color: red;">❌ Map access failed: ${mapError.message}</p>`;
+                    console.error("Map access error:", mapError);
+                }
+
+                // Test 1.5: Get Map Style Descriptor (this is what's failing)
+                try {
+                    const styleResult = await location.getMapStyleDescriptor({
+                        MapName: CONFIG.LOCATION.MAP_NAME
+                    }).promise();
+
+                    resultsDiv.innerHTML += '<p style="color: green;">✅ Map style descriptor access successful</p>';
+                    resultsDiv.innerHTML += `<pre>Style descriptor length: ${JSON.stringify(styleResult).length} characters</pre>`;
+                } catch (styleError) {
+                    resultsDiv.innerHTML += `<p style="color: red;">❌ Map style descriptor access failed: ${styleError.message}</p>`;
+                    console.error("Style descriptor error:", styleError);
                 }
 
                 // Test 2: Describe Place Index
