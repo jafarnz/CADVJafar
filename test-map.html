@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Test - Local Gigs</title>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/map.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        #map { height: 400px; width: 100%; border: 1px solid #ddd; border-radius: 8px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background-color: #e2e3e5; border-color: #d6d8db; color: #383d41; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Map Test Page</h1>
+    
+    <div class="test-section">
+        <h3>Authentication Status</h3>
+        <div id="auth-status"></div>
+        <button onclick="checkAuth()">Check Authentication</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Map Display</h3>
+        <div id="map"></div>
+        <div style="margin-top: 10px;">
+            <button onclick="initMap()">Initialize Map</button>
+            <button onclick="testUserLocation()">Test User Location</button>
+            <button onclick="addTestMarker()">Add Test Marker</button>
+        </div>
+        <div id="map-status" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Map Service Test Results</h3>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testResults.push({time: timestamp, message, type});
+            console.log(logEntry);
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = testResults.map(result => 
+                `<div style="color: ${result.type === 'error' ? 'red' : result.type === 'success' ? 'green' : 'blue'};">
+                    [${result.time}] ${result.message}
+                </div>`
+            ).join('');
+        }
+
+        async function checkAuth() {
+            const authDiv = document.getElementById('auth-status');
+            
+            try {
+                const isAuth = Utils.isAuthenticated();
+                if (isAuth) {
+                    const user = Utils.getUserFromToken();
+                    authDiv.className = 'success';
+                    authDiv.innerHTML = `
+                        <strong>✅ Authenticated</strong><br>
+                        User ID: ${user.sub}<br>
+                        Email: ${user.email}<br>
+                        Tokens available: ${!!localStorage.getItem('accessToken')} (access), ${!!localStorage.getItem('idToken')} (id)
+                    `;
+                    log('Authentication successful', 'success');
+                } else {
+                    authDiv.className = 'error';
+                    authDiv.innerHTML = '<strong>❌ Not authenticated</strong><br>Please login first';
+                    log('Authentication failed - not logged in', 'error');
+                }
+            } catch (error) {
+                authDiv.className = 'error';
+                authDiv.innerHTML = `<strong>❌ Auth Error:</strong> ${error.message}`;
+                log(`Authentication error: ${error.message}`, 'error');
+            }
+        }
+
+        async function initMap() {
+            const statusDiv = document.getElementById('map-status');
+            statusDiv.className = 'info';
+            statusDiv.innerHTML = '<strong>🔄 Initializing map...</strong>';
+            log('Starting map initialization');
+
+            try {
+                const success = await MapService.init('map');
+                
+                if (success) {
+                    statusDiv.className = 'success';
+                    statusDiv.innerHTML = '<strong>✅ Map initialized successfully!</strong>';
+                    log('Map initialization successful', 'success');
+                } else {
+                    statusDiv.className = 'error';
+                    statusDiv.innerHTML = '<strong>❌ Map initialization failed</strong>';
+                    log('Map initialization failed', 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'error';
+                statusDiv.innerHTML = `<strong>❌ Map Error:</strong> ${error.message}`;
+                log(`Map initialization error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserLocation() {
+            if (!MapService.isInitialized) {
+                log('Map not initialized - please initialize first', 'error');
+                return;
+            }
+
+            log('Testing user location...');
+            
+            try {
+                const location = await Utils.getCurrentLocation();
+                log(`User location: ${location.lat}, ${location.lng}`, 'success');
+                
+                await MapService.setUserLocation(location.lat, location.lng);
+                log('User location marker added to map', 'success');
+            } catch (error) {
+                log(`User location error: ${error.message}`, 'error');
+            }
+        }
+
+        function addTestMarker() {
+            if (!MapService.isInitialized) {
+                log('Map not initialized - please initialize first', 'error');
+                return;
+            }
+
+            log('Adding test marker...');
+            
+            try {
+                // Add marker at Singapore (default coordinates)
+                MapService.addMarker(
+                    CONFIG.APP.DEFAULT_COORDINATES.LAT,
+                    CONFIG.APP.DEFAULT_COORDINATES.LNG,
+                    "Test Event",
+                    "This is a test marker for the Local Gigs app!"
+                );
+                log('Test marker added successfully', 'success');
+            } catch (error) {
+                log(`Test marker error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            log('Map test page loaded');
+        });
+    </script>
+</body>
+</html>

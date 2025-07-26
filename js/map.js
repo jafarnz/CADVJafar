@@ -2,6 +2,8 @@
 const MapService = {
     map: null,
     markers: [],
+    venues: [],
+    venueMarkers: [],
     userLocationMarker: null,
     isInitialized: false,
     authHelper: null,
@@ -21,14 +23,14 @@ const MapService = {
             await this.loadMapLibreGL();
             await this.loadAmazonLocationAuthHelper();
 
-            // Initialize with Amazon Location Service
+            // Initialize with Amazon Location Service only
             await this.initializeWithLocationService(containerId);
 
             console.log("✅ Map initialized successfully");
             return true;
         } catch (error) {
             console.error("❌ Map initialization failed:", error);
-            this.displayMapError(error.message);
+            this.displayMapError("Map authentication failed. Please ensure you're logged in and AWS Location Service is properly configured.");
             return false;
         }
     },
@@ -125,14 +127,14 @@ const MapService = {
     // Initialize map with Amazon Location Service
     initializeWithLocationService: async function(containerId) {
         try {
-            console.log("🔐 Initializing authentication helper...");
+            console.log("🔐 Initializing AWS credentials for Location Service...");
 
             // Get access token for authenticated access
             const accessToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
             const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
 
             if (!accessToken && !idToken) {
-                throw new Error("No authentication tokens found. Please log in.");
+                throw new Error("No authentication tokens found. Please log in first.");
             }
 
             console.log("🔑 Setting up Cognito credentials for Location Service...");
@@ -147,76 +149,37 @@ const MapService = {
                     }
                 });
 
-                // Refresh credentials
+                // Refresh credentials and get them
                 await new Promise((resolve, reject) => {
                     AWS.config.credentials.refresh((error) => {
                         if (error) {
                             console.error("Failed to refresh AWS credentials:", error);
-                            reject(error);
+                            reject(new Error(`AWS credentials refresh failed: ${error.message}`));
                         } else {
                             console.log("✅ AWS credentials refreshed successfully");
                             resolve();
                         }
                     });
                 });
+            } else {
+                throw new Error("AWS SDK not loaded");
             }
 
-            // Create auth helper with multiple fallback methods
-            try {
-                // Method 1: Try with CognitoIdentityCredentials
-                if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCognitoCredentialProvider) {
-                    this.authHelper = await window.amazonLocationAuthHelper.withCognitoCredentialProvider({
-                        identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
-                        region: CONFIG.COGNITO.REGION,
-                        logins: {
-                            [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]: idToken || accessToken
-                        }
-                    });
-                    console.log("✅ Auth helper created with Cognito credential provider");
-                }
-                // Method 2: Try with direct credentials
-                else if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
-                    this.authHelper = await window.amazonLocationAuthHelper.withCredentials({
-                        region: CONFIG.COGNITO.REGION,
-                        credentials: AWS.config.credentials
-                    });
-                    console.log("✅ Auth helper created with direct credentials");
-                }
-                // Method 3: Create simple auth function
-                else {
-                    console.log("⚠️ Using fallback authentication method");
-                    this.authHelper = {
-                        getCredentials: () => AWS.config.credentials,
-                        transformRequest: (url, resourceType) => {
-                            if (resourceType === 'Style' && !url.includes('://')) {
-                                return {
-                                    url: `https://maps.geo.${CONFIG.COGNITO.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
-                                };
-                            }
-                            return { url };
-                        }
-                    };
-                }
-            } catch (authError) {
-                console.error("Auth helper creation failed:", authError);
-                // Create a simple fallback auth helper
-                this.authHelper = {
-                    transformRequest: (url, resourceType) => {
-                        console.log("🔄 Transform request:", url, resourceType);
-                        if (resourceType === 'Style' && !url.includes('://')) {
-                            return {
-                                url: `https://maps.geo.${CONFIG.COGNITO.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
-                            };
-                        }
-                        return { url };
-                    }
-                };
-                console.log("⚠️ Using minimal fallback auth helper");
+            // Create auth helper with Cognito credentials
+            if (!window.amazonLocationAuthHelper || !window.amazonLocationAuthHelper.withCredentials) {
+                throw new Error("Amazon Location Auth Helper not loaded properly");
             }
+
+            this.authHelper = await window.amazonLocationAuthHelper.withCredentials({
+                region: CONFIG.COGNITO.REGION,
+                credentials: AWS.config.credentials
+            });
+
+            console.log("✅ Auth helper created successfully");
 
             console.log("🗺️ Creating map with Amazon Location Service...");
 
-            // Create the map with transformRequest for authentication
+            // Create the map with proper authentication
             this.map = new maplibregl.Map({
                 container: containerId,
                 center: [
@@ -225,18 +188,7 @@ const MapService = {
                 ],
                 zoom: CONFIG.APP.MAP_ZOOM,
                 style: `https://maps.geo.${CONFIG.COGNITO.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`,
-                transformRequest: (url, resourceType) => {
-                    if (this.authHelper && this.authHelper.transformRequest) {
-                        return this.authHelper.transformRequest(url, resourceType);
-                    }
-                    // Fallback transform request
-                    if (resourceType === 'Style' && !url.includes('://')) {
-                        return {
-                            url: `https://maps.geo.${CONFIG.COGNITO.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
-                        };
-                    }
-                    return { url };
-                }
+                transformRequest: this.authHelper.transformRequest
             });
 
             // Add map controls
@@ -260,10 +212,7 @@ const MapService = {
             this.isInitialized = true;
             console.log("✅ Map fully initialized with Amazon Location Service");
         } catch (error) {
-            console.error(
-                "❌ Failed to initialize map with Location Service:",
-                error,
-            );
+            console.error("❌ Failed to initialize map with Location Service:", error);
             throw error;
         }
     },
@@ -276,19 +225,31 @@ const MapService = {
                 return;
             }
 
+            let loadTimeout;
+
             this.map.on("load", () => {
                 console.log("✅ Map tiles loaded successfully");
+                clearTimeout(loadTimeout);
                 resolve();
             });
 
             this.map.on("error", (error) => {
                 console.error("❌ Map loading error:", error);
-                reject(error);
+                clearTimeout(loadTimeout);
+                
+                // Check if it's a 403 error (authentication issue)
+                if (error.error && error.error.message && error.error.message.includes('403')) {
+                    reject(new Error("AWS Location Service authentication failed (403 Forbidden). Please check your Cognito configuration and IAM permissions."));
+                } else if (error.error && error.error.message && error.error.message.includes('404')) {
+                    reject(new Error("AWS Location Service map not found (404). Please verify MAP_NAME configuration."));
+                } else {
+                    reject(new Error(`AWS Location Service error: ${error.error ? error.error.message : 'Unknown error'}`));
+                }
             });
 
             // Timeout after 30 seconds
-            setTimeout(() => {
-                reject(new Error("Map loading timeout"));
+            loadTimeout = setTimeout(() => {
+                reject(new Error("AWS Location Service timeout - map failed to load within 30 seconds. This may indicate authentication or configuration issues."));
             }, 30000);
         });
     },
@@ -301,9 +262,19 @@ const MapService = {
 
         this.map.on("error", (error) => {
             console.error("❌ Map error:", error);
-            this.displayMapError(
-                "Map loading failed. Please check your internet connection.",
-            );
+            
+            let errorMessage = "AWS Location Service encountered an error.";
+            if (error.error && error.error.message) {
+                if (error.error.message.includes('403')) {
+                    errorMessage = "Authentication failed for AWS Location Service. Please check your login credentials and IAM permissions.";
+                } else if (error.error.message.includes('404')) {
+                    errorMessage = "AWS Location Service map configuration not found. Please verify your map settings.";
+                } else {
+                    errorMessage = `AWS Location Service error: ${error.error.message}`;
+                }
+            }
+            
+            this.displayMapError(errorMessage);
         });
 
         this.map.on("click", (e) => {
@@ -418,97 +389,201 @@ const MapService = {
         }
     },
 
-    // Search for places using Amazon Location Service
+    // Search for places using your Location Lambda API
     searchPlaces: async function(query, biasPosition = null) {
         try {
-            if (!this.authHelper) {
-                throw new Error("Authentication helper not initialized");
-            }
-
             console.log("🔍 Searching for places:", query);
 
-            // Create AWS Location client with credentials
-            const AWS = window.AWS;
-
-            // Get credentials from auth helper
-            let credentials;
-            if (this.authHelper.getCredentials) {
-                credentials = await this.authHelper.getCredentials();
-            } else if (this.authHelper.credentials) {
-                credentials = this.authHelper.credentials;
-            } else {
-                throw new Error("Unable to get credentials from auth helper");
-            }
-
-            const locationClient = new AWS.Location({
-                region: CONFIG.LOCATION.REGION,
-                credentials: credentials,
-            });
-
-            const searchParams = {
-                IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
-                Text: query,
-                MaxResults: 10,
+            const searchData = {
+                text: query,
+                maxResults: 10,
+                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
             };
 
-            // Add bias position if provided
             if (biasPosition) {
-                searchParams.BiasPosition = [biasPosition.lng, biasPosition.lat];
+                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
             }
 
-            const result = await locationClient
-                .searchPlaceIndexForText(searchParams)
-                .promise();
+            const response = await Utils.apiCall(
+                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'places/search'), 
+                {
+                    method: 'GET',
+                    headers: CONFIG.getAuthHeaders(),
+                    queryParams: searchData
+                }
+            );
 
-            console.log("🎯 Places search results:", result);
-            return result.Results || [];
+            console.log("🎯 Places search results:", response);
+            return response.results || [];
         } catch (error) {
             console.error("❌ Places search failed:", error);
             throw error;
         }
     },
 
-    // Reverse geocoding - get address from coordinates
+    // Reverse geocoding using your Location Lambda API
     reverseGeocode: async function(lng, lat) {
         try {
-            if (!this.authHelper) {
-                throw new Error("Authentication helper not initialized");
-            }
-
             console.log("🔄 Reverse geocoding:", { lng, lat });
 
-            // Create AWS Location client with credentials
-            const AWS = window.AWS;
+            const response = await Utils.apiCall(
+                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'reverse-geocode'), 
+                {
+                    method: 'POST',
+                    headers: CONFIG.getAuthHeaders(),
+                    body: JSON.stringify({
+                        longitude: lng,
+                        latitude: lat,
+                        indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
+                    })
+                }
+            );
 
-            // Get credentials from auth helper
-            let credentials;
-            if (this.authHelper.getCredentials) {
-                credentials = await this.authHelper.getCredentials();
-            } else if (this.authHelper.credentials) {
-                credentials = this.authHelper.credentials;
-            } else {
-                throw new Error("Unable to get credentials from auth helper");
-            }
-
-            const locationClient = new AWS.Location({
-                region: CONFIG.LOCATION.REGION,
-                credentials: credentials,
-            });
-
-            const result = await locationClient
-                .searchPlaceIndexForPosition({
-                    IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
-                    Position: [lng, lat],
-                    MaxResults: 1,
-                })
-                .promise();
-
-            console.log("📍 Reverse geocoding result:", result);
-            return result.Results && result.Results[0] || null;
+            console.log("📍 Reverse geocoding result:", response);
+            return response;
         } catch (error) {
             console.error("❌ Reverse geocoding failed:", error);
             throw error;
         }
+    },
+
+    // Geocode address using your Location Lambda API
+    geocodeAddress: async function(address, biasPosition = null) {
+        try {
+            console.log("🏠 Geocoding address:", address);
+
+            const geocodeData = {
+                address: address,
+                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
+            };
+
+            if (biasPosition) {
+                geocodeData.biasPosition = [biasPosition.lng, biasPosition.lat];
+            }
+
+            const response = await Utils.apiCall(
+                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'geocode'), 
+                {
+                    method: 'POST',
+                    headers: CONFIG.getAuthHeaders(),
+                    body: JSON.stringify(geocodeData)
+                }
+            );
+
+            console.log("📍 Geocoding result:", response);
+            return response;
+        } catch (error) {
+            console.error("❌ Geocoding failed:", error);
+            throw error;
+        }
+    },
+
+    // Venue functions using your Lambda APIs
+    loadVenues: async function() {
+        try {
+            console.log("🏪 Loading venues from Lambda API");
+
+            const response = await Utils.apiCall(
+                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES), 
+                {
+                    method: 'GET',
+                    headers: CONFIG.getAuthHeaders()
+                }
+            );
+
+            console.log("✅ Venues loaded:", response);
+
+            // Handle wrapped response
+            const venues = response.venues || response.message?.venues || response.Items || response;
+            
+            if (Array.isArray(venues)) {
+                this.venues = venues;
+                this.addVenueMarkers();
+                return venues;
+            } else {
+                console.warn("⚠️ Venues response not in expected format:", response);
+                return [];
+            }
+        } catch (error) {
+            console.error("❌ Failed to load venues:", error);
+            this.displayError(`Failed to load venues: ${error.message}`);
+            return [];
+        }
+    },
+
+    addVenueMarkers: function() {
+        console.log("📍 Adding venue markers");
+        
+        // Clear existing venue markers
+        this.clearVenueMarkers();
+
+        this.venues.forEach(venue => {
+            // Handle different coordinate formats
+            let coordinates;
+            if (venue.coordinates) {
+                if (Array.isArray(venue.coordinates)) {
+                    coordinates = venue.coordinates; // [lng, lat]
+                } else if (venue.coordinates.lat && venue.coordinates.lng) {
+                    coordinates = [venue.coordinates.lng, venue.coordinates.lat];
+                }
+            } else if (venue.lat && venue.lng) {
+                coordinates = [venue.lng, venue.lat];
+            } else if (venue.latitude && venue.longitude) {
+                coordinates = [venue.longitude, venue.latitude];
+            }
+
+            if (!coordinates) {
+                console.warn("⚠️ Venue missing coordinates:", venue);
+                return;
+            }
+
+            // Create popup content
+            const popupContent = this.createVenuePopup(venue);
+
+            // Create marker
+            const marker = new maplibregl.Marker({ 
+                color: '#ff6b6b',
+                scale: 0.8
+            })
+            .setLngLat(coordinates)
+            .setPopup(new maplibregl.Popup().setHTML(popupContent))
+            .addTo(this.map);
+
+            this.venueMarkers.push(marker);
+        });
+
+        console.log(`✅ Added ${this.venueMarkers.length} venue markers`);
+    },
+
+    createVenuePopup: function(venue) {
+        return `
+            <div class="venue-popup">
+                <h3>${venue.name || 'Unnamed Venue'}</h3>
+                <p><strong>Type:</strong> ${venue.type || 'Unknown'}</p>
+                ${venue.address ? `<p><strong>Address:</strong> ${venue.address}</p>` : ''}
+                ${venue.phone ? `<p><strong>Phone:</strong> ${venue.phone}</p>` : ''}
+                ${venue.website ? `<p><strong>Website:</strong> <a href="${venue.website}" target="_blank">${venue.website}</a></p>` : ''}
+                ${venue.description ? `<p>${venue.description}</p>` : ''}
+                <button onclick="MapService.selectVenue('${venue.venueId || venue.id}')" class="btn btn-primary btn-sm">Select Venue</button>
+            </div>
+        `;
+    },
+
+    selectVenue: function(venueId) {
+        console.log("🎯 Venue selected:", venueId);
+        const venue = this.venues.find(v => v.venueId === venueId || v.id === venueId);
+        if (venue) {
+            // Emit custom event for other parts of the app to listen to
+            window.dispatchEvent(new CustomEvent('venueSelected', { detail: venue }));
+            
+            // Close any open popups
+            this.map.getPopups().forEach(popup => popup.remove());
+        }
+    },
+
+    clearVenueMarkers: function() {
+        this.venueMarkers.forEach(marker => marker.remove());
+        this.venueMarkers = [];
     },
 
     // Display map error message
@@ -542,6 +617,8 @@ const MapService = {
             this.map = null;
         }
         this.markers = [];
+        this.venues = [];
+        this.venueMarkers = [];
         this.userLocationMarker = null;
         this.isInitialized = false;
         this.authHelper = null;

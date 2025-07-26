@@ -14,6 +14,9 @@ const CONFIG = {
       GEOCODE: "/geocode",
       REVERSE_GEOCODE: "/reverse-geocode",
 
+      // Location services endpoints
+      LOCATION: "/location",
+
       // User endpoints
       USERS: "/users",
       USER_BY_ID: "/users",
