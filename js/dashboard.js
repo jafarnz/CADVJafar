@@ -236,8 +236,19 @@ const Dashboard = {
         }
       }
     } catch (error) {
-      console.log("User profile not found in backend, using token data");
-      // This is not critical - dashboard can work with basic token info
+      // Don't log error for missing user profile - this is expected for new users
+      if (error.message && error.message.includes("User not found")) {
+        console.log("New user detected - creating profile automatically...");
+        try {
+          await createUserProfileIfMissing(this.currentUser);
+          console.log("✅ User profile created successfully");
+        } catch (createError) {
+          console.error("Failed to create user profile:", createError);
+        }
+      } else {
+        console.log("Using token data for user info");
+      }
+      // Dashboard can work with basic token info from JWT
     }
   },
 
@@ -274,6 +285,26 @@ const Dashboard = {
           Array.isArray(eventsResponse.Items)
         ) {
           this.events = eventsResponse.Items;
+        } else if (eventsResponse && eventsResponse.message) {
+          try {
+            const parsedEvents = JSON.parse(eventsResponse.message);
+            if (Array.isArray(parsedEvents)) {
+              this.events = parsedEvents;
+              console.log(
+                "✅ Events parsed from message field:",
+                this.events.length,
+              );
+            } else {
+              console.log(
+                "Parsed events message is not an array:",
+                parsedEvents,
+              );
+              this.events = [];
+            }
+          } catch (parseError) {
+            console.error("Failed to parse events message:", parseError);
+            this.events = [];
+          }
         } else {
           console.log("Events response is not an array:", eventsResponse);
           this.events = [];
@@ -306,6 +337,26 @@ const Dashboard = {
           Array.isArray(venuesResponse.Items)
         ) {
           this.venues = venuesResponse.Items;
+        } else if (venuesResponse && venuesResponse.message) {
+          try {
+            const parsedVenues = JSON.parse(venuesResponse.message);
+            if (Array.isArray(parsedVenues)) {
+              this.venues = parsedVenues;
+              console.log(
+                "✅ Venues parsed from message field:",
+                this.venues.length,
+              );
+            } else {
+              console.log(
+                "Parsed venues message is not an array:",
+                parsedVenues,
+              );
+              this.venues = [];
+            }
+          } catch (parseError) {
+            console.error("Failed to parse venues message:", parseError);
+            this.venues = [];
+          }
         } else {
           console.log("Venues response is not an array:", venuesResponse);
           this.venues = [];

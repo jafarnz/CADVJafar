@@ -515,54 +515,10 @@ const Utils = {
     }
   },
 
-  // Fix navigation to ensure .html extensions
+  // Simple navigation helper (disabled URL rewriting)
   initializeNavigation: function () {
-    document.addEventListener("DOMContentLoaded", function () {
-      // Fix all navigation links to include .html
-      const navLinks = document.querySelectorAll("a[href]");
-      navLinks.forEach(function (link) {
-        const href = link.getAttribute("href");
-
-        // Skip external links, hash links, and already correct links
-        if (
-          href.startsWith("http") ||
-          href.startsWith("#") ||
-          href.includes(".html") ||
-          href === "/"
-        ) {
-          return;
-        }
-
-        // Fix page navigation links
-        const pageLinks = [
-          "dashboard",
-          "events",
-          "venues",
-          "profile",
-          "login",
-          "signup",
-        ];
-        pageLinks.forEach(function (page) {
-          if (href === page || href === "/" + page || href === "./" + page) {
-            link.setAttribute("href", page + ".html");
-          }
-        });
-      });
-
-      // Add click handler to ensure navigation works
-      document.addEventListener("click", function (e) {
-        const link = e.target.closest("a");
-        if (link && link.getAttribute("href")) {
-          const href = link.getAttribute("href");
-
-          // Force navigation for page links
-          if (href.endsWith(".html") && !href.startsWith("http")) {
-            e.preventDefault();
-            window.location.href = href;
-          }
-        }
-      });
-    });
+    console.log("Navigation helper initialized (URL rewriting disabled)");
+    // Removed problematic URL rewriting that was causing navigation issues
   },
 
   // Image rendering utilities

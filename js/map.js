@@ -90,10 +90,24 @@ const MapService = {
     try {
       console.log("🔐 Initializing authentication helper...");
 
-      // Create auth helper with identity pool
-      this.authHelper = await amazonLocationAuthHelper.withIdentityPoolId(
-        CONFIG.COGNITO.IDENTITY_POOL_ID,
-      );
+      // Get Cognito tokens for authenticated access
+      const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+      if (!idToken) {
+        throw new Error("No authentication token found. Please log in.");
+      }
+
+      console.log("🔑 Using Cognito credential provider for authentication...");
+
+      // Create auth helper with Cognito credential provider
+      this.authHelper =
+        await amazonLocationAuthHelper.withCognitoCredentialProvider({
+          identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
+          region: CONFIG.COGNITO.REGION,
+          logins: {
+            [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
+              idToken,
+          },
+        });
 
       console.log("🗺️ Creating map with Amazon Location Service...");
 
