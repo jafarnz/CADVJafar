@@ -246,9 +246,65 @@
                             name="address"
                             class="form-control"
                             required
-                            placeholder="Enter venue address"
+                            placeholder="Enter venue address or search below"
                             maxlength="200"
                         />
+                    </div>
+
+                    <!-- Interactive Map for Location Selection -->
+                    <div class="form-group">
+                        <label>Location Selection</label>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                <input
+                                    type="text"
+                                    id="location-search"
+                                    class="form-control"
+                                    placeholder="Search for a location..."
+                                    style="flex: 1;"
+                                />
+                                <button
+                                    type="button"
+                                    id="search-location-btn"
+                                    class="btn btn-secondary"
+                                >
+                                    Search
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                                <button
+                                    type="button"
+                                    id="enable-location-picker-btn"
+                                    class="btn btn-primary"
+                                    style="flex: 1;"
+                                >
+                                    📍 Click on Map to Select Location
+                                </button>
+                                <button
+                                    type="button"
+                                    id="get-current-location-btn"
+                                    class="btn btn-secondary"
+                                    style="flex: 1;"
+                                >
+                                    📱 Use My Current Location
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Map Container -->
+                        <div id="venue-location-map" style="height: 400px; width: 100%; border: 2px solid #e9ecef; border-radius: 8px; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d; background: #f8f9fa;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
+                                    <p>Map will load when modal opens</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="selected-location-info" style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px; display: none;">
+                            <strong>Selected Location:</strong>
+                            <div id="selected-location-text" style="margin-top: 0.25rem;"></div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -333,17 +389,6 @@
                                 placeholder="103.8198"
                             />
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <button
-                            type="button"
-                            id="get-location-btn"
-                            class="btn btn-secondary"
-                            style="width: 100%; margin-bottom: 1rem"
-                        >
-                            Get My Current Location
-                        </button>
                     </div>
 
                     <div class="form-group">

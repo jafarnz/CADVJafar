@@ -27,6 +27,9 @@ const EventsPage = {
             this.applyFilters();
             this.render();
 
+            // Check if returning from venue creation
+            this.checkReturnFromVenueCreation();
+
             console.log("Events page initialized successfully");
         },
 
@@ -107,14 +110,14 @@ const EventsPage = {
 
             if (createEventBtn && createEventModal) {
                 createEventBtn.addEventListener("click", () => {
-                    this.loadVenuesForDropdown();
-                    createEventModal.style.display = "block";
+                    this.openCreateEventModal();
                 });
             }
 
             if (closeEventModal && createEventModal) {
                 closeEventModal.addEventListener("click", () => {
                     createEventModal.style.display = "none";
+                    this.clearEventForm();
                 });
             }
 
@@ -125,11 +128,19 @@ const EventsPage = {
                 });
             }
 
-            // Create venue from event modal
-            const createVenueBtn = document.getElementById("create-venue-btn");
-            if (createVenueBtn) {
-                createVenueBtn.addEventListener("click", () => {
-                    window.location.href = "venues.html?action=create";
+            // Venue selection and creation
+            const eventVenueSelect = document.getElementById("eventVenue");
+            const createCustomVenueBtn = document.getElementById("create-custom-venue-btn");
+            
+            if (eventVenueSelect) {
+                eventVenueSelect.addEventListener("change", () => {
+                    this.updateVenuePreview();
+                });
+            }
+
+            if (createCustomVenueBtn) {
+                createCustomVenueBtn.addEventListener("click", () => {
+                    this.handleCustomVenueCreation();
                 });
             }
 
@@ -634,6 +645,183 @@ const EventsPage = {
       );
     } finally {
       Utils.hideLoading(submitBtn, "Create Event");
+    }
+  },
+
+  // Enhanced venue management for events
+  openCreateEventModal: async function() {
+    const modal = document.getElementById("create-event-modal");
+    this.clearEventForm();
+    await this.loadVenuesForDropdown();
+    modal.style.display = "block";
+  },
+
+  clearEventForm: function() {
+    const form = document.getElementById("create-event-form");
+    if (form) {
+      form.reset();
+    }
+    
+    // Clear venue preview
+    const venuePreview = document.getElementById("selected-venue-preview");
+    if (venuePreview) {
+      venuePreview.style.display = "none";
+    }
+  },
+
+  loadVenuesForDropdown: async function() {
+    const venueSelect = document.getElementById("eventVenue");
+    if (!venueSelect) return;
+
+    try {
+      console.log("🏛️ Loading venues for dropdown...");
+      venueSelect.innerHTML = '<option value="">Loading venues...</option>';
+
+      // Load venues from API
+      const response = await Utils.apiCall(
+        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES),
+        {
+          method: "GET",
+          headers: CONFIG.getAuthHeaders(),
+        }
+      );
+
+      console.log("✅ Venues loaded:", response);
+
+      // Handle wrapped response
+      const venues = response.venues || response.message?.venues || response.Items || response;
+      
+      if (Array.isArray(venues)) {
+        this.venues = venues;
+        
+        // Populate dropdown
+        venueSelect.innerHTML = '<option value="">Select a venue...</option>';
+        
+        venues.forEach(venue => {
+          const option = document.createElement("option");
+          option.value = venue.venueID || venue.id;
+          option.textContent = `${venue.name} - ${venue.address || 'Address not specified'}`;
+          option.dataset.venue = JSON.stringify(venue);
+          venueSelect.appendChild(option);
+        });
+
+        console.log(`✅ Added ${venues.length} venues to dropdown`);
+      } else {
+        console.warn("⚠️ Venues response not in expected format:", response);
+        venueSelect.innerHTML = '<option value="">No venues available</option>';
+      }
+    } catch (error) {
+      console.error("❌ Failed to load venues:", error);
+      venueSelect.innerHTML = '<option value="">Failed to load venues</option>';
+    }
+  },
+
+  updateVenuePreview: function() {
+    const venueSelect = document.getElementById("eventVenue");
+    const venuePreview = document.getElementById("selected-venue-preview");
+    const venueName = document.getElementById("venue-preview-name");
+    const venueAddress = document.getElementById("venue-preview-address");
+    const venueDetails = document.getElementById("venue-preview-details");
+
+    if (!venueSelect || !venuePreview) return;
+
+    const selectedOption = venueSelect.selectedOptions[0];
+    
+    if (selectedOption && selectedOption.value && selectedOption.dataset.venue) {
+      try {
+        const venue = JSON.parse(selectedOption.dataset.venue);
+        
+        if (venueName) venueName.textContent = venue.name || 'Unknown Venue';
+        if (venueAddress) venueAddress.textContent = venue.address || 'Address not specified';
+        if (venueDetails) {
+          const details = [];
+          if (venue.type) details.push(`Type: ${venue.type}`);
+          if (venue.capacity) details.push(`Capacity: ${venue.capacity}`);
+          venueDetails.textContent = details.join(' • ');
+        }
+        
+        venuePreview.style.display = "block";
+        console.log("✅ Venue preview updated:", venue.name);
+      } catch (error) {
+        console.error("❌ Failed to parse venue data:", error);
+        venuePreview.style.display = "none";
+      }
+    } else {
+      venuePreview.style.display = "none";
+    }
+  },
+
+  handleCustomVenueCreation: function() {
+    // Store current event form data
+    const eventFormData = this.getEventFormData();
+    sessionStorage.setItem('pendingEventData', JSON.stringify(eventFormData));
+    
+    // Navigate to venue creation with return flag
+    window.location.href = "venues.html?action=create&returnTo=events";
+  },
+
+  getEventFormData: function() {
+    const form = document.getElementById("create-event-form");
+    if (!form) return {};
+
+    const formData = new FormData(form);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+      data[key] = value;
+    }
+    
+    return data;
+  },
+
+  restoreEventFormData: function() {
+    const pendingData = sessionStorage.getItem('pendingEventData');
+    if (!pendingData) return;
+
+    try {
+      const data = JSON.parse(pendingData);
+      const form = document.getElementById("create-event-form");
+      
+      if (form) {
+        Object.keys(data).forEach(key => {
+          const field = form.querySelector(`[name="${key}"]`);
+          if (field && data[key]) {
+            field.value = data[key];
+          }
+        });
+      }
+      
+      // Clear stored data
+      sessionStorage.removeItem('pendingEventData');
+      console.log("✅ Event form data restored");
+    } catch (error) {
+      console.error("❌ Failed to restore event form data:", error);
+    }
+  },
+
+  // Check if returning from venue creation
+  checkReturnFromVenueCreation: function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnFrom = urlParams.get('returnFrom');
+    const newVenueId = urlParams.get('venueId');
+    
+    if (returnFrom === 'venues' && newVenueId) {
+      // Open event modal and pre-select the new venue
+      setTimeout(() => {
+        this.openCreateEventModal().then(() => {
+          this.restoreEventFormData();
+          
+          // Pre-select the new venue
+          const venueSelect = document.getElementById("eventVenue");
+          if (venueSelect) {
+            venueSelect.value = newVenueId;
+            this.updateVenuePreview();
+          }
+        });
+      }, 500);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   },
 };

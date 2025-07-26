@@ -162,6 +162,39 @@ const VenuesPage = {
                 });
             }
 
+            // Interactive map controls for venue creation
+            const enableLocationPickerBtn = document.getElementById("enable-location-picker-btn");
+            const getCurrentLocationBtn = document.getElementById("get-current-location-btn");
+            const searchLocationBtn = document.getElementById("search-location-btn");
+            const locationSearchInput = document.getElementById("location-search");
+
+            if (enableLocationPickerBtn) {
+                enableLocationPickerBtn.addEventListener("click", () => {
+                    this.enableVenueLocationPicker();
+                });
+            }
+
+            if (getCurrentLocationBtn) {
+                getCurrentLocationBtn.addEventListener("click", () => {
+                    this.useCurrentLocationForVenue();
+                });
+            }
+
+            if (searchLocationBtn) {
+                searchLocationBtn.addEventListener("click", () => {
+                    this.searchAndSelectLocation();
+                });
+            }
+
+            if (locationSearchInput) {
+                locationSearchInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        this.searchAndSelectLocation();
+                    }
+                });
+            }
+
             // Pagination
             const prevPageBtn = document.getElementById("prev-page");
             const nextPageBtn = document.getElementById("next-page");
@@ -471,7 +504,15 @@ const VenuesPage = {
     if (submitBtn) submitBtn.textContent = "Add Venue";
     if (form) form.reset();
 
+    // Clear any selected location info
+    this.clearSelectedLocationInfo();
+
     modal.style.display = "block";
+
+    // Initialize map for location selection after modal is visible
+    setTimeout(() => {
+      this.initializeVenueLocationMap();
+    }, 100);
   },
 
   // Open edit venue modal
@@ -586,10 +627,21 @@ const VenuesPage = {
       this.applyFilters();
       this.render();
 
-      // Close modal after a delay
-      setTimeout(() => {
-        this.closeModal();
-      }, 2000);
+      // Check if we need to return to events page
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnTo = urlParams.get('returnTo');
+      
+      if (returnTo === 'events' && !this.editingVenue) {
+        // Return to events page with the new venue ID
+        setTimeout(() => {
+          window.location.href = `events.html?returnFrom=venues&venueId=${venueData.venueID}`;
+        }, 2000);
+      } else {
+        // Close modal after a delay
+        setTimeout(() => {
+          this.closeModal();
+        }, 2000);
+      }
     } catch (error) {
       console.error("Failed to save venue:", error);
       Utils.showError(
@@ -795,6 +847,349 @@ const VenuesPage = {
 
     if (pageInfo) {
       pageInfo.textContent = `Page ${this.currentPage} of ${totalPages}`;
+    }
+  },
+
+  // Interactive Map Functions for Venue Location Selection
+  venueLocationMap: null,
+  selectedLocationMarker: null,
+
+  // Initialize the venue location selection map
+  initializeVenueLocationMap: async function() {
+    try {
+      console.log("🗺️ Initializing venue location map...");
+      
+      // Initialize MapService if not already done
+      if (!window.MapService || !window.MapService.isInitialized) {
+        console.log("🔄 MapService not initialized, initializing now...");
+        if (window.MapService) {
+          await window.MapService.init("venue-location-map");
+          this.venueLocationMap = window.MapService.map;
+        } else {
+          throw new Error("MapService not available");
+        }
+      } else {
+        // Create a new map instance for the modal
+        await this.createVenueLocationMap();
+      }
+
+      console.log("✅ Venue location map initialized");
+    } catch (error) {
+      console.error("❌ Failed to initialize venue location map:", error);
+      this.showMapError("Failed to load map. Please try again.");
+    }
+  },
+
+  // Create a separate map instance for venue location selection
+  createVenueLocationMap: async function() {
+    const apiKey = CONFIG.LOCATION.API_KEY;
+    const region = CONFIG.LOCATION.REGION;
+    const style = "Standard";
+    const colorScheme = "Light";
+
+    const styleUrl = `https://maps.geo.${region}.amazonaws.com/v2/styles/${style}/descriptor?key=${apiKey}&color-scheme=${colorScheme}`;
+
+    this.venueLocationMap = new maplibregl.Map({
+      container: "venue-location-map",
+      style: styleUrl,
+      center: [CONFIG.APP.DEFAULT_COORDINATES.LNG, CONFIG.APP.DEFAULT_COORDINATES.LAT],
+      zoom: CONFIG.APP.MAP_ZOOM
+    });
+
+    // Add navigation controls
+    this.venueLocationMap.addControl(new maplibregl.NavigationControl(), "top-left");
+
+    // Wait for map to load
+    await new Promise((resolve) => {
+      this.venueLocationMap.on("load", resolve);
+    });
+  },
+
+  // Enable location picker mode
+  enableVenueLocationPicker: function() {
+    if (!this.venueLocationMap) {
+      console.error("Map not initialized");
+      return;
+    }
+
+    console.log("📍 Enabling location picker mode");
+    
+    // Update button state
+    const btn = document.getElementById("enable-location-picker-btn");
+    if (btn) {
+      btn.textContent = "🎯 Click on the map to select location";
+      btn.style.background = "#28a745";
+    }
+
+    // Change cursor
+    this.venueLocationMap.getCanvas().style.cursor = 'crosshair';
+
+    // Add click handler
+    const clickHandler = async (e) => {
+      const { lng, lat } = e.lngLat;
+      console.log("📍 Location selected:", { lng, lat });
+
+      try {
+        // Remove previous marker
+        if (this.selectedLocationMarker) {
+          this.selectedLocationMarker.remove();
+        }
+
+        // Add new marker
+        this.selectedLocationMarker = new maplibregl.Marker({ color: '#ff6b6b' })
+          .setLngLat([lng, lat])
+          .addTo(this.venueLocationMap);
+
+        // Try to reverse geocode to get address
+        let address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        try {
+          if (window.MapService && window.MapService.reverseGeocode) {
+            const locationInfo = await window.MapService.reverseGeocode(lng, lat);
+            if (locationInfo && locationInfo.Place && locationInfo.Place.Label) {
+              address = locationInfo.Place.Label;
+            }
+          }
+        } catch (geocodeError) {
+          console.warn("Reverse geocoding failed:", geocodeError);
+        }
+
+        // Update form fields
+        this.updateVenueLocationFields(lat, lng, address);
+
+        // Show selected location info
+        this.showSelectedLocationInfo(address, lat, lng);
+
+        // Reset button and cursor
+        if (btn) {
+          btn.textContent = "✅ Location Selected - Click again to change";
+          btn.style.background = "#007cbf";
+        }
+        this.venueLocationMap.getCanvas().style.cursor = '';
+
+        // Remove click handler
+        this.venueLocationMap.off('click', clickHandler);
+
+      } catch (error) {
+        console.error("❌ Error processing location selection:", error);
+        Utils.showError("Failed to process location selection. Please try again.");
+      }
+    };
+
+    // Add click handler
+    this.venueLocationMap.on('click', clickHandler);
+  },
+
+  // Use current location for venue
+  useCurrentLocationForVenue: async function() {
+    try {
+      console.log("📱 Getting current location...");
+      const btn = document.getElementById("get-current-location-btn");
+      if (btn) {
+        btn.textContent = "📱 Getting location...";
+        btn.disabled = true;
+      }
+
+      // Get current position
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        });
+      });
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // Remove previous marker
+      if (this.selectedLocationMarker) {
+        this.selectedLocationMarker.remove();
+      }
+
+      // Add marker at current location
+      this.selectedLocationMarker = new maplibregl.Marker({ color: '#007cbf' })
+        .setLngLat([lng, lat])
+        .addTo(this.venueLocationMap);
+
+      // Fly to current location
+      this.venueLocationMap.flyTo({
+        center: [lng, lat],
+        zoom: 15,
+        speed: 1.2
+      });
+
+      // Try to reverse geocode
+      let address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      try {
+        if (window.MapService && window.MapService.reverseGeocode) {
+          const locationInfo = await window.MapService.reverseGeocode(lng, lat);
+          if (locationInfo && locationInfo.Place && locationInfo.Place.Label) {
+            address = locationInfo.Place.Label;
+          }
+        }
+      } catch (geocodeError) {
+        console.warn("Reverse geocoding failed:", geocodeError);
+      }
+
+      // Update form fields
+      this.updateVenueLocationFields(lat, lng, address);
+
+      // Show selected location info
+      this.showSelectedLocationInfo(address, lat, lng);
+
+      console.log("✅ Current location set for venue");
+
+    } catch (error) {
+      console.error("❌ Failed to get current location:", error);
+      Utils.showError("Failed to get current location. Please check location permissions.");
+    } finally {
+      const btn = document.getElementById("get-current-location-btn");
+      if (btn) {
+        btn.textContent = "📱 Use My Current Location";
+        btn.disabled = false;
+      }
+    }
+  },
+
+  // Search and select location
+  searchAndSelectLocation: async function() {
+    const searchInput = document.getElementById("location-search");
+    const searchBtn = document.getElementById("search-location-btn");
+    
+    if (!searchInput || !searchInput.value.trim()) {
+      Utils.showError("Please enter a location to search for.");
+      return;
+    }
+
+    const query = searchInput.value.trim();
+
+    try {
+      console.log("🔍 Searching for location:", query);
+      
+      if (searchBtn) {
+        searchBtn.textContent = "Searching...";
+        searchBtn.disabled = true;
+      }
+
+      // Use MapService search if available
+      let results = [];
+      if (window.MapService && window.MapService.searchPlaces) {
+        results = await window.MapService.searchPlaces(query);
+      } else {
+        throw new Error("Search service not available");
+      }
+
+      if (results && results.length > 0) {
+        const result = results[0]; // Use first result
+        const place = result.Place;
+        
+        if (place && place.Geometry && place.Geometry.Point) {
+          const [lng, lat] = place.Geometry.Point;
+          const address = place.Label || query;
+
+          // Remove previous marker
+          if (this.selectedLocationMarker) {
+            this.selectedLocationMarker.remove();
+          }
+
+          // Add marker at search result
+          this.selectedLocationMarker = new maplibregl.Marker({ color: '#28a745' })
+            .setLngLat([lng, lat])
+            .addTo(this.venueLocationMap);
+
+          // Fly to search result
+          this.venueLocationMap.flyTo({
+            center: [lng, lat],
+            zoom: 15,
+            speed: 1.2
+          });
+
+          // Update form fields
+          this.updateVenueLocationFields(lat, lng, address);
+
+          // Show selected location info
+          this.showSelectedLocationInfo(address, lat, lng);
+
+          console.log("✅ Location found and selected:", address);
+        } else {
+          throw new Error("Invalid search result format");
+        }
+      } else {
+        Utils.showError("No locations found for that search. Please try a different search term.");
+      }
+
+    } catch (error) {
+      console.error("❌ Location search failed:", error);
+      Utils.showError("Location search failed. Please try again.");
+    } finally {
+      if (searchBtn) {
+        searchBtn.textContent = "Search";
+        searchBtn.disabled = false;
+      }
+    }
+  },
+
+  // Update venue form location fields
+  updateVenueLocationFields: function(lat, lng, address) {
+    const latInput = document.getElementById("venueLatitude");
+    const lngInput = document.getElementById("venueLongitude");
+    const addressInput = document.getElementById("venueAddress");
+
+    if (latInput) latInput.value = lat.toFixed(6);
+    if (lngInput) lngInput.value = lng.toFixed(6);
+    if (addressInput && !addressInput.value.trim()) {
+      addressInput.value = address;
+    }
+
+    console.log("📝 Form fields updated:", { lat, lng, address });
+  },
+
+  // Show selected location info
+  showSelectedLocationInfo: function(address, lat, lng) {
+    const infoDiv = document.getElementById("selected-location-info");
+    const textDiv = document.getElementById("selected-location-text");
+
+    if (infoDiv && textDiv) {
+      textDiv.innerHTML = `
+        <strong>${address}</strong><br>
+        <small>Latitude: ${lat.toFixed(6)}, Longitude: ${lng.toFixed(6)}</small>
+      `;
+      infoDiv.style.display = "block";
+    }
+  },
+
+  // Clear selected location info
+  clearSelectedLocationInfo: function() {
+    const infoDiv = document.getElementById("selected-location-info");
+    if (infoDiv) {
+      infoDiv.style.display = "none";
+    }
+
+    // Clear any existing marker
+    if (this.selectedLocationMarker) {
+      this.selectedLocationMarker.remove();
+      this.selectedLocationMarker = null;
+    }
+
+    // Reset location picker button
+    const btn = document.getElementById("enable-location-picker-btn");
+    if (btn) {
+      btn.textContent = "📍 Click on Map to Select Location";
+      btn.style.background = "#007cbf";
+    }
+  },
+
+  // Show map error message
+  showMapError: function(message) {
+    const mapContainer = document.getElementById("venue-location-map");
+    if (mapContainer) {
+      mapContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; color: #6c757d; text-align: center; padding: 2rem;">
+          <div style="font-size: 2rem; margin-bottom: 1rem;">🗺️</div>
+          <h4 style="margin: 0 0 1rem 0; color: #495057;">Map Error</h4>
+          <p style="margin: 0; max-width: 300px; line-height: 1.5;">${message}</p>
+        </div>
+      `;
     }
   },
 };

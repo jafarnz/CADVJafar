@@ -304,7 +304,7 @@
 
                     <div class="form-group">
                         <label for="eventVenue">Venue *</label>
-                        <div style="display: flex; gap: 0.5rem">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <select
                                 id="eventVenue"
                                 name="venueID"
@@ -312,15 +312,31 @@
                                 required
                                 style="flex: 1"
                             >
-                                <option value="">Select a venue...</option>
+                                <option value="">Loading venues...</option>
                             </select>
                             <button
                                 type="button"
-                                id="create-venue-btn"
+                                id="create-custom-venue-btn"
                                 class="btn btn-secondary"
+                                title="Create a new venue"
                             >
-                                Add New
+                                📍 Add New Venue
                             </button>
+                        </div>
+                        <div class="form-text">
+                            Select an existing venue or create a new one if your venue isn't listed
+                        </div>
+                    </div>
+
+                    <!-- Selected Venue Preview -->
+                    <div id="selected-venue-preview" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 1.5rem;">🏛️</div>
+                            <div style="flex: 1;">
+                                <div id="venue-preview-name" style="font-weight: 600; margin-bottom: 0.25rem;"></div>
+                                <div id="venue-preview-address" style="color: #6c757d; font-size: 0.9rem;"></div>
+                                <div id="venue-preview-details" style="color: #6c757d; font-size: 0.8rem; margin-top: 0.25rem;"></div>
+                            </div>
                         </div>
                     </div>
 
