@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        button {
+            background: #007cbf;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #005a87;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        .profile-elements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .profile-element {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Profile System Test</h1>
+
+    <div class="test-container">
+        <h2>Quick Profile Test</h2>
+        <button onclick="runProfileTest()">Test Profile Loading</button>
+        <button onclick="testAuthentication()">Test Authentication</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <div id="test-results"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Profile Elements Test</h2>
+        <p>These elements should exist on the profile page:</p>
+        <div class="profile-elements">
+            <div class="profile-element">
+                <strong>display-name:</strong>
+                <div id="display-name">Test Name</div>
+            </div>
+            <div class="profile-element">
+                <strong>display-email:</strong>
+                <div id="display-email">test@example.com</div>
+            </div>
+            <div class="profile-element">
+                <strong>display-bio:</strong>
+                <div id="display-bio">No bio added yet</div>
+            </div>
+            <div class="profile-element">
+                <strong>display-member-since:</strong>
+                <div id="display-member-since">January 1, 2024</div>
+            </div>
+            <div class="profile-element">
+                <strong>profile-picture:</strong>
+                <img id="profile-picture" src="" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; background: #ccc;">
+            </div>
+            <div class="profile-element">
+                <strong>favorite-genres:</strong>
+                <div id="favorite-genres">No genres selected</div>
+            </div>
+            <div class="profile-element">
+                <strong>notifications-status:</strong>
+                <div id="notifications-status">Enabled</div>
+            </div>
+            <div class="profile-element">
+                <strong>reminders-status:</strong>
+                <div id="reminders-status">Enabled</div>
+            </div>
+        </div>
+        <button onclick="testProfileRender()">Test Profile Rendering</button>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/profile.js"></script>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const container = document.getElementById('test-results');
+            const result = document.createElement('div');
+            result.className = `result ${type}`;
+            result.innerHTML = message;
+            container.appendChild(result);
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        async function testAuthentication() {
+            clearResults();
+            addResult('🔐 Testing authentication...', 'info');
+
+            try {
+                const isAuth = Utils.isAuthenticated();
+                addResult(`Authentication status: ${isAuth}`, isAuth ? 'success' : 'error');
+
+                if (isAuth) {
+                    const user = Utils.getUserFromToken();
+                    if (user) {
+                        addResult(`✅ User found: ${user.email}`, 'success');
+                        addResult(`<pre>${JSON.stringify(user, null, 2)}</pre>`, 'info');
+                    } else {
+                        addResult('❌ No user data in token', 'error');
+                    }
+                } else {
+                    addResult('⚠️ Please log in first at <a href="login.html">login.html</a>', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Authentication test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runProfileTest() {
+            clearResults();
+            addResult('🚀 Starting profile system test...', 'info');
+
+            try {
+                // Check authentication
+                if (!Utils.isAuthenticated()) {
+                    addResult('❌ Not authenticated. Please log in first.', 'error');
+                    return;
+                }
+
+                const user = Utils.getUserFromToken();
+                if (!user) {
+                    addResult('❌ No user found in token', 'error');
+                    return;
+                }
+
+                addResult(`✅ User authenticated: ${user.email}`, 'success');
+
+                // Test API URL building
+                const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, user.sub);
+                addResult(`🌐 API URL: ${apiUrl}`, 'info');
+
+                // Test profile loading
+                addResult('📡 Testing profile API call...', 'info');
+                try {
+                    const profileData = await Utils.apiCall(apiUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+                    addResult('✅ Profile loaded from backend', 'success');
+                    addResult(`<pre>${JSON.stringify(profileData, null, 2)}</pre>`, 'info');
+                } catch (error) {
+                    addResult(`⚠️ Backend profile not found: ${error.message}`, 'error');
+                    addResult('Creating fallback profile...', 'info');
+
+                    const fallbackProfile = {
+                        userID: user.sub,
+                        name: user.email.split("@")[0],
+                        email: user.email,
+                        preferences: {
+                            genres: [],
+                            emailNotifications: true,
+                            eventReminders: true,
+                            locationSuggestions: true,
+                        },
+                        createdAt: new Date().toISOString(),
+                    };
+                    addResult(`<pre>${JSON.stringify(fallbackProfile, null, 2)}</pre>`, 'info');
+                }
+
+                // Test ProfilePage if available
+                if (typeof ProfilePage !== 'undefined') {
+                    addResult('🎨 Testing ProfilePage initialization...', 'info');
+
+                    // Reset ProfilePage state
+                    ProfilePage.currentUser = null;
+                    ProfilePage.userProfile = null;
+                    ProfilePage.eventListenersAttached = false;
+
+                    await ProfilePage.init();
+
+                    if (ProfilePage.currentUser && ProfilePage.userProfile) {
+                        addResult('✅ ProfilePage initialized successfully', 'success');
+                        addResult(`Profile data: <pre>${JSON.stringify(ProfilePage.userProfile, null, 2)}</pre>`, 'info');
+                    } else {
+                        addResult('❌ ProfilePage initialization failed', 'error');
+                    }
+                } else {
+                    addResult('⚠️ ProfilePage not available (expected on profile.html)', 'info');
+                }
+
+                addResult('🎉 Profile test completed', 'success');
+
+            } catch (error) {
+                addResult(`❌ Profile test failed: ${error.message}`, 'error');
+                console.error('Profile test error:', error);
+            }
+        }
+
+        function testProfileRender() {
+            clearResults();
+            addResult('🎨 Testing profile element rendering...', 'info');
+
+            // Simulate profile data
+            const mockProfile = {
+                name: "Test User",
+                email: "test@example.com",
+                bio: "This is a test bio",
+                createdAt: new Date().toISOString(),
+                profilePictureUrl: "https://via.placeholder.com/50",
+                preferences: {
+                    genres: ["rock", "jazz"],
+                    emailNotifications: true,
+                    eventReminders: false
+                }
+            };
+
+            // Test rendering
+            if (typeof ProfilePage !== 'undefined') {
+                ProfilePage.userProfile = mockProfile;
+                ProfilePage.renderProfile();
+                addResult('✅ Profile rendered with mock data', 'success');
+            } else {
+                // Manual rendering for testing
+                document.getElementById('display-name').textContent = mockProfile.name;
+                document.getElementById('display-email').textContent = mockProfile.email;
+                document.getElementById('display-bio').textContent = mockProfile.bio;
+                document.getElementById('display-member-since').textContent = new Date(mockProfile.createdAt).toLocaleDateString();
+                document.getElementById('profile-picture').src = mockProfile.profilePictureUrl;
+                document.getElementById('favorite-genres').innerHTML = mockProfile.preferences.genres.map(g => `<span style="background:#e9ecef;padding:2px 6px;border-radius:3px;margin:2px;">${g}</span>`).join('');
+                document.getElementById('notifications-status').textContent = mockProfile.preferences.emailNotifications ? 'Enabled' : 'Disabled';
+                document.getElementById('reminders-status').textContent = mockProfile.preferences.eventReminders ? 'Enabled' : 'Disabled';
+
+                addResult('✅ Elements updated with mock data', 'success');
+            }
+        }
+
+        // Auto-run tests on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            addResult('🔧 Profile test page loaded', 'info');
+            addResult('Click "Test Profile Loading" to run comprehensive tests', 'info');
+        });
+    </script>
+</body>
+
+</html>

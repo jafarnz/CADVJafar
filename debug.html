@@ -108,6 +108,15 @@
         </div>
 
         <div class="debug-section">
+            <h2>Profile System Test</h2>
+            <div id="profile-status"></div>
+            <button class="btn-test" onclick="testProfileSystem()">Test Profile Loading</button>
+            <button class="btn-test" onclick="testTokenDecoding()">Test Token Decoding</button>
+            <button class="btn-test" onclick="testUserFromToken()">Test Get User From Token</button>
+            <button class="btn-test" onclick="testProfileRender()">Test Profile Rendering</button>
+        </div>
+
+        <div class="debug-section">
             <h2>API Endpoints Test</h2>
             <div id="api-status"></div>
             <button class="btn-test" onclick="testUserAPI()">Test User API</button>
@@ -846,6 +855,165 @@
                 checkConfig();
             }, 1000);
         });
+
+        // Profile System Tests
+        async function testProfileSystem() {
+            clearContainer('profile-status');
+            addResult('profile-status', '🚀 Starting comprehensive profile system test...', 'info');
+
+            try {
+                // Test 1: Authentication check
+                addResult('profile-status', '🔐 Testing authentication...', 'info');
+                const isAuth = Utils.isAuthenticated();
+                addResult('profile-status', `Authentication status: ${isAuth}`, isAuth ? 'success' : 'error');
+
+                if (!isAuth) {
+                    addResult('profile-status', '❌ Cannot test profile system without authentication', 'error');
+                    return;
+                }
+
+                // Test 2: Get user from token
+                addResult('profile-status', '👤 Testing getUserFromToken...', 'info');
+                const user = Utils.getUserFromToken();
+                if (user) {
+                    addResult('profile-status', `✅ User found: ${user.email} (${user.sub})`, 'success');
+                } else {
+                    addResult('profile-status', '❌ No user found in token', 'error');
+                    return;
+                }
+
+                // Test 3: Build API URL
+                addResult('profile-status', '🌐 Testing buildApiUrl...', 'info');
+                const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, user.sub);
+                addResult('profile-status', `API URL: ${apiUrl}`, 'info');
+
+                // Test 4: Test profile API call
+                addResult('profile-status', '📡 Testing profile API call...', 'info');
+                try {
+                    const profileData = await Utils.apiCall(apiUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+                    addResult('profile-status', '✅ Profile loaded from backend successfully', 'success');
+                    addResult('profile-status', `Profile data: ${JSON.stringify(profileData, null, 2)}`, 'info');
+                } catch (error) {
+                    addResult('profile-status', `⚠️ Backend profile not found: ${error.message}`, 'error');
+                    addResult('profile-status', '🔧 This is normal for new users - fallback profile will be created', 'info');
+                }
+
+                // Test 5: Initialize ProfilePage manually
+                addResult('profile-status', '🎨 Testing ProfilePage initialization...', 'info');
+                if (typeof ProfilePage !== 'undefined') {
+                    // Reset the profile page state
+                    ProfilePage.currentUser = null;
+                    ProfilePage.userProfile = null;
+                    ProfilePage.eventListenersAttached = false;
+
+                    // Initialize
+                    await ProfilePage.init();
+
+                    if (ProfilePage.currentUser && ProfilePage.userProfile) {
+                        addResult('profile-status', '✅ ProfilePage initialized successfully', 'success');
+                        addResult('profile-status', `Current user: ${ProfilePage.currentUser.email}`, 'success');
+                        addResult('profile-status', `Profile: ${JSON.stringify(ProfilePage.userProfile, null, 2)}`, 'info');
+                    } else {
+                        addResult('profile-status', '❌ ProfilePage initialization failed', 'error');
+                    }
+                } else {
+                    addResult('profile-status', '⚠️ ProfilePage not available (not on profile.html)', 'info');
+                }
+
+                addResult('profile-status', '🎉 Profile system test completed', 'success');
+
+            } catch (error) {
+                addResult('profile-status', `❌ Profile system test failed: ${error.message}`, 'error');
+                console.error('Profile system test error:', error);
+            }
+        }
+
+        async function testTokenDecoding() {
+            clearContainer('profile-status');
+            addResult('profile-status', '🔍 Testing token decoding...', 'info');
+
+            const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+            const accessToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+
+            addResult('profile-status', `ID Token present: ${!!idToken}`, idToken ? 'success' : 'error');
+            addResult('profile-status', `Access Token present: ${!!accessToken}`, accessToken ? 'success' : 'error');
+
+            if (idToken) {
+                addResult('profile-status', `ID Token length: ${idToken.length}`, 'info');
+                addResult('profile-status', `ID Token preview: ${idToken.substring(0, 50)}...`, 'info');
+
+                try {
+                    const parts = idToken.split('.');
+                    addResult('profile-status', `Token parts: ${parts.length} (expected: 3)`, parts.length === 3 ? 'success' : 'error');
+
+                    if (parts.length === 3) {
+                        const payload = parts[1];
+                        const paddedPayload = payload + "=".repeat((4 - (payload.length % 4)) % 4);
+                        const decodedPayload = atob(paddedPayload);
+                        const userData = JSON.parse(decodedPayload);
+
+                        addResult('profile-status', '✅ Token decoded successfully', 'success');
+                        addResult('profile-status', `Decoded payload: ${JSON.stringify(userData, null, 2)}`, 'info');
+                    }
+                } catch (error) {
+                    addResult('profile-status', `❌ Token decoding failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testUserFromToken() {
+            clearContainer('profile-status');
+            addResult('profile-status', '👤 Testing Utils.getUserFromToken()...', 'info');
+
+            try {
+                const user = Utils.getUserFromToken();
+                if (user) {
+                    addResult('profile-status', '✅ User extracted successfully', 'success');
+                    addResult('profile-status', `User data: ${JSON.stringify(user, null, 2)}`, 'info');
+                } else {
+                    addResult('profile-status', '❌ No user found', 'error');
+                }
+            } catch (error) {
+                addResult('profile-status', `❌ getUserFromToken failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testProfileRender() {
+            clearContainer('profile-status');
+            addResult('profile-status', '🎨 Testing profile rendering elements...', 'info');
+
+            const elements = [
+                'display-name',
+                'display-email',
+                'display-bio',
+                'display-member-since',
+                'profile-picture',
+                'favorite-genres',
+                'notifications-status',
+                'reminders-status'
+            ];
+
+            let foundElements = 0;
+            elements.forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    addResult('profile-status', `✅ Found element: ${elementId}`, 'success');
+                    foundElements++;
+                } else {
+                    addResult('profile-status', `❌ Missing element: ${elementId}`, 'error');
+                }
+            });
+
+            addResult('profile-status', `Found ${foundElements}/${elements.length} profile elements`,
+                foundElements === elements.length ? 'success' : 'error');
+
+            if (foundElements < elements.length) {
+                addResult('profile-status', '⚠️ This test requires running on profile.html page', 'info');
+            }
+        }
     </script>
 </body>
 

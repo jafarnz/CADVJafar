@@ -133,6 +133,9 @@ const Utils = {
     // Make API calls with proper error handling
     apiCall: async function(url, options = {}) {
         try {
+            console.log("📡 Making API call to:", url);
+            console.log("🔧 Options:", options);
+
             const defaultOptions = {
                 headers: CONFIG.getAuthHeaders(),
             };
@@ -146,11 +149,16 @@ const Utils = {
                 },
             };
 
+            console.log("🔑 Final request options:", mergedOptions);
+
             const response = await fetch(url, mergedOptions);
+            console.log("📡 Response status:", response.status, response.statusText);
 
             // Handle non-JSON responses
             let data;
             const contentType = response.headers.get("content-type");
+            console.log("📄 Content-Type:", contentType);
+
             if (contentType && contentType.includes("application/json")) {
                 data = await response.json();
             } else {
@@ -158,7 +166,10 @@ const Utils = {
                 data = { message: text };
             }
 
+            console.log("📊 Response data:", data);
+
             if (!response.ok) {
+                console.error("❌ API call failed with status:", response.status);
                 // Handle specific error cases
                 if (response.status === 404) {
                     throw new Error("User not found");
@@ -186,9 +197,10 @@ const Utils = {
                 );
             }
 
+            console.log("✅ API call successful");
             return data;
         } catch (error) {
-            console.error("API call failed:", error);
+            console.error("❌ API call failed:", error);
             throw error;
         }
     },
@@ -326,15 +338,21 @@ const Utils = {
     // Get user data from JWT token
     getUserFromToken: function() {
         try {
+            console.log("🔍 Getting user from token...");
             const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+
             if (!idToken) {
+                console.log("❌ No ID token found in localStorage");
+                console.log("🔍 Available localStorage keys:", Object.keys(localStorage));
                 return null;
             }
+
+            console.log("✅ ID token found, length:", idToken.length);
 
             // Decode JWT token (simple base64 decode of payload)
             const parts = idToken.split(".");
             if (parts.length !== 3) {
-                console.error("Invalid JWT token format");
+                console.error("❌ Invalid JWT token format - expected 3 parts, got:", parts.length);
                 return null;
             }
 
@@ -346,14 +364,21 @@ const Utils = {
             const decodedPayload = atob(paddedPayload);
             const userData = JSON.parse(decodedPayload);
 
-            return {
+            console.log("✅ Token decoded successfully");
+            console.log("🔍 Token payload:", userData);
+
+            const userInfo = {
                 username: userData["cognito:username"] || userData.sub,
                 email: userData.email,
                 preferredUsername: userData.preferred_username,
                 sub: userData.sub,
             };
+
+            console.log("✅ User info extracted:", userInfo);
+            return userInfo;
         } catch (error) {
-            console.error("Error decoding user token:", error);
+            console.error("❌ Error decoding user token:", error);
+            console.log("🔍 Token that failed:", localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN));
             return null;
         }
     },

@@ -8,33 +8,47 @@ const ProfilePage = {
 
     // Initialize the profile page
     init: async function() {
-        console.log("Initializing profile page...");
+        console.log("🚀 Initializing profile page...");
 
         // Check authentication
+        console.log("🔐 Checking authentication...");
         if (!Utils.requireAuth()) {
+            console.error("❌ Authentication check failed");
             return;
         }
+        console.log("✅ Authentication check passed");
 
         // Get current user from token
+        console.log("👤 Getting user from token...");
         this.currentUser = Utils.getUserFromToken();
+        console.log("🔍 Current user from token:", this.currentUser);
+
         if (!this.currentUser) {
+            console.error("❌ No current user found, logging out");
             Utils.logout();
             return;
         }
+        console.log("✅ Current user found:", this.currentUser.email);
 
         // Set up event listeners
+        console.log("🔗 Setting up event listeners...");
         this.setupEventListeners();
 
         // Load user profile data
+        console.log("📊 Loading user profile data...");
         await this.loadUserProfile();
+        console.log("✅ User profile loaded:", this.userProfile);
 
         // Load activity data
+        console.log("📈 Loading activity data...");
         await this.loadActivityData();
+        console.log("✅ Activity data loaded");
 
         // Render profile display
+        console.log("🎨 Rendering profile display...");
         this.renderProfile();
 
-        console.log("Profile page initialized successfully");
+        console.log("🎉 Profile page initialized successfully");
     },
 
     // Set up all event listeners
@@ -214,17 +228,23 @@ const ProfilePage = {
     // Load user profile from backend
     loadUserProfile: async function() {
         try {
-            console.log("Loading user profile...");
+            console.log("📡 Loading user profile from backend...");
+            console.log("🆔 User ID (sub):", this.currentUser.sub);
 
             const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, this.currentUser.sub);
+            console.log("🌐 API URL:", url);
+            console.log("🔑 Auth headers:", CONFIG.getAuthHeaders());
+
             this.userProfile = await Utils.apiCall(url, {
                 method: "GET",
                 headers: CONFIG.getAuthHeaders(),
             });
 
-            console.log("User profile loaded successfully");
+            console.log("✅ User profile loaded successfully from backend:", this.userProfile);
         } catch (error) {
-            console.log("User profile not found in backend, using token data");
+            console.log("⚠️ User profile not found in backend, using token data");
+            console.log("❌ Backend error:", error.message);
+
             // Create a basic profile from token data
             this.userProfile = {
                 userID: this.currentUser.sub,
@@ -238,6 +258,7 @@ const ProfilePage = {
                 },
                 createdAt: new Date().toISOString(),
             };
+            console.log("🔧 Created fallback profile:", this.userProfile);
         }
     },
 
@@ -286,6 +307,9 @@ const ProfilePage = {
 
     // Render profile display
     renderProfile: function() {
+        console.log("🎨 Starting profile render...");
+        console.log("📊 Profile data to render:", this.userProfile);
+
         // Update profile display
         const displayName = document.getElementById("display-name");
         const displayEmail = document.getElementById("display-email");
@@ -293,12 +317,22 @@ const ProfilePage = {
         const displayMemberSince = document.getElementById("display-member-since");
         const profilePicture = document.getElementById("profile-picture");
 
+        console.log("🔍 DOM elements found:", {
+            displayName: !!displayName,
+            displayEmail: !!displayEmail,
+            displayBio: !!displayBio,
+            displayMemberSince: !!displayMemberSince,
+            profilePicture: !!profilePicture
+        });
+
         if (displayName) {
             displayName.textContent = this.userProfile.name || "No name set";
+            console.log("✅ Display name updated:", displayName.textContent);
         }
 
         if (displayEmail) {
             displayEmail.textContent = this.userProfile.email;
+            console.log("✅ Display email updated:", displayEmail.textContent);
         }
 
         if (displayBio) {
@@ -311,6 +345,7 @@ const ProfilePage = {
                 displayBio.style.fontStyle = "italic";
                 displayBio.style.color = "#666";
             }
+            console.log("✅ Display bio updated:", displayBio.textContent);
         }
 
         if (displayMemberSince) {
@@ -320,20 +355,27 @@ const ProfilePage = {
                 month: "long",
                 day: "numeric",
             });
+            console.log("✅ Member since updated:", displayMemberSince.textContent);
         }
 
         if (profilePicture && this.userProfile.profilePictureUrl) {
             profilePicture.src = this.userProfile.profilePictureUrl;
+            console.log("✅ Profile picture updated:", this.userProfile.profilePictureUrl);
         }
 
         // Update preferences display
+        console.log("🎛️ Rendering preferences...");
         this.renderPreferences();
 
         // Update activity summary
+        console.log("📊 Rendering activity summary...");
         this.renderActivitySummary();
 
         // Update recent activity
+        console.log("📈 Rendering recent activity...");
         this.renderRecentActivity();
+
+        console.log("🎉 Profile render completed successfully");
     },
 
     // Render preferences display
