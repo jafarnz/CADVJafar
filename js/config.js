@@ -46,12 +46,11 @@ const CONFIG = {
   },
 
   // Amazon Location Service Configuration
-  // NOTE: Using API Key method instead of Cognito for simpler authentication
+  // NOTE: Using API Key method with AWS standard styles
   LOCATION: {
     PLACE_INDEX_NAME: "LocalGigsPlaces", // Must exist in AWS Location Service
-    MAP_NAME: "LocalGigsMap", // Must exist in AWS Location Service
     REGION: "us-east-1",
-    API_KEY: "v1.public.eyJqdGkiOiIwOGNmNmYwNy03NmUyLTRjMWUtOTllYi00M2JmMjk3MzcwZDAifTC7LOivLklvf_slA88w5njIcP4QXqhEVIdAwEwAXMzHGyson0LsiaV8VBsLL-XHwEzp6Bv8pP1V6UxyYi2A58GutcpTkfhU7XwCkW366-fe4ECXmlSQh0Ntdw8-2J02n-HVW3teNO8GZHtCPYL_ifGcsjmXfBZ0MjCBqrk1AMiGEYkyYOI4vF0haSGYnz2600AVfDab81Q2VYaYkz74vrvtZs-5lqETn8ejzpbNxv0aAGfFcgGVD0lmoNTXre6unG37VkcCrQ7PgKxeh9yxAEpVxiEHJi7Avgi9wtBeHWQEiuyLjJbONpsZ6Y_6YmAoXowWGbMXOGnx6bXiCTwUcSI.ZWU0ZWIzMTktMWRhNi00Mzg0LTllMzYtNzlmMDU3MjRmYTkx", // Replace with your actual API key from AWS Location Service
+    API_KEY: "v1.public.eyJqdGkiOiIwOGNmNmYwNy03NmUyLTRjMWUtOTllYi00M2JmMjk3MzcwZDAifTC7LOivLklvf_slA88w5njIcP4QXqhEVIdAwEwAXMzHGyson0LsiaV8VBsLL-XHwEzp6Bv8pP1V6UxyYi2A58GutcpTkfhU7XwCkW366-fe4ECXmlSQh0Ntdw8-2J02n-HVW3teNO8GZHtCPYL_ifGcsjmXfBZ0MjCBqrk1AMiGEYkyYOI4vF0haSGYnz2600AVfDab81Q2VYaYkz74vrvtZs-5lqETn8ejzpbNxv0aAGfFcgGVD0lmoNTXre6unG37VkcCrQ7PgKxeh9yxAEpVxiEHJi7Avgi9wtBeHWQEiuyLjJbONpsZ6Y_6YmAoXowWGbMXOGnx6bXiCTwUcSI.ZWU0ZWIzMTktMWRhNi00Mzg0LTllMzYtNzlmMDU3MjRmYTkx", // API key from AWS Location Service
   },
 
   // App Configuration
@@ -136,8 +135,8 @@ const CONFIG = {
     }
 
     // Check required Location Service settings
-    if (!this.LOCATION.PLACE_INDEX_NAME || !this.LOCATION.MAP_NAME) {
-      errors.push("Location Service resource names are required");
+    if (!this.LOCATION.PLACE_INDEX_NAME || !this.LOCATION.API_KEY) {
+      errors.push("Location Service place index name and API key are required");
     }
 
     if (errors.length > 0) {
@@ -163,8 +162,7 @@ const CONFIG = {
     return {
       region: this.LOCATION.REGION,
       placeIndexName: this.LOCATION.PLACE_INDEX_NAME,
-      mapName: this.LOCATION.MAP_NAME,
-      identityPoolId: this.LOCATION.IDENTITY_POOL_ID,
+      apiKey: this.LOCATION.API_KEY,
     };
   },
 

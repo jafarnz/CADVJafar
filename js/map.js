@@ -1,4 +1,4 @@
-// Simplified Map integration using Amazon Location Service API Key
+// AWS Location Service Map integration following official AWS guide
 const MapService = {
     map: null,
     markers: [],
@@ -7,7 +7,7 @@ const MapService = {
     userLocationMarker: null,
     isInitialized: false,
 
-    // Initialize the map
+    // Initialize the map using AWS standard styles
     init: async function(containerId = "map") {
         try {
             const container = document.getElementById(containerId);
@@ -16,7 +16,7 @@ const MapService = {
                 return false;
             }
 
-            console.log("🗺️ Starting map initialization with API Key...");
+            console.log("🗺️ Starting map initialization with AWS standard styles...");
 
             // Check API key configuration
             if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
@@ -26,8 +26,8 @@ const MapService = {
             // Load required libraries
             await this.loadMapLibreGL();
 
-            // Initialize with Amazon Location Service using API Key
-            await this.initializeWithApiKey(containerId);
+            // Initialize with AWS standard map style
+            await this.initializeWithAWSStyles(containerId);
 
             console.log("✅ Map initialized successfully");
             return true;
@@ -67,40 +67,49 @@ const MapService = {
         });
     },
 
-    // Initialize map with Amazon Location Service API Key
-    initializeWithApiKey: async function(containerId) {
+    // Initialize map with AWS standard styles (following AWS guide exactly)
+    initializeWithAWSStyles: async function(containerId) {
         try {
-            console.log("🔐 Initializing with API Key authentication...");
+            console.log("🔐 Initializing with AWS standard styles...");
 
-            // Create the map style URL with API key
-            const styleUrl = `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor?key=${CONFIG.LOCATION.API_KEY}`;
+            // Use AWS standard style following the official guide exactly
+            const apiKey = CONFIG.LOCATION.API_KEY;
+            const region = CONFIG.LOCATION.REGION;
+            const style = "Standard";  // AWS provided style
+            const colorScheme = "Light";  // Light or Dark
 
-            console.log("🗺️ Creating map with API Key authentication...");
+            // Create style URL following AWS guide format
+            const styleUrl = `https://maps.geo.${region}.amazonaws.com/v2/styles/${style}/descriptor?key=${apiKey}&color-scheme=${colorScheme}`;
+
+            console.log("🗺️ Creating map with AWS standard style...");
             console.log("🔗 Style URL:", styleUrl);
 
-            // Create the map with simple configuration - let MapLibre handle all authentication
+            // Create map exactly as shown in AWS guide
             const mapConfig = {
                 container: containerId,
+                style: styleUrl,
                 center: [
                     CONFIG.APP.DEFAULT_COORDINATES.LNG,
                     CONFIG.APP.DEFAULT_COORDINATES.LAT,
                 ],
-                zoom: CONFIG.APP.MAP_ZOOM,
-                style: styleUrl
-                // No transformRequest - let MapLibre handle everything automatically
+                zoom: CONFIG.APP.MAP_ZOOM
             };
 
             console.log("📍 Map configuration:", {
-                region: CONFIG.LOCATION.REGION,
-                mapName: CONFIG.LOCATION.MAP_NAME,
+                region: region,
+                style: style,
+                colorScheme: colorScheme,
                 center: mapConfig.center,
                 zoom: mapConfig.zoom
             });
 
+            // Create map instance
             this.map = new maplibregl.Map(mapConfig);
 
-            // Add map controls
+            // Add navigation controls as shown in AWS guide
             this.map.addControl(new maplibregl.NavigationControl(), "top-left");
+
+            // Add geolocation control
             this.map.addControl(
                 new maplibregl.GeolocateControl({
                     positionOptions: {
@@ -118,9 +127,9 @@ const MapService = {
             await this.waitForMapLoad();
 
             this.isInitialized = true;
-            console.log("✅ Map fully initialized with API Key");
+            console.log("✅ Map fully initialized with AWS standard style");
         } catch (error) {
-            console.error("❌ Failed to initialize map with API Key:", error);
+            console.error("❌ Failed to initialize map with AWS styles:", error);
             throw error;
         }
     },
