@@ -76,8 +76,9 @@ const MapService = {
             const styleUrl = `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor?key=${CONFIG.LOCATION.API_KEY}`;
 
             console.log("🗺️ Creating map with API Key authentication...");
+            console.log("🔗 Style URL:", styleUrl);
 
-            // Create the map with API key authentication
+            // Create the map with simple configuration - let MapLibre handle all authentication
             const mapConfig = {
                 container: containerId,
                 center: [
@@ -85,26 +86,8 @@ const MapService = {
                     CONFIG.APP.DEFAULT_COORDINATES.LAT,
                 ],
                 zoom: CONFIG.APP.MAP_ZOOM,
-                style: styleUrl,
-                transformRequest: (url, resourceType) => {
-                    console.log("🔄 Transform request for:", url);
-                    
-                    // For AWS Location Service requests that don't already have API key
-                    if ((url.includes('amazonaws.com') || url.includes('maps.geo.')) && !url.includes('key=')) {
-                        console.log("🔐 Adding API key to AWS request");
-                        
-                        // Check if URL already has query parameters
-                        const separator = url.includes('?') ? '&' : '?';
-                        const authenticatedUrl = `${url}${separator}key=${CONFIG.LOCATION.API_KEY}`;
-                        
-                        console.log("✅ Authenticated URL created");
-                        return { url: authenticatedUrl };
-                    }
-                    
-                    // Don't modify URLs that already have the API key
-                    console.log("🔄 URL already has key or not AWS, passing through:", url);
-                    return { url };
-                }
+                style: styleUrl
+                // No transformRequest - let MapLibre handle everything automatically
             };
 
             console.log("📍 Map configuration:", {
