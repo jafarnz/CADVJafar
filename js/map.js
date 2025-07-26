@@ -504,7 +504,7 @@ const MapService = {
                 .promise();
 
             console.log("📍 Reverse geocoding result:", result);
-            return result.Results ? .[0] || null;
+            return result.Results && result.Results[0] || null;
         } catch (error) {
             console.error("❌ Reverse geocoding failed:", error);
             throw error;

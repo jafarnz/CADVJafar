@@ -343,7 +343,7 @@ const ProfilePage = {
         const remindersStatus = document.getElementById("reminders-status");
 
         if (favoriteGenres) {
-            if (this.userProfile.preferences ? .genres ? .length > 0) {
+            if (this.userProfile.preferences && this.userProfile.preferences.genres && this.userProfile.preferences.genres.length > 0) {
                 favoriteGenres.innerHTML = this.userProfile.preferences.genres
                     .map(genre => `<span class="genre-tag">${Utils.capitalize(genre)}</span>`)
                     .join("");
@@ -353,13 +353,13 @@ const ProfilePage = {
         }
 
         if (notificationsStatus) {
-            notificationsStatus.textContent = this.userProfile.preferences ? .emailNotifications ? "Enabled" : "Disabled";
-            notificationsStatus.style.color = this.userProfile.preferences ? .emailNotifications ? "#28a745" : "#dc3545";
+            notificationsStatus.textContent = this.userProfile.preferences && this.userProfile.preferences.emailNotifications ? "Enabled" : "Disabled";
+            notificationsStatus.style.color = this.userProfile.preferences && this.userProfile.preferences.emailNotifications ? "#28a745" : "#dc3545";
         }
 
         if (remindersStatus) {
-            remindersStatus.textContent = this.userProfile.preferences ? .eventReminders ? "Enabled" : "Disabled";
-            remindersStatus.style.color = this.userProfile.preferences ? .eventReminders ? "#28a745" : "#dc3545";
+            remindersStatus.textContent = this.userProfile.preferences && this.userProfile.preferences.eventReminders ? "Enabled" : "Disabled";
+            remindersStatus.style.color = this.userProfile.preferences && this.userProfile.preferences.eventReminders ? "#28a745" : "#dc3545";
         }
     },
 
@@ -495,7 +495,7 @@ const ProfilePage = {
         });
 
         // Set current preferences
-        if (this.userProfile.preferences ? .genres) {
+        if (this.userProfile.preferences && this.userProfile.preferences.genres) {
             this.userProfile.preferences.genres.forEach(genre => {
                 const checkbox = form.querySelector(`input[name="genres"][value="${genre}"]`);
                 if (checkbox) {
@@ -506,9 +506,9 @@ const ProfilePage = {
         }
 
         // Set notification preferences
-        document.getElementById("emailNotifications").checked = this.userProfile.preferences ? .emailNotifications || false;
-        document.getElementById("eventReminders").checked = this.userProfile.preferences ? .eventReminders || false;
-        document.getElementById("locationSuggestions").checked = this.userProfile.preferences ? .locationSuggestions || false;
+        document.getElementById("emailNotifications").checked = this.userProfile.preferences && this.userProfile.preferences.emailNotifications || false;
+        document.getElementById("eventReminders").checked = this.userProfile.preferences && this.userProfile.preferences.eventReminders || false;
+        document.getElementById("locationSuggestions").checked = this.userProfile.preferences && this.userProfile.preferences.locationSuggestions || false;
 
         modal.style.display = "block";
     },

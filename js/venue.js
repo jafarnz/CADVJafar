@@ -243,10 +243,15 @@ const VenuesPage = {
 
         // Apply search and filter criteria
         applyFilters: function() {
-            const searchTerm = document.getElementById("search-input") ? .value.toLowerCase() || "";
-            const capacityFilter = document.getElementById("capacity-filter") ? .value || "";
-            const locationFilter = document.getElementById("location-filter") ? .value.toLowerCase() || "";
-            const sortBy = document.getElementById("sort-select") ? .value || "name-asc";
+            const searchInput = document.getElementById("search-input");
+            const capacityFilter = document.getElementById("capacity-filter");
+            const locationFilter = document.getElementById("location-filter");
+            const sortSelect = document.getElementById("sort-select");
+
+            const searchTerm = searchInput && searchInput.value.toLowerCase() || "";
+            const capacityFilterValue = capacityFilter && capacityFilter.value || "";
+            const locationFilterValue = locationFilter && locationFilter.value.toLowerCase() || "";
+            const sortBy = sortSelect && sortSelect.value || "name-asc";
 
             let filtered = [...this.venues];
 
@@ -261,11 +266,11 @@ const VenuesPage = {
             }
 
             // Apply capacity filter
-            if (capacityFilter) {
+            if (capacityFilterValue) {
                 filtered = filtered.filter((venue) => {
-                    if (!venue.capacity) return capacityFilter === "small"; // Assume small if no capacity
+                    if (!venue.capacity) return capacityFilterValue === "small"; // Assume small if no capacity
                     const capacity = parseInt(venue.capacity);
-                    switch (capacityFilter) {
+                    switch (capacityFilterValue) {
                         case "small":
                             return capacity <= 500;
                         case "medium":
@@ -279,9 +284,9 @@ const VenuesPage = {
             }
 
             // Apply location filter
-            if (locationFilter) {
+            if (locationFilterValue) {
                 filtered = filtered.filter((venue) =>
-                    venue.address.toLowerCase().includes(locationFilter)
+                    venue.address.toLowerCase().includes(locationFilterValue)
                 );
             }
 
@@ -512,7 +517,7 @@ const VenuesPage = {
       Utils.showLoading(submitBtn, this.editingVenue ? "Updating..." : "Creating...");
 
       const formData = new FormData(form);
-      let imageUrl = this.editingVenue?.imageUrl || null;
+      let imageUrl = this.editingVenue && this.editingVenue.imageUrl || null;
 
       // Handle image upload if present
       const imageFile = formData.get("image");
