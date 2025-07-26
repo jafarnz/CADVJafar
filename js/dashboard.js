@@ -486,9 +486,18 @@ const Dashboard = {
       : "TBA";
     const eventTime = event.eventTime ? Utils.formatTime(event.eventTime) : "";
 
+    // Handle image URL - check if it's already a full URL or needs S3 prefix
+    let imageHtml = "";
+    if (event.imageUrl) {
+      const fullImageUrl = event.imageUrl.startsWith("http")
+        ? event.imageUrl
+        : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${event.imageUrl}`;
+      imageHtml = `<img src="${fullImageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image" onerror="this.style.display='none'">`;
+    }
+
     return `
       <div class="event-card" onclick="window.location.href='event-details.html?id=${event.eventID}'">
-        ${event.imageUrl ? `<img src="${event.imageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image">` : ""}
+        ${imageHtml}
         <div class="event-content">
           <h3 class="event-title">${Utils.sanitizeInput(event.name)}</h3>
           <div class="event-meta">
@@ -509,9 +518,18 @@ const Dashboard = {
 
   // Create HTML for venue card
   createVenueCard: function (venue) {
+    // Handle image URL - check if it's already a full URL or needs S3 prefix
+    let imageHtml = "";
+    if (venue.imageUrl) {
+      const fullImageUrl = venue.imageUrl.startsWith("http")
+        ? venue.imageUrl
+        : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
+      imageHtml = `<img src="${fullImageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-image" onerror="this.style.display='none'">`;
+    }
+
     return `
       <div class="venue-card" onclick="window.location.href='venues.html?id=${venue.venueID}'">
-        ${venue.imageUrl ? `<img src="${venue.imageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-image">` : ""}
+        ${imageHtml}
         <div class="venue-content">
           <h3 class="venue-title">${Utils.sanitizeInput(venue.name)}</h3>
           <div class="venue-meta">
@@ -555,14 +573,44 @@ const Dashboard = {
       Utils.showLoading(submitBtn, "Creating...");
 
       const formData = new FormData(form);
+      const eventID = CONFIG.generateEventID();
+
+      let imageUrl = null;
+
+      // Upload event image if selected
+      if (window.selectedEventImage) {
+        try {
+          Utils.showLoading(submitBtn, "Uploading image...");
+          imageUrl = await Utils.s3.uploadEventImage(
+            window.selectedEventImage,
+            eventID,
+          );
+          console.log("Event image uploaded:", imageUrl);
+        } catch (uploadError) {
+          console.error("Event image upload failed:", uploadError);
+          // Continue without image, but log the error
+          Utils.showError(
+            "Image upload failed, but event will be created without image",
+            messagesDiv.id,
+          );
+        }
+      }
+
       const eventData = {
-        eventID: CONFIG.generateEventID(),
+        eventID: eventID,
         name: formData.get("name"),
         description: formData.get("description") || "",
         eventDate: formData.get("eventDate"),
         eventTime: formData.get("eventTime"),
         venueID: parseInt(formData.get("venueID")),
       };
+
+      // Add image URL if uploaded successfully
+      if (imageUrl) {
+        eventData.imageUrl = imageUrl;
+      }
+
+      Utils.showLoading(submitBtn, "Creating event...");
 
       const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
       const response = await Utils.apiCall(url, {
@@ -573,6 +621,12 @@ const Dashboard = {
 
       Utils.showSuccess("Event created successfully!", messagesDiv.id);
       form.reset();
+
+      // Reset image selection
+      window.selectedEventImage = null;
+      if (typeof removeEventPhoto === "function") {
+        removeEventPhoto();
+      }
 
       // Reload data and re-render
       await this.loadAllData();
@@ -608,6 +662,28 @@ const Dashboard = {
       Utils.showLoading(submitBtn, "Creating...");
 
       const formData = new FormData(form);
+      const venueID = CONFIG.generateVenueID();
+
+      let imageUrl = null;
+
+      // Upload venue image if selected
+      if (window.selectedVenueImage) {
+        try {
+          Utils.showLoading(submitBtn, "Uploading image...");
+          imageUrl = await Utils.s3.uploadVenueImage(
+            window.selectedVenueImage,
+            venueID,
+          );
+          console.log("Venue image uploaded:", imageUrl);
+        } catch (uploadError) {
+          console.error("Venue image upload failed:", uploadError);
+          // Continue without image, but log the error
+          Utils.showError(
+            "Image upload failed, but venue will be created without image",
+            messagesDiv.id,
+          );
+        }
+      }
 
       // Geocode address if lat/lng not provided
       let latitude = parseFloat(formData.get("latitude"));
@@ -616,6 +692,7 @@ const Dashboard = {
       if (!latitude || !longitude) {
         const address = formData.get("address");
         if (address) {
+          Utils.showLoading(submitBtn, "Geocoding address...");
           const geocoded = await MapService.geocodeAddress(address);
           if (geocoded) {
             latitude = geocoded.lat;
@@ -625,7 +702,7 @@ const Dashboard = {
       }
 
       const venueData = {
-        venueID: CONFIG.generateVenueID(),
+        venueID: venueID,
         name: formData.get("name"),
         address: formData.get("address"),
         capacity: formData.get("capacity")
@@ -634,6 +711,13 @@ const Dashboard = {
         latitude: latitude || null,
         longitude: longitude || null,
       };
+
+      // Add image URL if uploaded successfully
+      if (imageUrl) {
+        venueData.imageUrl = imageUrl;
+      }
+
+      Utils.showLoading(submitBtn, "Creating venue...");
 
       const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
       const response = await Utils.apiCall(url, {
@@ -644,6 +728,12 @@ const Dashboard = {
 
       Utils.showSuccess("Venue created successfully!", messagesDiv.id);
       form.reset();
+
+      // Reset image selection
+      window.selectedVenueImage = null;
+      if (typeof removeVenuePhoto === "function") {
+        removeVenuePhoto();
+      }
 
       // Reload data and re-render
       await this.loadAllData();

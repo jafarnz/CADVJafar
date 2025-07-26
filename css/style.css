@@ -501,6 +501,7 @@ a:hover {
     transform: translateY(-2px);
 }
 
+/* Event and Venue Images */
 .event-image,
 .venue-image {
     width: 100%;
@@ -508,6 +509,63 @@ a:hover {
     object-fit: cover;
     border-radius: var(--radius-md);
     margin-bottom: var(--space-md);
+    border: 1px solid var(--border-gray);
+    transition: var(--transition-fast);
+}
+
+.event-image:hover,
+.venue-image:hover {
+    transform: scale(1.02);
+}
+
+/* Image placeholder for cards without images */
+.no-image-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-gray);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-md);
+    color: var(--text-muted);
+}
+
+.no-image-placeholder span {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+}
+
+.no-image-placeholder p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Image error handling */
+.image-error {
+    width: 100%;
+    height: 200px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-gray);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-md);
+    color: var(--text-muted);
+}
+
+.image-error span {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+}
+
+.image-error p {
+    font-size: 0.875rem;
+    margin: 0;
 }
 
 .event-meta,
@@ -592,6 +650,61 @@ a:hover {
     border-radius: var(--radius-full);
     object-fit: cover;
     border: 3px solid var(--border-gray);
+}
+
+/* Profile picture styles */
+.profile-picture {
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 2px solid var(--border-gray);
+    transition: var(--transition-fast);
+}
+
+.profile-picture:hover {
+    border-color: var(--primary-black);
+}
+
+.profile-picture.w-8 {
+    width: 2rem;
+    height: 2rem;
+}
+.profile-picture.h-8 {
+    width: 2rem;
+    height: 2rem;
+}
+.profile-picture.w-16 {
+    width: 4rem;
+    height: 4rem;
+}
+.profile-picture.h-16 {
+    width: 4rem;
+    height: 4rem;
+}
+.profile-picture.w-32 {
+    width: 8rem;
+    height: 8rem;
+}
+.profile-picture.h-32 {
+    width: 8rem;
+    height: 8rem;
+}
+
+/* Profile picture placeholder */
+.profile-picture-placeholder {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-gray);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-weight: 600;
+    transition: var(--transition-fast);
+}
+
+.profile-picture-placeholder:hover {
+    border-color: var(--primary-black);
+    background: var(--bg-tertiary);
 }
 
 .profile-info h1 {

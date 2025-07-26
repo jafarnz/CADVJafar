@@ -37,8 +37,8 @@ const CONFIG = {
   // Example: "us-east-1:12345678-1234-1234-1234-123456789012"
   COGNITO: {
     CLIENT_ID: "m9kv9bgjlbctat24f36ar236b",
-    USER_POOL_ID: "us-east-1_Vq9PF4nOv",
-    IDENTITY_POOL_ID: "us-east-1:9347ba62-c90d-4e9d-9752-56303ed79554",
+    USER_POOL_ID: "us-east-1_vY3ORmav8",
+    IDENTITY_POOL_ID: "us-east-1:965741ea-08fd-488f-ad78-775566391b0d",
     REGION: "us-east-1",
   },
 
@@ -48,7 +48,7 @@ const CONFIG = {
     PLACE_INDEX_NAME: "LocalGigsPlaces", // Must exist in AWS Location Service
     MAP_NAME: "LocalGigsMap", // Must exist in AWS Location Service
     REGION: "us-east-1",
-    IDENTITY_POOL_ID: "us-east-1:9347ba62-c90d-4e9d-9752-56303ed79554", // Configured Identity Pool ID
+    IDENTITY_POOL_ID: "us-east-1:965741ea-08fd-488f-ad78-775566391b0d", // Configured Identity Pool ID
   },
 
   // App Configuration

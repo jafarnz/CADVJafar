@@ -5,37 +5,327 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sign In - Local Gigs</title>
         <link rel="stylesheet" href="css/style.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <style>
+            /* Enhanced form styling for login */
+            .auth-container {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem 1rem;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            }
+
+            .login-card {
+                width: 100%;
+                max-width: 450px;
+                background: white;
+                padding: 3rem;
+                border-radius: 16px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+
+            .auth-header {
+                text-align: center;
+                margin-bottom: 2.5rem;
+            }
+
+            .auth-header h1 {
+                font-size: 2rem;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+                color: var(--text-primary);
+            }
+
+            .auth-header p {
+                color: var(--text-muted);
+                font-size: 1rem;
+            }
+
+            /* Large modern inputs */
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+
+            .form-label {
+                display: block;
+                font-weight: 600;
+                font-size: 0.95rem;
+                color: var(--text-primary);
+                margin-bottom: 0.5rem;
+            }
+
+            .form-input {
+                width: 100%;
+                padding: 1rem 1.25rem;
+                font-size: 1rem;
+                border: 2px solid #e1e5e9;
+                border-radius: 12px;
+                background: white;
+                transition: all 0.2s ease;
+                font-family: inherit;
+            }
+
+            .form-input:focus {
+                outline: none;
+                border-color: var(--primary-black);
+                box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+            }
+
+            .form-input::placeholder {
+                color: #9ca3af;
+            }
+
+            /* Submit button */
+            .submit-btn {
+                width: 100%;
+                padding: 1.25rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                background: var(--primary-black);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                margin-top: 0.5rem;
+            }
+
+            .submit-btn:hover:not(:disabled) {
+                background: var(--secondary-black);
+                transform: translateY(-1px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+            .submit-btn:disabled {
+                background: #9ca3af;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            /* Loading state */
+            .loading .submit-btn {
+                position: relative;
+                color: transparent;
+            }
+
+            .loading .submit-btn::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 20px;
+                height: 20px;
+                margin: -10px 0 0 -10px;
+                border: 2px solid transparent;
+                border-top: 2px solid white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Forgot password link */
+            .forgot-password {
+                text-align: center;
+                margin: 1.5rem 0;
+            }
+
+            .forgot-password a {
+                color: var(--primary-black);
+                text-decoration: none;
+                font-size: 0.9rem;
+                font-weight: 500;
+            }
+
+            .forgot-password a:hover {
+                text-decoration: underline;
+            }
+
+            /* Auth links */
+            .auth-links {
+                text-align: center;
+                margin-top: 2rem;
+                padding-top: 2rem;
+                border-top: 1px solid #e9ecef;
+            }
+
+            .auth-links p {
+                margin-bottom: 0.5rem;
+                color: var(--text-muted);
+            }
+
+            .auth-links a {
+                color: var(--primary-black);
+                font-weight: 600;
+                text-decoration: none;
+            }
+
+            .auth-links a:hover {
+                text-decoration: underline;
+            }
+
+            /* Messages */
+            .message {
+                padding: 1rem 1.25rem;
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                font-weight: 500;
+            }
+
+            .message.error {
+                background: #fef2f2;
+                color: #991b1b;
+                border: 1px solid #fecaca;
+            }
+
+            .message.success {
+                background: #f0fdf4;
+                color: #166534;
+                border: 1px solid #bbf7d0;
+            }
+
+            .message.info {
+                background: #eff6ff;
+                color: #1e40af;
+                border: 1px solid #bfdbfe;
+            }
+
+            /* Remember me checkbox */
+            .remember-me {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin: 1.25rem 0;
+            }
+
+            .custom-checkbox {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+
+            .custom-checkbox input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                margin: 0;
+                cursor: pointer;
+                opacity: 0;
+                position: absolute;
+            }
+
+            .checkbox-visual {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #d1d5db;
+                border-radius: 4px;
+                background: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+
+            .custom-checkbox input[type="checkbox"]:checked + .checkbox-visual {
+                background: var(--primary-black);
+                border-color: var(--primary-black);
+            }
+
+            .custom-checkbox
+                input[type="checkbox"]:checked
+                + .checkbox-visual::after {
+                content: "✓";
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            .remember-label {
+                font-size: 0.9rem;
+                color: var(--text-secondary);
+                cursor: pointer;
+            }
+
+            /* Quick actions */
+            .quick-actions {
+                margin: 2rem 0 1.5rem 0;
+                padding: 1.25rem;
+                background: #f8f9fa;
+                border-radius: 12px;
+                border: 1px solid #e9ecef;
+            }
+
+            .quick-actions h4 {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin: 0 0 1rem 0;
+                text-align: center;
+            }
+
+            .quick-demo-btn {
+                width: 100%;
+                padding: 0.75rem;
+                font-size: 0.9rem;
+                font-weight: 500;
+                background: transparent;
+                color: var(--text-secondary);
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .quick-demo-btn:hover {
+                background: #f3f4f6;
+                border-color: var(--primary-black);
+                color: var(--text-primary);
+            }
+
+            /* Responsive */
+            @media (max-width: 640px) {
+                .login-card {
+                    padding: 2rem 1.5rem;
+                    margin: 1rem;
+                }
+
+                .auth-header h1 {
+                    font-size: 1.75rem;
+                }
+            }
+        </style>
     </head>
     <body>
         <div class="auth-container">
-            <div class="auth-card">
+            <div class="login-card">
                 <div class="auth-header">
-                    <div class="logo-icon" style="margin: 0 auto 16px auto">
-                        LG
-                    </div>
-                    <h1 class="auth-title">Welcome back</h1>
-                    <p class="auth-subtitle">
-                        Sign in to your Local Gigs account
-                    </p>
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to discover local music events</p>
                 </div>
 
                 <div id="loginMessages"></div>
 
-                <form id="loginForm">
+                <form id="loginForm" novalidate>
                     <div class="form-group">
                         <label for="username" class="form-label"
-                            >Email address</label
+                            >Username or Email</label
                         >
                         <input
                             type="text"
                             id="username"
                             name="username"
-                            class="form-control"
+                            class="form-input"
                             required
+                            placeholder="Enter your username or email"
                             autocomplete="username"
-                            placeholder="Enter your email"
                         />
                     </div>
 
@@ -47,106 +337,221 @@
                             type="password"
                             id="password"
                             name="password"
-                            class="form-control"
+                            class="form-input"
                             required
-                            autocomplete="current-password"
                             placeholder="Enter your password"
+                            autocomplete="current-password"
                         />
                     </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary btn-full">
-                            Sign in →
-                        </button>
+                    <div class="remember-me">
+                        <div class="custom-checkbox">
+                            <input
+                                type="checkbox"
+                                id="rememberMe"
+                                name="rememberMe"
+                            />
+                            <div class="checkbox-visual"></div>
+                        </div>
+                        <label for="rememberMe" class="remember-label"
+                            >Keep me signed in</label
+                        >
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        Sign In
+                    </button>
+
+                    <div class="forgot-password">
+                        <a href="#" id="forgotPasswordLink"
+                            >Forgot your password?</a
+                        >
                     </div>
                 </form>
+
+                <div class="quick-actions">
+                    <h4>🚀 Quick Demo</h4>
+                    <button type="button" class="quick-demo-btn" id="demoBtn">
+                        Try Demo Account
+                    </button>
+                </div>
 
                 <div class="auth-links">
                     <p>
                         Don't have an account?
-                        <a href="signup.html">Sign up here</a>
+                        <a href="signup.html">Create one here</a>
                     </p>
                     <p>
                         <a href="index.html">← Back to home</a>
                     </p>
                 </div>
-
-                <div class="help-section">
-                    <h4
-                        style="
-                            color: var(--primary-color);
-                            margin-bottom: 12px;
-                            font-size: 16px;
-                        "
-                    >
-                        Having trouble?
-                    </h4>
-                    <ul
-                        style="
-                            color: var(--text-secondary);
-                            font-size: 14px;
-                            line-height: 1.6;
-                            list-style: none;
-                            padding: 0;
-                        "
-                    >
-                        <li style="margin-bottom: 8px">
-                            • Make sure you're using the correct email and
-                            password
-                        </li>
-                        <li style="margin-bottom: 8px">
-                            • Check if Caps Lock is on
-                        </li>
-                        <li style="margin-bottom: 8px">
-                            • Try refreshing the page if you see errors
-                        </li>
-                        <li>• Contact support if you continue having issues</li>
-                    </ul>
-                </div>
             </div>
         </div>
 
+        <!-- Scripts -->
         <script src="js/config.js"></script>
         <script src="js/utils.js"></script>
-        <script src="js/auth.js"></script>
+        <script>
+            // Form elements
+            const loginForm = document.getElementById("loginForm");
+            const submitBtn = document.getElementById("submitBtn");
+            const messagesDiv = document.getElementById("loginMessages");
+            const demoBtn = document.getElementById("demoBtn");
+            const forgotPasswordLink =
+                document.getElementById("forgotPasswordLink");
 
-        <style>
-            .help-section {
-                margin-top: 32px;
-                padding-top: 24px;
-                border-top: 1px solid var(--border-light);
+            // Auto-focus username input
+            document.getElementById("username").focus();
+
+            // Demo account functionality
+            demoBtn.addEventListener("click", function () {
+                document.getElementById("username").value = "demo";
+                document.getElementById("password").value = "Demo123!";
+                messagesDiv.innerHTML =
+                    '<div class="message info">Demo credentials loaded. Click "Sign In" to continue.</div>';
+            });
+
+            // Forgot password functionality
+            forgotPasswordLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                alert(
+                    "Password reset functionality will be implemented soon. Please contact support if you need help accessing your account.",
+                );
+            });
+
+            // Form validation
+            function validateForm() {
+                const username = document
+                    .getElementById("username")
+                    .value.trim();
+                const password = document.getElementById("password").value;
+
+                const isValid = username.length > 0 && password.length > 0;
+                submitBtn.disabled = !isValid;
+                return isValid;
             }
 
-            .auth-container {
-                background: var(--primary-gradient);
-                position: relative;
-            }
+            // Real-time validation
+            document
+                .getElementById("username")
+                .addEventListener("input", validateForm);
+            document
+                .getElementById("password")
+                .addEventListener("input", validateForm);
 
-            .auth-container::before {
-                content: "";
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="%23ffffff08" points="0,1000 1000,0 1000,1000"/></svg>');
-                pointer-events: none;
-            }
+            // Initial validation
+            validateForm();
 
-            .auth-card {
-                animation: slideIn 0.5s ease-out;
-            }
+            // Form submission
+            loginForm.addEventListener("submit", async function (e) {
+                e.preventDefault();
 
-            @media (max-width: 480px) {
-                .auth-card {
-                    margin: 16px;
-                    padding: 24px;
+                if (!validateForm()) {
+                    messagesDiv.innerHTML =
+                        '<div class="message error">Please fill in all fields.</div>';
+                    return;
                 }
 
-                .auth-title {
-                    font-size: 24px;
+                const formData = new FormData(loginForm);
+                const username = formData.get("username").trim();
+                const password = formData.get("password");
+
+                // Show loading state
+                submitBtn.classList.add("loading");
+                submitBtn.disabled = true;
+                messagesDiv.innerHTML = "";
+
+                try {
+                    const loginData = {
+                        username: username,
+                        password: password,
+                    };
+
+                    const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOGIN);
+                    const response = await Utils.apiCall(url, {
+                        method: "POST",
+                        headers: CONFIG.getBasicHeaders(),
+                        body: JSON.stringify(loginData),
+                    });
+
+                    // Store tokens
+                    if (response.AccessToken) {
+                        localStorage.setItem(
+                            CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+                            response.AccessToken,
+                        );
+                    }
+                    if (response.IdToken) {
+                        localStorage.setItem(
+                            CONFIG.STORAGE_KEYS.ID_TOKEN,
+                            response.IdToken,
+                        );
+                    }
+
+                    // Store user data
+                    if (response.user) {
+                        localStorage.setItem(
+                            CONFIG.STORAGE_KEYS.USER_DATA,
+                            JSON.stringify(response.user),
+                        );
+                    }
+
+                    // Success message
+                    messagesDiv.innerHTML =
+                        '<div class="message success">Login successful! Redirecting to dashboard...</div>';
+
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1500);
+                } catch (error) {
+                    console.error("Login failed:", error);
+                    let errorMessage =
+                        "Login failed. Please check your credentials and try again.";
+
+                    if (error.message.includes("UserNotConfirmedException")) {
+                        errorMessage =
+                            "Please check your email and confirm your account first.";
+                    } else if (
+                        error.message.includes("NotAuthorizedException")
+                    ) {
+                        errorMessage =
+                            "Invalid username or password. Please try again.";
+                    } else if (
+                        error.message.includes("UserNotFoundException")
+                    ) {
+                        errorMessage =
+                            "Account not found. Please check your username or create a new account.";
+                    }
+
+                    messagesDiv.innerHTML = `<div class="message error">${errorMessage}</div>`;
+                } finally {
+                    submitBtn.classList.remove("loading");
+                    validateForm(); // Re-enable button if form is valid
                 }
-            }
-        </style>
+            });
+
+            // Handle Enter key in form
+            loginForm.addEventListener("keypress", function (e) {
+                if (e.key === "Enter" && validateForm()) {
+                    loginForm.dispatchEvent(new Event("submit"));
+                }
+            });
+
+            // Check if user is already logged in
+            document.addEventListener("DOMContentLoaded", function () {
+                const accessToken = localStorage.getItem(
+                    CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+                );
+                if (accessToken) {
+                    // User is already logged in, redirect to dashboard
+                    messagesDiv.innerHTML =
+                        '<div class="message info">You are already logged in. Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
+                }
+            });
+        </script>
     </body>
 </html>

@@ -1,225 +1,194 @@
 // Utility functions for Local Gigs App
-
 const Utils = {
-  // Show loading spinner or disable button
-  showLoading: function (element, text = "Loading...") {
-    if (element && element.tagName === "BUTTON") {
-      element.disabled = true;
-      element.textContent = text;
-      element.classList.add("loading");
-    }
+  // Show loading state on buttons
+  showLoading: function (button, text) {
+    if (!button) return;
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.innerHTML =
+      '<span class="spinner"></span> ' + (text || "Loading...");
   },
 
-  // Hide loading spinner or re-enable button
-  hideLoading: function (element, originalText = "Submit") {
-    if (element && element.tagName === "BUTTON") {
-      element.disabled = false;
-      element.textContent = originalText;
-      element.classList.remove("loading");
-    }
+  // Hide loading state on buttons
+  hideLoading: function (button, originalText) {
+    if (!button) return;
+    button.disabled = false;
+    button.textContent =
+      originalText || button.dataset.originalText || "Submit";
+  },
+
+  // Show success message
+  showSuccess: function (message, containerId) {
+    this.showMessage(message, "success", containerId);
   },
 
   // Show error message
-  showError: function (message, containerId = null) {
-    const errorDiv = document.createElement("div");
-    errorDiv.className = "error-message fade-in";
-    errorDiv.textContent = message;
+  showError: function (message, containerId) {
+    this.showMessage(message, "error", containerId);
+  },
 
-    if (containerId) {
-      const container = document.getElementById(containerId);
-      if (container) {
-        // Remove existing error messages
-        const existingErrors = container.querySelectorAll(".error-message");
-        existingErrors.forEach((error) => error.remove());
+  // Show warning message
+  showWarning: function (message, containerId) {
+    this.showMessage(message, "warning", containerId);
+  },
 
-        container.appendChild(errorDiv);
-      }
-    } else {
-      // Show as alert if no container specified
-      alert(message);
-    }
+  // Generic message display
+  showMessage: function (message, type, containerId) {
+    const container = containerId
+      ? document.getElementById(containerId)
+      : document.body;
+    if (!container) return;
 
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
+    // Remove existing messages
+    const existingMessages = container.querySelectorAll(".alert-message");
+    existingMessages.forEach((msg) => msg.remove());
+
+    // Create message element
+    const messageEl = document.createElement("div");
+    messageEl.className = "alert-message alert-" + type;
+    messageEl.textContent = message;
+
+    // Add close button
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "alert-close";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.onclick = function () {
+      messageEl.remove();
+    };
+    messageEl.appendChild(closeBtn);
+
+    // Insert at top of container
+    container.insertBefore(messageEl, container.firstChild);
+
+    // Auto remove after 5 seconds
+    setTimeout(function () {
+      if (messageEl.parentNode) {
+        messageEl.remove();
       }
     }, 5000);
   },
 
-  // Show success message
-  showSuccess: function (message, containerId = null) {
-    const successDiv = document.createElement("div");
-    successDiv.className = "success-message fade-in";
-    successDiv.textContent = message;
-
-    if (containerId) {
-      const container = document.getElementById(containerId);
-      if (container) {
-        // Remove existing messages
-        const existingMessages = container.querySelectorAll(
-          ".success-message, .error-message",
-        );
-        existingMessages.forEach((msg) => msg.remove());
-
-        container.appendChild(successDiv);
-      }
-    }
-
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-      if (successDiv.parentNode) {
-        successDiv.parentNode.removeChild(successDiv);
-      }
-    }, 3000);
+  // Clear all messages
+  clearMessages: function (containerId) {
+    const container = containerId
+      ? document.getElementById(containerId)
+      : document.body;
+    if (!container) return;
+    const messages = container.querySelectorAll(".alert-message");
+    messages.forEach((msg) => msg.remove());
   },
 
-  // Format date for display
+  // Format date
   formatDate: function (dateString) {
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-SG", {
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   },
 
-  // Format time for display
+  // Format time
   formatTime: function (timeString) {
-    const time = new Date(`2000-01-01T${timeString}`);
-    return time.toLocaleTimeString("en-SG", {
+    if (!timeString) return "";
+    const time = new Date("1970-01-01T" + timeString + "Z");
+    return time.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     });
   },
 
-  // Format datetime for input fields
-  formatDateTimeForInput: function (date) {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  // Format currency
+  formatCurrency: function (amount) {
+    if (typeof amount !== "number") return "$0.00";
+    return "$" + amount.toFixed(2);
   },
 
-  // Validate email format
-  validateEmail: function (email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
-
-  // Validate password strength
-  validatePassword: function (password) {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasNonalphas = /\W/.test(password);
-
-    return {
-      isValid:
-        password.length >= minLength &&
-        hasUpperCase &&
-        hasLowerCase &&
-        hasNumbers,
-      minLength: password.length >= minLength,
-      hasUpperCase,
-      hasLowerCase,
-      hasNumbers,
-      hasSpecialChar: hasNonalphas,
-    };
-  },
-
-  // Sanitize input to prevent XSS
-  sanitizeInput: function (input) {
-    const div = document.createElement("div");
-    div.textContent = input;
-    return div.innerHTML;
-  },
-
-  // Generate unique ID
-  generateId: function (prefix = "id") {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  },
-
-  // Calculate distance between two coordinates
-  calculateDistance: function (lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the Earth in kilometers
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) *
-        Math.cos(this.deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in kilometers
-    return Math.round(d * 100) / 100; // Round to 2 decimal places
-  },
-
-  // Convert degrees to radians
-  deg2rad: function (deg) {
-    return deg * (Math.PI / 180);
-  },
-
-  // Debounce function for search inputs
-  debounce: function (func, wait, immediate) {
+  // Debounce function
+  debounce: function (func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
+    return function executedFunction() {
+      const context = this;
+      const args = arguments;
+      const later = function () {
         timeout = null;
-        if (!immediate) func(...args);
+        func.apply(context, args);
       };
-      const callNow = immediate && !timeout;
       clearTimeout(timeout);
       timeout = setTimeout(later, wait);
-      if (callNow) func(...args);
     };
+  },
+
+  // Generic API call helper
+  apiCall: async function (url, options) {
+    try {
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Request failed" }));
+        throw new Error(
+          errorData.error || "Request failed with status " + response.status,
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("API call failed:", error);
+      throw error;
+    }
+  },
+
+  // Validate email
+  validateEmail: function (email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  },
+
+  // Validate password
+  validatePassword: function (password) {
+    return password && password.length >= CONFIG.VALIDATION.PASSWORD_MIN_LENGTH;
+  },
+
+  // Validate username
+  validateUsername: function (username) {
+    if (!username) return false;
+    return (
+      username.length >= CONFIG.VALIDATION.USERNAME_MIN_LENGTH &&
+      username.length <= CONFIG.VALIDATION.USERNAME_MAX_LENGTH
+    );
+  },
+
+  // Generate random ID
+  generateId: function () {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  },
+
+  // Sanitize HTML
+  sanitizeHtml: function (str) {
+    const temp = document.createElement("div");
+    temp.textContent = str;
+    return temp.innerHTML;
+  },
+
+  // Truncate text
+  truncateText: function (text, maxLength) {
+    if (!text || text.length <= maxLength) return text;
+    return text.substr(0, maxLength) + "...";
   },
 
   // Check if user is authenticated
   isAuthenticated: function () {
-    const token = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-    if (!token) return false;
-
-    try {
-      // Basic token validation (check if it's expired)
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const currentTime = Date.now() / 1000;
-      return payload.exp > currentTime;
-    } catch (error) {
-      console.error("Error validating token:", error);
-      return false;
-    }
+    return !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
   },
 
-  // Check authentication and return user data
-  checkAuth: async function () {
-    if (!this.isAuthenticated()) {
-      return null;
-    }
-    return this.getUserFromToken();
-  },
-
-  // Get user data from token
-  getUserFromToken: function () {
-    const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
-    if (!idToken) return null;
-
-    try {
-      const payload = JSON.parse(atob(idToken.split(".")[1]));
-      return {
-        username: payload["cognito:username"] || payload.sub,
-        email: payload.email,
-        preferredUsername: payload.preferred_username,
-        sub: payload.sub,
-      };
-    } catch (error) {
-      console.error("Error parsing token:", error);
-      return null;
-    }
+  // Get current user data
+  getCurrentUser: function () {
+    const userData = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_DATA);
+    return userData ? JSON.parse(userData) : null;
   },
 
   // Logout user
@@ -228,11 +197,10 @@ const Utils = {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.PREFERENCES);
-    localStorage.removeItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
-    window.location.href = "index.html";
+    window.location.href = "login.html";
   },
 
-  // Redirect to login if not authenticated
+  // Redirect if not authenticated
   requireAuth: function () {
     if (!this.isAuthenticated()) {
       window.location.href = "login.html";
@@ -241,74 +209,60 @@ const Utils = {
     return true;
   },
 
-  // Show/hide elements
-  show: function (elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.classList.remove("hidden");
-    }
+  // Format file size
+  formatFileSize: function (bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   },
 
-  hide: function (elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.classList.add("hidden");
-    }
-  },
-
-  // Toggle element visibility
-  toggle: function (elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.classList.toggle("hidden");
-    }
-  },
-
-  // Make API calls with proper error handling
-  apiCall: async function (url, options = {}) {
-    try {
-      const defaultOptions = {
-        headers: CONFIG.getAuthHeaders(),
+  // Convert file to base64
+  fileToBase64: function (file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = function () {
+        resolve(reader.result);
       };
+      reader.onerror = function (error) {
+        reject(error);
+      };
+    });
+  },
 
-      const mergedOptions = {
-        ...defaultOptions,
-        ...options,
-        headers: {
-          ...defaultOptions.headers,
-          ...options.headers,
+  // Capitalize first letter
+  capitalize: function (str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  },
+
+  // Get current user's location
+  getCurrentLocation: function () {
+    return new Promise(function (resolve, reject) {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation is not supported by this browser."));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
         },
-      };
-
-      const response = await fetch(url, mergedOptions);
-
-      // Handle non-JSON responses
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        data = { message: text };
-      }
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 404) {
-          throw new Error("User not found");
-        }
-        throw new Error(
-          data.error ||
-            data.message ||
-            `HTTP error! status: ${response.status}`,
-        );
-      }
-
-      return data;
-    } catch (error) {
-      console.error("API call failed:", error);
-      throw error;
-    }
+        function (error) {
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        },
+      );
+    });
   },
 
   // Copy text to clipboard
@@ -316,14 +270,14 @@ const Utils = {
     if (navigator.clipboard) {
       navigator.clipboard
         .writeText(text)
-        .then(() => {
-          this.showSuccess("Copied to clipboard!");
+        .then(function () {
+          Utils.showSuccess("Copied to clipboard!");
         })
-        .catch(() => {
-          this.fallbackCopyTextToClipboard(text);
+        .catch(function () {
+          Utils.fallbackCopyTextToClipboard(text);
         });
     } else {
-      this.fallbackCopyTextToClipboard(text);
+      Utils.fallbackCopyTextToClipboard(text);
     }
   },
 
@@ -340,81 +294,170 @@ const Utils = {
 
     try {
       document.execCommand("copy");
-      this.showSuccess("Copied to clipboard!");
+      Utils.showSuccess("Copied to clipboard!");
     } catch (err) {
-      this.showError("Failed to copy to clipboard");
+      Utils.showError("Failed to copy to clipboard");
     }
 
     document.body.removeChild(textArea);
   },
 
-  // Get current user's location
-  getCurrentLocation: function () {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation is not supported by this browser."));
-        return;
+  // Fix navigation to ensure .html extensions
+  initializeNavigation: function () {
+    document.addEventListener("DOMContentLoaded", function () {
+      // Fix all navigation links to include .html
+      const navLinks = document.querySelectorAll("a[href]");
+      navLinks.forEach(function (link) {
+        const href = link.getAttribute("href");
+
+        // Skip external links, hash links, and already correct links
+        if (
+          href.startsWith("http") ||
+          href.startsWith("#") ||
+          href.includes(".html") ||
+          href === "/"
+        ) {
+          return;
+        }
+
+        // Fix page navigation links
+        const pageLinks = [
+          "dashboard",
+          "events",
+          "venues",
+          "profile",
+          "login",
+          "signup",
+        ];
+        pageLinks.forEach(function (page) {
+          if (href === page || href === "/" + page || href === "./" + page) {
+            link.setAttribute("href", page + ".html");
+          }
+        });
+      });
+
+      // Add click handler to ensure navigation works
+      document.addEventListener("click", function (e) {
+        const link = e.target.closest("a");
+        if (link && link.getAttribute("href")) {
+          const href = link.getAttribute("href");
+
+          // Force navigation for page links
+          if (href.endsWith(".html") && !href.startsWith("http")) {
+            e.preventDefault();
+            window.location.href = href;
+          }
+        }
+      });
+    });
+  },
+
+  // Image rendering utilities
+  renderImage: function (imageUrl, alt, className) {
+    alt = alt || "";
+    className = className || "";
+
+    if (!imageUrl) {
+      return (
+        '<div class="no-image-placeholder ' +
+        className +
+        '">' +
+        "<span>📷</span>" +
+        "<p>Image unavailable</p>" +
+        "</div>"
+      );
+    }
+
+    // Handle S3 URLs
+    let fullUrl = imageUrl;
+    if (!imageUrl.startsWith("http")) {
+      fullUrl =
+        "https://local-gigs-static.s3.us-east-1.amazonaws.com/" + imageUrl;
+    }
+
+    return (
+      '<img src="' +
+      fullUrl +
+      '" alt="' +
+      alt +
+      '" class="' +
+      className +
+      '" onerror="this.parentElement.innerHTML=\'<div class=\\\"no-image-placeholder\\\"><span>📷</span><p>Image unavailable</p></div>\'">'
+    );
+  },
+
+  // Profile picture renderer
+  renderProfilePicture: function (imageUrl, userName, size) {
+    userName = userName || "";
+    size = size || "medium";
+
+    const sizeClasses = {
+      small: "w-8 h-8",
+      medium: "w-16 h-16",
+      large: "w-32 h-32",
+    };
+
+    const className =
+      "profile-picture " + (sizeClasses[size] || sizeClasses.medium);
+
+    if (!imageUrl) {
+      return (
+        '<div class="' +
+        className +
+        ' bg-gray-200 rounded-full flex items-center justify-center">' +
+        '<span class="text-gray-500">' +
+        (userName.charAt(0).toUpperCase() || "👤") +
+        "</span>" +
+        "</div>"
+      );
+    }
+
+    return Utils.renderImage(
+      imageUrl,
+      userName + " profile picture",
+      className + " rounded-full object-cover",
+    );
+  },
+
+  // Upload image to S3 via Lambda function
+  uploadImage: async function (file, folder) {
+    folder = folder || "events";
+
+    try {
+      // Validate file
+      if (!file || !file.type.startsWith("image/")) {
+        throw new Error("Please select a valid image file");
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          reject(error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
-        },
-      );
-    });
-  },
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Image must be smaller than 5MB");
+      }
 
-  // Format file size
-  formatFileSize: function (bytes) {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  },
+      // Convert to base64
+      const base64Result = await Utils.fileToBase64(file);
+      const base64Data = base64Result.split(",")[1]; // Remove data:image/jpeg;base64, prefix
 
-  // Convert image file to base64
-  fileToBase64: function (file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  },
+      // Generate unique filename
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName = folder + "_" + timestamp + "." + fileExtension;
 
-  // Capitalize first letter
-  capitalize: function (str) {
-    if (!str) return "";
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  },
+      // Prepare upload data matching Lambda function expectations
+      const uploadData = {
+        fileData: base64Data,
+        fileName: fileName,
+        folder: folder,
+        fileType: file.type,
+        fileSize: file.size,
+      };
 
-  // Upload image to S3 via backend
-  uploadImage: async function (file, folder = "events") {
-    try {
-      const base64 = await this.fileToBase64(file);
-      const base64Data = base64.split(",")[1]; // Remove data:image/jpeg;base64, prefix
-
+      // Upload via API Gateway
       const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.UPLOAD);
-      const response = await this.apiCall(url, {
+      const response = await Utils.apiCall(url, {
         method: "POST",
         headers: CONFIG.getAuthHeaders(),
-        body: JSON.stringify({
-          image: base64Data,
-          folder: folder,
-          filename: file.name,
-        }),
+        body: JSON.stringify(uploadData),
       });
 
       return response.imageUrl;
@@ -422,6 +465,104 @@ const Utils = {
       console.error("Image upload failed:", error);
       throw error;
     }
+  },
+
+  // S3 helper functions for specific use cases
+  s3: {
+    // Upload profile picture
+    uploadProfilePicture: async function (file, userId) {
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName =
+        "profile_" + userId + "_" + timestamp + "." + fileExtension;
+      return await Utils.uploadImage(file, "users");
+    },
+
+    // Upload event image
+    uploadEventImage: async function (file, eventId) {
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName =
+        "event_" + eventId + "_" + timestamp + "." + fileExtension;
+      return await Utils.uploadImage(file, "events");
+    },
+
+    // Upload venue image
+    uploadVenueImage: async function (file, venueId) {
+      const timestamp = Date.now();
+      const fileExtension = file.name.split(".").pop();
+      const fileName =
+        "venue_" + venueId + "_" + timestamp + "." + fileExtension;
+      return await Utils.uploadImage(file, "venues");
+    },
+
+    // Create image preview
+    createImagePreview: function (file, previewElementId) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById(previewElementId);
+        if (preview) {
+          preview.src = e.target.result;
+          preview.style.display = "block";
+        }
+      };
+      reader.readAsDataURL(file);
+    },
+
+    // Validate image file
+    validateImageFile: function (file) {
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error("Please select a JPEG, PNG, GIF, or WebP image");
+      }
+
+      if (file.size > maxSize) {
+        throw new Error("Image must be smaller than 5MB");
+      }
+
+      return true;
+    },
+
+    // Setup image upload input
+    setupImageUpload: function (inputId, previewId, onUploadCallback) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+
+      if (!input) return;
+
+      input.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+          Utils.s3.validateImageFile(file);
+
+          // Create preview
+          if (preview) {
+            Utils.s3.createImagePreview(file, previewId);
+          }
+
+          // Call callback if provided
+          if (onUploadCallback) {
+            onUploadCallback(file);
+          }
+        } catch (error) {
+          alert(error.message);
+          input.value = "";
+          if (preview) {
+            preview.style.display = "none";
+          }
+        }
+      });
+    },
   },
 };
 

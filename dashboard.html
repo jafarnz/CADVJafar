@@ -231,80 +231,124 @@
         <!-- Create Event Modal -->
         <div id="create-event-modal" class="modal">
             <div class="modal-content">
-                <span class="close" id="close-event-modal">&times;</span>
-                <h2>Create New Event</h2>
+                <div class="modal-header">
+                    <h2>Create New Event</h2>
+                    <span class="close-modal" id="close-event-modal"
+                        >&times;</span
+                    >
+                </div>
                 <div id="event-modal-messages"></div>
                 <form id="create-event-form">
                     <div class="form-group">
-                        <label for="eventName">Event Name *</label>
+                        <label for="eventName" class="form-label"
+                            >Event Name *</label
+                        >
                         <input
                             type="text"
                             id="eventName"
                             name="name"
-                            class="form-control"
+                            class="form-input"
                             required
-                            placeholder="Enter event name"
+                            placeholder="Enter a catchy event name"
                             maxlength="100"
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="eventDescription">Description</label>
+                        <label for="eventDescription" class="form-label"
+                            >Description</label
+                        >
                         <textarea
                             id="eventDescription"
                             name="description"
-                            class="form-control"
+                            class="form-textarea"
                             rows="4"
-                            placeholder="Describe your event..."
+                            placeholder="Tell people what makes this event special..."
                             maxlength="500"
                         ></textarea>
                     </div>
 
-                    <div
-                        style="
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 1rem;
-                        "
-                    >
+                    <!-- Event Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Event Image</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview-wrapper event-image-preview">
+                                <img id="eventImagePreview" class="image-preview" style="display: none;" alt="Event preview">
+                                <div class="upload-placeholder" id="eventUploadPlaceholder">
+                                    <div class="upload-icon">🖼️</div>
+                                    <p>Add an event photo</p>
+                                    <small></small>JPEG, PNG, or GIF (max 5MB)</small>
+                                </div>
+                            </div>
+                            <input type="file" id="eventImageInput" name="eventImage" accept="image/*" style="display: none;">
+                            <div class="upload-actions">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('eventImageInput').click()">
+                                    Choose Photo
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="removeEventPhotoBtn" style="display: none;" onclick="removeEventPhoto()">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="eventDate">Event Date *</label>
+                            <label for="eventDate" class="form-label"
+                                >Event Date *</label
+                            >
                             <input
                                 type="date"
                                 id="eventDate"
                                 name="eventDate"
-                                class="form-control"
+                                class="form-input"
                                 required
                             />
                         </div>
 
                         <div class="form-group">
-                            <label for="eventTime">Event Time *</label>
+                            <label for="eventTime" class="form-label"
+                                >Event Time *</label
+                            >
                             <input
                                 type="time"
                                 id="eventTime"
                                 name="eventTime"
-                                class="form-control"
+                                class="form-input"
                                 required
                             />
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="eventVenue">Venue *</label>
+                        <label for="eventVenue" class="form-label"
+                            >Venue *</label
+                        >
                         <select
                             id="eventVenue"
                             name="venueID"
-                            class="form-control"
+                            class="form-select"
                             required
                         >
                             <option value="">Select a venue...</option>
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem">
+                        <button
+                            type="submit"
+                            class="btn btn-lg"
+                            style="flex: 1"
+                        >
                             Create Event
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-lg"
+                            onclick="document.getElementById('create-event-modal').style.display='none'"
+                            style="flex: 1"
+                        >
+                            Cancel
                         </button>
                     </div>
                 </form>
@@ -314,95 +358,141 @@
         <!-- Add Venue Modal -->
         <div id="add-venue-modal" class="modal">
             <div class="modal-content">
-                <span class="close" id="close-venue-modal">&times;</span>
-                <h2>Add New Venue</h2>
+                <div class="modal-header">
+                    <h2>Add New Venue</h2>
+                    <span class="close-modal" id="close-venue-modal"
+                        >&times;</span
+                    >
+                </div>
                 <div id="venue-modal-messages"></div>
                 <form id="add-venue-form">
                     <div class="form-group">
-                        <label for="venueName">Venue Name *</label>
+                        <label for="venueName" class="form-label"
+                            >Venue Name *</label
+                        >
                         <input
                             type="text"
                             id="venueName"
                             name="name"
-                            class="form-control"
+                            class="form-input"
                             required
-                            placeholder="Enter venue name"
+                            placeholder="Enter the venue name"
                             maxlength="100"
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="venueAddress">Address *</label>
+                        <label for="venueAddress" class="form-label"
+                            >Address *</label
+                        >
                         <input
                             type="text"
                             id="venueAddress"
                             name="address"
-                            class="form-control"
+                            class="form-input"
                             required
-                            placeholder="Enter venue address"
+                            placeholder="Enter the full venue address"
                             maxlength="200"
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="venueCapacity">Capacity</label>
+                        <label for="venueCapacity" class="form-label"
+                            >Capacity</label
+                        >
                         <input
                             type="number"
                             id="venueCapacity"
                             name="capacity"
-                            class="form-control"
+                            class="form-input"
+                            placeholder="Maximum number of people (optional)"
                             min="1"
                             max="100000"
-                            placeholder="Maximum capacity"
                         />
                     </div>
 
-                    <div
-                        style="
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 1rem;
-                        "
-                    >
+                    <!-- Venue Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Venue Image</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview-wrapper venue-image-preview">
+                                <img id="venueImagePreview" class="image-preview" style="display: none;" alt="Venue preview">
+                                <div class="upload-placeholder" id="venueUploadPlaceholder">
+                                    <div class="upload-icon">🏢</div>
+                                    <p>Add a venue photo</p>
+                                    <small>JPEG, PNG, or GIF (max 5MB)</small>
+                                </div>
+                            </div>
+                            <input type="file" id="venueImageInput" name="venueImage" accept="image/*" style="display: none;">
+                            <div class="upload-actions">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('venueImageInput').click()">
+                                    Choose Photo
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="removeVenuePhotoBtn" style="display: none;" onclick="removeVenuePhoto()">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="venueLatitude">Latitude</label>
+                            <label for="venueLatitude" class="form-label"
+                                >Latitude</label
+                            >
                             <input
                                 type="number"
                                 id="venueLatitude"
                                 name="latitude"
-                                class="form-control"
-                                step="0.000001"
-                                placeholder="1.3521"
+                                class="form-input"
+                                placeholder="Latitude coordinate"
+                                step="any"
                             />
                         </div>
 
                         <div class="form-group">
-                            <label for="venueLongitude">Longitude</label>
+                            <label for="venueLongitude" class="form-label"
+                                >Longitude</label
+                            >
                             <input
                                 type="number"
                                 id="venueLongitude"
                                 name="longitude"
-                                class="form-control"
-                                step="0.000001"
-                                placeholder="103.8198"
+                                class="form-input"
+                                placeholder="Longitude coordinate"
+                                step="any"
                             />
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <div
+                        class="form-group"
+                        style="text-align: center; margin: 1.5rem 0"
+                    >
                         <button
                             type="button"
+                            class="btn btn-outline"
                             id="get-location-btn"
-                            class="btn btn-secondary"
-                            style="width: 100%; margin-bottom: 1rem"
                         >
-                            Get My Current Location
+                            📍 Get My Current Location
                         </button>
                     </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem">
+                        <button
+                            type="submit"
+                            class="btn btn-lg"
+                            style="flex: 1"
+                        >
                             Add Venue
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-lg"
+                            onclick="document.getElementById('add-venue-modal').style.display='none'"
+                            style="flex: 1"
+                        >
+                            Cancel
                         </button>
                     </div>
                 </form>
@@ -489,6 +579,176 @@
                 color: #666;
                 font-size: 0.9rem;
             }
+
+            /* Image Upload Styles */
+            .image-upload-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+                margin: 1rem 0;
+            }
+
+            .image-preview-wrapper {
+                position: relative;
+                width: 200px;
+                height: 120px;
+                border-radius: 12px;
+                overflow: hidden;
+                border: 2px dashed #d1d5db;
+                background: #f9fafb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .image-preview-wrapper:hover {
+                border-color: var(--primary-black);
+                background: #f3f4f6;
+            }
+
+            .image-preview-wrapper.event-image-preview,
+            .image-preview-wrapper.venue-image-preview {
+                width: 100%;
+                max-width: 300px;
+                height: 150px;
+            }
+
+            .image-preview {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .upload-placeholder {
+                text-align: center;
+                color: #6b7280;
+                padding: 1rem;
+            }
+
+            .upload-icon {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .upload-placeholder p {
+                margin: 0.5rem 0;
+                font-weight: 500;
+            }
+
+            .upload-placeholder small {
+                color: #9ca3af;
+                font-size: 0.75rem;
+            }
+
+            .upload-actions {
+                display: flex;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         </style>
+
+        <script>
+            // Initialize navigation fix
+            Utils.initializeNavigation();
+
+            // Image upload variables
+            let selectedEventImage = null;
+            let selectedVenueImage = null;
+
+            // Event image upload handling
+            document.addEventListener('DOMContentLoaded', function() {
+                // Event image upload
+                const eventImageInput = document.getElementById('eventImageInput');
+                const eventImagePreview = document.getElementById('eventImagePreview');
+                const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+                const removeEventBtn = document.getElementById('removeEventPhotoBtn');
+
+                if (eventImageInput) {
+                    eventImageInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        try {
+                            Utils.s3.validateImageFile(file);
+                            selectedEventImage = file;
+
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                eventImagePreview.src = e.target.result;
+                                eventImagePreview.style.display = 'block';
+                                eventPlaceholder.style.display = 'none';
+                                removeEventBtn.style.display = 'inline-block';
+                            };
+                            reader.readAsDataURL(file);
+                        } catch (error) {
+                            alert(error.message);
+                            eventImageInput.value = '';
+                        }
+                    });
+                }
+
+                // Venue image upload
+                const venueImageInput = document.getElementById('venueImageInput');
+                const venueImagePreview = document.getElementById('venueImagePreview');
+                const venuePlaceholder = document.getElementById('venueUploadPlaceholder');
+                const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
+
+                if (venueImageInput) {
+                    venueImageInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        try {
+                            Utils.s3.validateImageFile(file);
+                            selectedVenueImage = file;
+
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                venueImagePreview.src = e.target.result;
+                                venueImagePreview.style.display = 'block';
+                                venuePlaceholder.style.display = 'none';
+                                removeVenueBtn.style.display = 'inline-block';
+                            };
+                            reader.readAsDataURL(file);
+                        } catch (error) {
+                            alert(error.message);
+                            venueImageInput.value = '';
+                        }
+                    });
+                }
+            });
+
+            // Remove photo functions
+            function removeEventPhoto() {
+                const eventImagePreview = document.getElementById('eventImagePreview');
+                const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+                const removeEventBtn = document.getElementById('removeEventPhotoBtn');
+                const eventImageInput = document.getElementById('eventImageInput');
+
+                selectedEventImage = null;
+                eventImageInput.value = '';
+                eventImagePreview.style.display = 'none';
+                eventPlaceholder.style.display = 'block';
+                removeEventBtn.style.display = 'none';
+            }
+
+            function removeVenuePhoto() {
+                const venueImagePreview = document.getElementById('venueImagePreview');
+                const venuePlaceholder = document.getElementById('venueUploadPlaceholder');
+                const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
+                const venueImageInput = document.getElementById('venueImageInput');
+
+                selectedVenueImage = null;
+                venueImageInput.value = '';
+                venueImagePreview.style.display = 'none';
+                venuePlaceholder.style.display = 'block';
+                removeVenueBtn.style.display = 'none';
+            }
+        </script>
     </body>
 </html>
+</text>
