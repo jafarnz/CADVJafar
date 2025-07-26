@@ -260,9 +260,13 @@ const ProfilePage = {
             };
             console.log("🔧 Created fallback profile:", this.userProfile);
         }
-    },
 
-    // Load activity data
+        // Ensure userProfile always has a userID
+        if (this.userProfile && !this.userProfile.userID) {
+            console.log("⚠️ Profile missing userID, adding it");
+            this.userProfile.userID = this.currentUser.sub;
+        }
+    },    // Load activity data
     loadActivityData: async function() {
         // For now, we'll use mock data since we don't have activity tracking in the backend
         // In a real app, this would load from various endpoints
@@ -467,6 +471,28 @@ const ProfilePage = {
         try {
             Utils.showLoading(submitBtn, "Saving...");
 
+            // Ensure we have a user profile with userID
+            if (!this.userProfile) {
+                console.log("⚠️ No user profile found, creating one from current user");
+                this.userProfile = {
+                    userID: this.currentUser.sub,
+                    name: this.currentUser.email.split("@")[0],
+                    email: this.currentUser.email,
+                    preferences: {
+                        genres: [],
+                        emailNotifications: true,
+                        eventReminders: true,
+                        locationSuggestions: true,
+                    },
+                    createdAt: new Date().toISOString(),
+                };
+            }
+
+            if (!this.userProfile.userID) {
+                console.log("⚠️ No userID in profile, setting from current user");
+                this.userProfile.userID = this.currentUser.sub;
+            }
+
             const formData = new FormData(form);
             const profileData = {
                 ...this.userProfile,
@@ -603,10 +629,30 @@ const ProfilePage = {
                 },
             };
 
-            // Ensure we have a userID - critical for the update
-            if (!this.userProfile || !this.userProfile.userID) {
-                throw new Error("No user profile or userID found - cannot update preferences");
+            // Ensure we have a user profile with userID
+            if (!this.userProfile) {
+                console.log("⚠️ No user profile found, creating one from current user");
+                this.userProfile = {
+                    userID: this.currentUser.sub,
+                    name: this.currentUser.email.split("@")[0],
+                    email: this.currentUser.email,
+                    preferences: {
+                        genres: [],
+                        emailNotifications: true,
+                        eventReminders: true,
+                        locationSuggestions: true,
+                    },
+                    createdAt: new Date().toISOString(),
+                };
             }
+
+            if (!this.userProfile.userID) {
+                console.log("⚠️ No userID in profile, setting from current user");
+                this.userProfile.userID = this.currentUser.sub;
+            }
+
+            // Update the preferences data with the correct userID
+            preferencesData.userID = this.userProfile.userID;
 
             const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, this.userProfile.userID);
             console.log("🔄 Updating user preferences:", {
@@ -748,10 +794,32 @@ const ProfilePage = {
             const imageUrl = await Utils.uploadImage(imageFile, "users");
             console.log("✅ Image uploaded successfully:", imageUrl);
 
-            // Update user profile with new image URL
-            if (!this.userProfile || !this.userProfile.userID) {
-                throw new Error("No user profile found - cannot update profile picture");
+            // Ensure we have a user profile with userID
+            if (!this.userProfile) {
+                console.log("⚠️ No user profile found, creating one from current user");
+                this.userProfile = {
+                    userID: this.currentUser.sub,
+                    name: this.currentUser.email.split("@")[0],
+                    email: this.currentUser.email,
+                    preferences: {
+                        genres: [],
+                        emailNotifications: true,
+                        eventReminders: true,
+                        locationSuggestions: true,
+                    },
+                    createdAt: new Date().toISOString(),
+                };
             }
+
+            if (!this.userProfile.userID) {
+                console.log("⚠️ No userID in profile, setting from current user");
+                this.userProfile.userID = this.currentUser.sub;
+            }
+
+            console.log("🔄 Updating user profile with image URL:", {
+                userID: this.userProfile.userID,
+                imageUrl: imageUrl
+            });
 
             const profileData = {
                 ...this.userProfile,

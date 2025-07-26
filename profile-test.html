@@ -87,6 +87,7 @@
         <h2>Quick Profile Test</h2>
         <button onclick="runProfileTest()">Test Profile Loading</button>
         <button onclick="testAuthentication()">Test Authentication</button>
+        <button onclick="testBackendUserOps()">Test Backend User Operations</button>
         <button onclick="clearResults()">Clear Results</button>
         <div id="test-results"></div>
     </div>
@@ -295,6 +296,111 @@
             addResult('🔧 Profile test page loaded', 'info');
             addResult('Click "Test Profile Loading" to run comprehensive tests', 'info');
         });
+
+        async function testBackendUserOps() {
+            clearResults();
+            addResult('🔧 Testing backend user operations...', 'info');
+
+            try {
+                if (!Utils.isAuthenticated()) {
+                    addResult('❌ Not authenticated. Please log in first.', 'error');
+                    return;
+                }
+
+                const user = Utils.getUserFromToken();
+                if (!user) {
+                    addResult('❌ No user found in token', 'error');
+                    return;
+                }
+
+                addResult(`✅ Testing with user: ${user.email} (${user.sub})`, 'success');
+
+                // Test 1: Try to GET user profile
+                addResult('📡 Testing GET user profile...', 'info');
+                const getUserUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, user.sub);
+                try {
+                    const existingProfile = await Utils.apiCall(getUserUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+                    addResult('✅ User profile exists in backend', 'success');
+                    addResult(`<pre>${JSON.stringify(existingProfile, null, 2)}</pre>`, 'info');
+                } catch (error) {
+                    addResult(`⚠️ User profile not found: ${error.message}`, 'error');
+                    
+                    // Test 2: Try to CREATE user profile
+                    addResult('📡 Testing POST create user profile...', 'info');
+                    const createUserUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                    const newUserData = {
+                        userID: user.sub,
+                        name: user.email.split("@")[0],
+                        email: user.email,
+                        preferences: {
+                            genres: ["test"],
+                            emailNotifications: true,
+                            eventReminders: true,
+                            locationSuggestions: true,
+                        },
+                        bio: "Test bio",
+                        location: "Test location",
+                        website: "https://test.com",
+                        profilePictureUrl: null,
+                        createdAt: new Date().toISOString(),
+                    };
+
+                    try {
+                        const createdProfile = await Utils.apiCall(createUserUrl, {
+                            method: "POST",
+                            headers: CONFIG.getAuthHeaders(),
+                            body: JSON.stringify(newUserData),
+                        });
+                        addResult('✅ User profile created successfully', 'success');
+                        addResult(`<pre>${JSON.stringify(createdProfile, null, 2)}</pre>`, 'info');
+                    } catch (createError) {
+                        addResult(`❌ Failed to create user: ${createError.message}`, 'error');
+                    }
+                }
+
+                // Test 3: Try to UPDATE user profile
+                addResult('📡 Testing PUT update user profile...', 'info');
+                const updateUserUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, user.sub);
+                const updateData = {
+                    userID: user.sub,
+                    name: user.email.split("@")[0] + " (Updated)",
+                    email: user.email,
+                    preferences: {
+                        genres: ["rock", "jazz"],
+                        emailNotifications: false,
+                        eventReminders: true,
+                        locationSuggestions: false,
+                    },
+                    bio: "Updated test bio",
+                    location: "Updated location",
+                    website: "https://updated.com",
+                    profilePictureUrl: "https://test-image-url.com/test.jpg",
+                    createdAt: new Date().toISOString(),
+                };
+
+                try {
+                    const updatedProfile = await Utils.apiCall(updateUserUrl, {
+                        method: "PUT",
+                        headers: CONFIG.getAuthHeaders(),
+                        body: JSON.stringify(updateData),
+                    });
+                    addResult('✅ User profile updated successfully', 'success');
+                    addResult(`<pre>${JSON.stringify(updatedProfile, null, 2)}</pre>`, 'info');
+                } catch (updateError) {
+                    addResult(`❌ Failed to update user: ${updateError.message}`, 'error');
+                    addResult('🔍 This suggests the Lambda function may need to be redeployed with the latest FIXED_USER_LAMBDA.js code', 'error');
+                }
+
+                addResult('🎉 Backend user operations test completed', 'success');
+
+            } catch (error) {
+                addResult(`❌ Backend test failed: ${error.message}`, 'error');
+                console.error('Backend test error:', error);
+            }
+        }
     </script>
 </body>
 
