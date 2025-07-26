@@ -859,6 +859,32 @@ const VenuesPage = {
     try {
       console.log("🗺️ Initializing venue location map...");
       
+      // Enhanced availability check with retry logic
+      let retryCount = 0;
+      const maxRetries = 15;
+      const retryInterval = 300;
+
+      const checkMapServiceAvailability = () => {
+        return new Promise((resolve, reject) => {
+          const attemptCheck = () => {
+            if (window.MapService && typeof maplibregl !== 'undefined') {
+              console.log("✅ MapService and MapLibre GL available");
+              resolve();
+            } else if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`🔄 MapService check attempt ${retryCount}/${maxRetries}...`);
+              setTimeout(attemptCheck, retryInterval);
+            } else {
+              reject(new Error("MapService or MapLibre GL not available after multiple attempts"));
+            }
+          };
+          attemptCheck();
+        });
+      };
+
+      // Wait for MapService availability
+      await checkMapServiceAvailability();
+      
       // Initialize MapService if not already done
       if (!window.MapService || !window.MapService.isInitialized) {
         console.log("🔄 MapService not initialized, initializing now...");
@@ -873,10 +899,51 @@ const VenuesPage = {
         await this.createVenueLocationMap();
       }
 
-      console.log("✅ Venue location map initialized");
+      console.log("✅ Venue location map initialized successfully");
     } catch (error) {
       console.error("❌ Failed to initialize venue location map:", error);
       this.showMapError("Failed to load map. Please try again.");
+    }
+  },
+
+  // Show map error with modern styling
+  showMapError: function(message) {
+    const mapContainer = document.getElementById('venue-location-map');
+    if (mapContainer) {
+      mapContainer.innerHTML = `
+        <div style="
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          height: 100%; 
+          color: #dc3545; 
+          background: linear-gradient(135deg, #fdf2f2 0%, #fef2f2 100%);
+          border: 2px solid #f87171;
+          border-radius: 12px;
+        ">
+          <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.8;">❌</div>
+            <p style="margin: 0 0 1rem 0; font-weight: 600; color: #991b1b; font-size: 1.1rem;">${message}</p>
+            <button 
+              onclick="VenuesPage.initializeVenueLocationMap()" 
+              style="
+                padding: 12px 20px; 
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+                color: white; 
+                border: none; 
+                border-radius: 8px; 
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.2s ease;
+              "
+              onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(220,38,38,0.4)'"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+            >
+              🔄 Retry Loading Map
+            </button>
+          </div>
+        </div>
+      `;
     }
   },
 

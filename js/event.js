@@ -154,6 +154,31 @@ const EventsPage = {
                 });
             }
 
+            // Create venue modal (inline)
+            const createVenueModal = document.getElementById("create-venue-modal");
+            const closeCreateVenueModal = document.getElementById("close-create-venue-modal");
+            const cancelCreateVenueBtn = document.getElementById("cancel-create-venue-btn");
+            const createVenueForm = document.getElementById("create-venue-form");
+
+            if (closeCreateVenueModal && createVenueModal) {
+                closeCreateVenueModal.addEventListener("click", () => {
+                    createVenueModal.style.display = "none";
+                });
+            }
+
+            if (cancelCreateVenueBtn && createVenueModal) {
+                cancelCreateVenueBtn.addEventListener("click", () => {
+                    createVenueModal.style.display = "none";
+                });
+            }
+
+            if (createVenueForm) {
+                createVenueForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    this.handleInlineVenueCreation(e);
+                });
+            }
+
             // Pagination
             const prevPageBtn = document.getElementById("prev-page");
             const nextPageBtn = document.getElementById("next-page");
@@ -186,6 +211,9 @@ const EventsPage = {
                 }
                 if (e.target === eventDetailsModal) {
                     eventDetailsModal.style.display = "none";
+                }
+                if (e.target === createVenueModal) {
+                    createVenueModal.style.display = "none";
                 }
             });
         },
@@ -752,12 +780,26 @@ const EventsPage = {
   },
 
   handleCustomVenueCreation: function() {
-    // Store current event form data
-    const eventFormData = this.getEventFormData();
-    sessionStorage.setItem('pendingEventData', JSON.stringify(eventFormData));
-    
-    // Navigate to venue creation with return flag
-    window.location.href = "venues.html?action=create&returnTo=events";
+    // Instead of redirecting, open the inline venue creation modal
+    const createVenueModal = document.getElementById("create-venue-modal");
+    if (createVenueModal) {
+      // Store current event form data
+      const eventFormData = this.getEventFormData();
+      sessionStorage.setItem('pendingEventData', JSON.stringify(eventFormData));
+      
+      // Open the venue creation modal
+      createVenueModal.style.display = "block";
+      
+      // Initialize the venue location map with proper delay
+      setTimeout(() => {
+        this.initializeCreateVenueLocationMap();
+      }, 1000); // Increased delay to ensure MapService is ready
+    } else {
+      // Fallback to redirect if modal not found
+      const eventFormData = this.getEventFormData();
+      sessionStorage.setItem('pendingEventData', JSON.stringify(eventFormData));
+      window.location.href = "venues.html?action=create&returnTo=events";
+    }
   },
 
   getEventFormData: function() {
@@ -822,6 +864,404 @@ const EventsPage = {
       
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  },
+
+  // Handle inline venue creation from events page
+  handleInlineVenueCreation: async function(e) {
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const messagesDiv = document.getElementById("create-venue-modal-messages");
+
+    try {
+      // Show loading state
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating venue...";
+
+      const formData = new FormData(form);
+      
+      // Validate required fields
+      const name = formData.get("name");
+      const address = formData.get("address");
+      const latitude = formData.get("latitude");
+      const longitude = formData.get("longitude");
+
+      if (!name || !address) {
+        throw new Error("Please fill in venue name and address");
+      }
+
+      if (!latitude || !longitude) {
+        throw new Error("Please select a location on the map");
+      }
+
+      // Create venue data object
+      const venueData = {
+        id: 'venue_' + Date.now(),
+        name: name,
+        address: address,
+        description: formData.get("description") || "",
+        capacity: formData.get("capacity") ? parseInt(formData.get("capacity")) : null,
+        type: formData.get("type") || "",
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        location: {
+          lat: parseFloat(latitude),
+          lng: parseFloat(longitude)
+        }
+      };
+
+      // Handle image upload if present
+      const imageFile = formData.get("image");
+      if (imageFile && imageFile.size > 0) {
+        try {
+          // Simulate image upload - in real app would upload to S3
+          venueData.imageUrl = URL.createObjectURL(imageFile);
+        } catch (error) {
+          console.warn("Image upload failed:", error);
+        }
+      }
+
+      // Save venue to localStorage (in real app would be API call)
+      const existingVenues = JSON.parse(localStorage.getItem('venues') || '[]');
+      existingVenues.push(venueData);
+      localStorage.setItem('venues', JSON.stringify(existingVenues));
+
+      // Show success message
+      if (messagesDiv) {
+        messagesDiv.innerHTML = `
+          <div style="padding: 1rem; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; margin-bottom: 1rem;">
+            ✅ Venue "${venueData.name}" created successfully!
+          </div>
+        `;
+      }
+
+      // Close venue modal after a delay
+      setTimeout(() => {
+        document.getElementById("create-venue-modal").style.display = "none";
+        
+        // Refresh venues in event form and auto-select the new one
+        this.loadVenuesForDropdown().then(() => {
+          this.restoreEventFormData();
+          
+          // Auto-select the newly created venue
+          const venueSelect = document.getElementById("eventVenue");
+          if (venueSelect) {
+            // Find the new venue option
+            for (let option of venueSelect.options) {
+              if (option.dataset.venue) {
+                try {
+                  const venue = JSON.parse(option.dataset.venue);
+                  if (venue.id === venueData.id || venue.name === venueData.name) {
+                    venueSelect.value = option.value;
+                    this.updateVenuePreview();
+                    break;
+                  }
+                } catch (e) {
+                  // Continue searching
+                }
+              }
+            }
+          }
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error("Failed to create venue:", error);
+      if (messagesDiv) {
+        messagesDiv.innerHTML = `
+          <div style="padding: 1rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; margin-bottom: 1rem;">
+            ❌ ${error.message || "Failed to create venue"}
+          </div>
+        `;
+      }
+    } finally {
+      // Reset button state
+      submitBtn.disabled = false;
+      submitBtn.textContent = "✅ Create Venue & Return to Event";
+    }
+  },
+
+  // Initialize inline venue location map
+  initializeCreateVenueLocationMap: async function() {
+    try {
+      console.log("🗺️ Initializing inline venue location map...");
+      
+      // Enhanced availability check with retry logic
+      let retryCount = 0;
+      const maxRetries = 15;
+      const retryInterval = 300;
+
+      const checkMapServiceAvailability = () => {
+        return new Promise((resolve, reject) => {
+          const attemptCheck = () => {
+            if (window.MapService && typeof maplibregl !== 'undefined') {
+              console.log("✅ MapService and MapLibre GL available for inline venue creation");
+              resolve();
+            } else if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`🔄 Inline MapService check attempt ${retryCount}/${maxRetries}...`);
+              setTimeout(attemptCheck, retryInterval);
+            } else {
+              reject(new Error("MapService or MapLibre GL not available for inline venue creation"));
+            }
+          };
+          attemptCheck();
+        });
+      };
+
+      // Wait for MapService availability
+      await checkMapServiceAvailability();
+
+      if (!window.MapService) {
+        throw new Error("MapService not available after availability check");
+      }
+
+      // Initialize map
+      const map = await window.MapService.initializeMap('create-venue-location-map', {
+        center: [103.8198, 1.3521], // Singapore default
+        zoom: 11
+      });
+
+      if (map) {
+        let currentMarker = null;
+        
+        // Enable location picker
+        const enablePickerBtn = document.getElementById("create-enable-location-picker-btn");
+        if (enablePickerBtn) {
+          enablePickerBtn.addEventListener("click", () => {
+            console.log("📍 Location picker enabled");
+            map.getCanvas().style.cursor = 'crosshair';
+            
+            // Add visual feedback
+            enablePickerBtn.innerHTML = '🎯 Click Map to Place Pin';
+            enablePickerBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            
+            // Add click listener to map
+            map.on('click', (e) => {
+              const { lng, lat } = e.lngLat;
+              
+              // Remove existing marker
+              if (currentMarker) {
+                currentMarker.remove();
+              }
+              
+              // Add new marker
+              currentMarker = window.MapService.addMarker(map, {
+                lng: lng,
+                lat: lat,
+                popup: `
+                  <div style="text-align: center; padding: 0.5rem;">
+                    <strong>Selected Location</strong><br>
+                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                  </div>
+                `
+              });
+              
+              // Update form fields
+              document.getElementById("createVenueLatitude").value = lat.toFixed(6);
+              document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+              
+              // Show location info
+              const locationInfo = document.getElementById("create-selected-location-info");
+              const locationText = document.getElementById("create-selected-location-text");
+              if (locationInfo && locationText) {
+                locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                locationInfo.style.display = 'block';
+              }
+              
+              // Reset cursor
+              map.getCanvas().style.cursor = '';
+              
+              console.log("📍 Location selected:", { lat, lng });
+            });
+          });
+        }
+
+        // Current location button
+        const currentLocationBtn = document.getElementById("create-get-current-location-btn");
+        if (currentLocationBtn) {
+          currentLocationBtn.addEventListener("click", () => {
+            if (navigator.geolocation) {
+              currentLocationBtn.textContent = "📡 Getting location...";
+              currentLocationBtn.disabled = true;
+              
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const lat = position.coords.latitude;
+                  const lng = position.coords.longitude;
+                  
+                  // Center map on user location
+                  map.setCenter([lng, lat]);
+                  map.setZoom(15);
+                  
+                  // Remove existing marker
+                  if (currentMarker) {
+                    currentMarker.remove();
+                  }
+                  
+                  // Add marker at current location
+                  currentMarker = window.MapService.addMarker(map, {
+                    lng: lng,
+                    lat: lat,
+                    popup: `
+                      <div style="text-align: center; padding: 0.5rem;">
+                        <strong>Your Current Location</strong><br>
+                        ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                      </div>
+                    `
+                  });
+                  
+                  // Update form fields
+                  document.getElementById("createVenueLatitude").value = lat.toFixed(6);
+                  document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+                  
+                  // Show location info
+                  const locationInfo = document.getElementById("create-selected-location-info");
+                  const locationText = document.getElementById("create-selected-location-text");
+                  if (locationInfo && locationText) {
+                    locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} (Current Location)`;
+                    locationInfo.style.display = 'block';
+                  }
+                  
+                  currentLocationBtn.textContent = "📱 Use My Location";
+                  currentLocationBtn.disabled = false;
+                  
+                  console.log("📱 Current location set:", { lat, lng });
+                },
+                (error) => {
+                  console.error("Geolocation error:", error);
+                  alert("Unable to get your current location. Please select manually on the map.");
+                  currentLocationBtn.textContent = "📱 Use My Location";
+                  currentLocationBtn.disabled = false;
+                }
+              );
+            } else {
+              alert("Geolocation is not supported by this browser.");
+            }
+          });
+        }
+
+        // Search functionality
+        const searchBtn = document.getElementById("create-search-location-btn");
+        const searchInput = document.getElementById("create-location-search");
+        
+        if (searchBtn && searchInput) {
+          const performSearch = async () => {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            
+            try {
+              searchBtn.textContent = "🔍 Searching...";
+              searchBtn.disabled = true;
+              
+              // Simple geocoding simulation - in real app would use AWS Location Service
+              console.log("🔍 Searching for:", query);
+              
+              // For demo, center on Singapore if searching
+              const lat = 1.3521 + (Math.random() - 0.5) * 0.1;
+              const lng = 103.8198 + (Math.random() - 0.5) * 0.1;
+              
+              map.setCenter([lng, lat]);
+              map.setZoom(15);
+              
+              // Remove existing marker
+              if (currentMarker) {
+                currentMarker.remove();
+              }
+              
+              // Add marker at search result
+              currentMarker = window.MapService.addMarker(map, {
+                lng: lng,
+                lat: lat,
+                popup: `
+                  <div style="text-align: center; padding: 0.5rem;">
+                    <strong>Search Result</strong><br>
+                    ${query}<br>
+                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                  </div>
+                `
+              });
+              
+              // Update form fields
+              document.getElementById("createVenueLatitude").value = lat.toFixed(6);
+              document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+              document.getElementById("createVenueAddress").value = query;
+              
+              // Show location info
+              const locationInfo = document.getElementById("create-selected-location-info");
+              const locationText = document.getElementById("create-selected-location-text");
+              if (locationInfo && locationText) {
+                locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} (${query})`;
+                locationInfo.style.display = 'block';
+              }
+              
+            } catch (error) {
+              console.error("Search error:", error);
+              alert("Search failed. Please try again or select manually on the map.");
+            } finally {
+              searchBtn.textContent = "🔍 Search";
+              searchBtn.disabled = false;
+            }
+          };
+          
+          searchBtn.addEventListener("click", performSearch);
+          searchInput.addEventListener("keypress", (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              performSearch();
+            }
+          });
+        }
+
+        console.log("✅ Inline venue location map initialized successfully");
+      } else {
+        throw new Error("Failed to initialize map");
+      }
+    } catch (error) {
+      console.error("❌ Failed to initialize inline venue location map:", error);
+      this.showCreateVenueMapError("Failed to load map. Please try again.");
+    }
+  },
+
+  // Show map error for create venue modal
+  showCreateVenueMapError: function(message) {
+    const mapContainer = document.getElementById('create-venue-location-map');
+    if (mapContainer) {
+      mapContainer.innerHTML = `
+        <div style="
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          height: 100%; 
+          color: #dc3545; 
+          background: linear-gradient(135deg, #fdf2f2 0%, #fef2f2 100%);
+          border: 2px solid #f87171;
+          border-radius: 12px;
+        ">
+          <div style="text-align: center; padding: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.8;">❌</div>
+            <p style="margin: 0 0 1rem 0; font-weight: 600; color: #991b1b; font-size: 1.1rem;">${message}</p>
+            <button 
+              onclick="EventsPage.initializeCreateVenueLocationMap()" 
+              style="
+                padding: 12px 20px; 
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+                color: white; 
+                border: none; 
+                border-radius: 8px; 
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.2s ease;
+              "
+              onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(220,38,38,0.4)'"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+            >
+              🔄 Retry Loading Map
+            </button>
+          </div>
+        </div>
+      `;
     }
   },
 };
