@@ -78,8 +78,8 @@ const Auth = {
             const user = Utils.getUserFromToken();
             console.log("👤 checkProfileSetup - User from token:", user);
 
-            if (!user) {
-                console.log("❌ No user found in token, redirecting to login");
+            if (!user || !user.email) {
+                console.log("❌ No user email found in token, redirecting to login");
                 console.log("🔍 Token details:", {
                     idToken: localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN) ?
                         "EXISTS" :
@@ -92,22 +92,30 @@ const Auth = {
                 return;
             }
 
-            console.log("🔍 Checking user profile in backend...");
-            console.log(
-                "📡 Making API call to:",
-                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
-            );
+            const userEmail = user.email;
+            console.log("🔍 Checking profile for user email:", userEmail);
 
             // Check if user profile exists in backend
-            const response = await Utils.apiCall(
-                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub), { method: "GET" },
-            );
+            const userApiUrl = CONFIG.buildApiUrl(`${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userEmail)}`);
+            console.log("📡 Making API call to:", userApiUrl);
+
+            const response = await Utils.apiCall(userApiUrl, {
+                method: "GET",
+                headers: CONFIG.getAuthHeaders(),
+            });
 
             console.log("📡 Profile check response:", response);
 
-            if (response && response.preferences && response.profileSetupComplete) {
+            if (response && response.email && response.profileComplete) {
                 // Profile exists and setup is complete, redirect to dashboard
                 console.log("✅ Profile setup complete, redirecting to dashboard");
+                
+                // Store user data locally for quick access
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(response));
+                if (response.preferences) {
+                    localStorage.setItem(CONFIG.STORAGE_KEYS.PREFERENCES, JSON.stringify(response.preferences));
+                }
+                
                 console.log("🚀 Redirecting to dashboard.html...");
                 window.location.href = "dashboard.html";
             } else {
@@ -123,10 +131,29 @@ const Auth = {
                 stack: error.stack,
                 status: error.status,
             });
-            // If error (like 404), assume profile needs to be set up
-            console.log("📝 Error occurred, redirecting to profile setup");
-            console.log("🚀 Redirecting to profile-setup.html due to error...");
-            window.location.href = "profile-setup.html";
+            
+            // If 404 error (user doesn't exist), redirect to profile setup
+            if (error.message && error.message.includes('404')) {
+                console.log("📝 User profile not found (404), redirecting to profile setup");
+                console.log("🚀 Redirecting to profile-setup.html...");
+                window.location.href = "profile-setup.html";
+            } else {
+                // For other errors, also redirect to profile setup as fallback
+                console.log("📝 Error occurred, redirecting to profile setup as fallback");
+                console.log("🚀 Redirecting to profile-setup.html due to error...");
+                window.location.href = "profile-setup.html";
+            }
+        }
+    },
+
+    // Get current user email from token
+    getCurrentUserEmail: function() {
+        try {
+            const user = Utils.getUserFromToken();
+            return user && user.email ? user.email : null;
+        } catch (error) {
+            console.error("Error getting user email:", error);
+            return null;
         }
     },
 
@@ -592,15 +619,24 @@ const Auth = {
 
             console.log("Profile data to send:", profileData);
 
-            const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+            // Use the correct endpoint based on whether profile exists
+            let apiUrl, method;
+            if (existingProfile) {
+                // Update existing profile using PUT /users/{userID}
+                apiUrl = CONFIG.buildApiUrl(`${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userEmail)}`);
+                method = "PUT";
+            } else {
+                // Create new profile using POST /users
+                apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                method = "POST";
+            }
+            
             console.log("API URL:", apiUrl);
-
-            // Use PUT if updating existing profile, POST if creating new
-            const method = existingProfile ? "PUT" : "POST";
             console.log("Using HTTP method:", method);
 
             const response = await Utils.apiCall(apiUrl, {
                 method: method,
+                headers: CONFIG.getAuthHeaders(),
                 body: JSON.stringify(profileData),
             });
 
