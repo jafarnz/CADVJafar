@@ -902,10 +902,24 @@ const Utils = {
             } else if (response && response.url) {
                 console.log("✅ Image uploaded successfully:", response.url);
                 return response.url;
-            } else {
-                console.error("❌ Unexpected upload response:", response);
-                throw new Error("Upload succeeded but no image URL returned");
+            } else if (response && response.message) {
+                // Handle wrapped response (Lambda returns stringified JSON in message field)
+                try {
+                    const parsedResponse = JSON.parse(response.message);
+                    if (parsedResponse.imageUrl) {
+                        console.log("✅ Image uploaded successfully (parsed):", parsedResponse.imageUrl);
+                        return parsedResponse.imageUrl;
+                    } else if (parsedResponse.url) {
+                        console.log("✅ Image uploaded successfully (parsed):", parsedResponse.url);
+                        return parsedResponse.url;
+                    }
+                } catch (parseError) {
+                    console.error("❌ Failed to parse upload response message:", parseError);
+                }
             }
+
+            console.error("❌ Unexpected upload response:", response);
+            throw new Error("Upload succeeded but no image URL returned");
         } catch (error) {
             console.error("Image upload failed:", error);
             throw error;
