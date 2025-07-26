@@ -1,36 +1,196 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Sign Up</h1>
-        <form id="signup-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sign Up - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <div class="auth-container">
+            <div class="auth-card">
+                <h1>Join Local Gigs</h1>
+                <p class="text-center mb-2">
+                    Create your account to discover amazing local music events
+                </p>
+
+                <div id="signupMessages"></div>
+
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="form-control"
+                            required
+                            autocomplete="username"
+                            placeholder="Choose a unique username"
+                            minlength="3"
+                            maxlength="20"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="form-control"
+                            required
+                            autocomplete="email"
+                            placeholder="Enter your email address"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="preferredUsername">Display Name</label>
+                        <input
+                            type="text"
+                            id="preferredUsername"
+                            name="preferredUsername"
+                            class="form-control"
+                            required
+                            placeholder="How should others see you?"
+                            maxlength="50"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control"
+                            required
+                            autocomplete="new-password"
+                            placeholder="Create a strong password"
+                            minlength="8"
+                        />
+                        <div class="password-requirements">
+                            <small>
+                                Password must be at least 8 characters and
+                                contain uppercase, lowercase, and numbers
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            class="form-control"
+                            required
+                            autocomplete="new-password"
+                            placeholder="Confirm your password"
+                            minlength="8"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                            "
+                        >
+                            <input
+                                type="checkbox"
+                                id="termsAccepted"
+                                name="termsAccepted"
+                                required
+                            />
+                            <label
+                                for="termsAccepted"
+                                style="margin: 0; font-weight: normal"
+                            >
+                                I agree to the
+                                <a href="#" target="_blank">Terms of Service</a>
+                                and
+                                <a href="#" target="_blank">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="auth-links">
+                    <p>
+                        Already have an account?
+                        <a href="login.html">Sign in here</a>
+                    </p>
+                    <p><a href="index.html">Back to Home</a></p>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label for="preferred_username">Preferred Username</label>
-                <input type="text" id="preferred_username" name="preferred_username" required>
-            </div>
-            <button type="submit" class="btn">Sign Up</button>
-        </form>
-        <div id="message"></div>
-        <p>Already have an account? <a href="login.html">Login</a></p>
-    </div>
-    <script src="js/auth.js"></script>
-</body>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+
+        <script>
+            // Real-time password validation
+            document
+                .getElementById("password")
+                .addEventListener("input", function () {
+                    const password = this.value;
+                    const validation = Utils.validatePassword(password);
+                    const requirements = document.querySelector(
+                        ".password-requirements small",
+                    );
+
+                    if (password.length > 0) {
+                        if (validation.isValid) {
+                            requirements.style.color = "#51cf66";
+                            requirements.textContent =
+                                "✓ Password meets all requirements";
+                        } else {
+                            requirements.style.color = "#ff6b6b";
+                            let missing = [];
+                            if (!validation.minLength)
+                                missing.push("8+ characters");
+                            if (!validation.hasUpperCase)
+                                missing.push("uppercase letter");
+                            if (!validation.hasLowerCase)
+                                missing.push("lowercase letter");
+                            if (!validation.hasNumbers) missing.push("number");
+                            requirements.textContent = `Missing: ${missing.join(", ")}`;
+                        }
+                    } else {
+                        requirements.style.color = "#666";
+                        requirements.textContent =
+                            "Password must be at least 8 characters and contain uppercase, lowercase, and numbers";
+                    }
+                });
+
+            // Confirm password validation
+            document
+                .getElementById("confirmPassword")
+                .addEventListener("input", function () {
+                    const password = document.getElementById("password").value;
+                    const confirmPassword = this.value;
+
+                    if (confirmPassword.length > 0) {
+                        if (password === confirmPassword) {
+                            this.style.borderColor = "#51cf66";
+                        } else {
+                            this.style.borderColor = "#ff6b6b";
+                        }
+                    } else {
+                        this.style.borderColor = "#e0e0e0";
+                    }
+                });
+        </script>
+    </body>
 </html>

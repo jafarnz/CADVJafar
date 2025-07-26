@@ -1,28 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Login</h1>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <div class="auth-container">
+            <div class="auth-card">
+                <h1>Welcome Back</h1>
+                <p class="text-center mb-2">
+                    Sign in to your Local Gigs account
+                </p>
+
+                <div id="loginMessages"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username or Email</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="form-control"
+                            required
+                            autocomplete="username"
+                            placeholder="Enter your username or email"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-control"
+                            required
+                            autocomplete="current-password"
+                            placeholder="Enter your password"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+
+                <div class="auth-links">
+                    <p>
+                        Don't have an account?
+                        <a href="signup.html">Sign up here</a>
+                    </p>
+                    <p>
+                        <a href="forgot-password.html">Forgot your password?</a>
+                    </p>
+                    <p><a href="index.html">Back to Home</a></p>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn">Login</button>
-        </form>
-        <div id="message"></div>
-        <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
-    </div>
-    <script src="js/auth.js"></script>
-</body>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+    </body>
 </html>

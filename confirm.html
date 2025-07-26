@@ -1,28 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Sign Up</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Check your email</h1>
-        <p>We've sent a confirmation code to your email address.</p>
-        <form id="confirm-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required readonly>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Email Confirmation - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <div class="auth-container">
+            <div class="auth-card">
+                <h1></h1>Confirm Your Email</h1>
+                <p class="text-center mb-2">
+                    We've sent a verification code to your email address. Please enter it below to activate your account.
+                </p>
+
+                <div id="confirmMessages"></div>
+
+                <form id="confirmForm">
+                    <div class="form-group">
+                        <label for="confirmationCode">Verification Code *</label>
+                        <input
+                            type="text"
+                            id="confirmationCode"
+                            name="confirmationCode"
+                            class="form-control"
+                            required
+                            placeholder="Enter 6-digit verification code"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            autocomplete="one-time-code"
+                            style="text-align: center; font-size: 1.2rem; letter-spacing: 0.2rem;"
+                        />
+                        <small style="color: #666; display: block; margin-top: 0.5rem;">
+                            Check your email inbox and spam folder for the verification code
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">
+                            Confirm Email
+                        </button>
+                    </div>
+                </form>
+
+                <div class="auth-links">
+                    <p>
+                        Didn't receive the code?
+                        <a href="#" id="resendConfirmation">Resend verification code</a>
+                    </p>
+                    <p>
+                        <a href="login.html">Back to Login</a>
+                    </p>
+                    <p>
+                        <a href="index.html">Back to Home</a>
+                    </p>
+                </div>
+
+                <div class="help-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+                    <h4 style="color: #667eea; margin-bottom: 1rem;">Having trouble?</h4>
+                    <ul style="color: #666; font-size: 0.9rem; line-height: 1.6;">
+                        <li>Check your spam/junk folder</li>
+                        <li>Make sure you entered the correct email address</li>
+                        <li>The code expires after 24 hours</li>
+                        <li>Contact support if you continue having issues</li>
+                    </ul>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="code">Confirmation Code</label>
-                <input type="text" id="code" name="code" required>
-            </div>
-            <button type="submit" class="btn">Confirm</button>
-        </form>
-        <div id="message"></div>
-    </div>
-    <script src="js/confirm.js"></script>
-</body>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if we have a username stored from signup
+                const username = localStorage.getItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
+                if (!username) {
+                    Utils.showError('Session expired. Please sign up again.');
+                    setTimeout(() => {
+                        window.location.href = 'signup.html';
+                    }, 2000);
+                    return;
+                }
+
+                // Auto-format the confirmation code input
+                const confirmationCodeInput = document.getElementById('confirmationCode');
+                confirmationCodeInput.addEventListener('input', function(e) {
+                    // Remove any non-numeric characters
+                    this.value = this.value.replace(/[^0-9]/g, '');
+
+                    // Limit to 6 digits
+                    if (this.value.length > 6) {
+                        this.value = this.value.slice(0, 6);
+                    }
+                });
+
+                // Auto-submit when 6 digits are entered
+                confirmationCodeInput.addEventListener('input', function(e) {
+                    if (this.value.length === 6) {
+                        // Small delay to let user see the complete code
+                        setTimeout(() => {
+                            document.getElementById('confirmForm').dispatchEvent(new Event('submit'));
+                        }, 500);
+                    }
+                });
+
+                // Focus the input field on page load
+                confirmationCodeInput.focus();
+            });
+        </script>
+    </body>
 </html>
