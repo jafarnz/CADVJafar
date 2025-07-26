@@ -391,6 +391,7 @@
         <!-- Scripts -->
         <script src="js/config.js"></script>
         <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
         <script>
             // Form elements
             const loginForm = document.getElementById("loginForm");
@@ -442,94 +443,8 @@
             // Initial validation
             validateForm();
 
-            // Form submission
-            loginForm.addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                if (!validateForm()) {
-                    messagesDiv.innerHTML =
-                        '<div class="message error">Please fill in all fields.</div>';
-                    return;
-                }
-
-                const formData = new FormData(loginForm);
-                const username = formData.get("username").trim();
-                const password = formData.get("password");
-
-                // Show loading state
-                submitBtn.classList.add("loading");
-                submitBtn.disabled = true;
-                messagesDiv.innerHTML = "";
-
-                try {
-                    const loginData = {
-                        username: username,
-                        password: password,
-                    };
-
-                    const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOGIN);
-                    const response = await Utils.apiCall(url, {
-                        method: "POST",
-                        headers: CONFIG.getBasicHeaders(),
-                        body: JSON.stringify(loginData),
-                    });
-
-                    // Store tokens
-                    if (response.AccessToken) {
-                        localStorage.setItem(
-                            CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
-                            response.AccessToken,
-                        );
-                    }
-                    if (response.IdToken) {
-                        localStorage.setItem(
-                            CONFIG.STORAGE_KEYS.ID_TOKEN,
-                            response.IdToken,
-                        );
-                    }
-
-                    // Store user data
-                    if (response.user) {
-                        localStorage.setItem(
-                            CONFIG.STORAGE_KEYS.USER_DATA,
-                            JSON.stringify(response.user),
-                        );
-                    }
-
-                    // Success message
-                    messagesDiv.innerHTML =
-                        '<div class="message success">Login successful! Redirecting to dashboard...</div>';
-
-                    // Redirect to dashboard
-                    setTimeout(() => {
-                        window.location.href = "dashboard.html";
-                    }, 1500);
-                } catch (error) {
-                    console.error("Login failed:", error);
-                    let errorMessage =
-                        "Login failed. Please check your credentials and try again.";
-
-                    if (error.message.includes("UserNotConfirmedException")) {
-                        errorMessage =
-                            "Please check your email and confirm your account first.";
-                    } else if (
-                        error.message.includes("NotAuthorizedException")
-                    ) {
-                        errorMessage =
-                            "Invalid username or password. Please try again.";
-                    } else if (
-                        error.message.includes("UserNotFoundException")
-                    ) {
-                        errorMessage =
-                            "Account not found. Please check your username or create a new account.";
-                    }
-
-                    messagesDiv.innerHTML = `<div class="message error">${errorMessage}</div>`;
-                } finally {
-                    submitBtn.classList.remove("loading");
-                    validateForm(); // Re-enable button if form is valid
-                }
-            });
+            // Form submission is now handled by Auth module
+            // The Auth.init() call will set up the event listener
 
             // Handle Enter key in form
             loginForm.addEventListener("keypress", function (e) {

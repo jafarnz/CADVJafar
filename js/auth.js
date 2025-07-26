@@ -171,16 +171,35 @@ const Auth = {
         throw new Error(data.error || "Login failed");
       }
 
-      console.log("🔑 Login successful! Response data:", {
+      console.log("🔑 Login successful! Full API response:", data);
+      console.log("🔑 Response data structure:", {
         hasAccessToken: !!data.accessToken,
         hasIdToken: !!data.idToken,
+        hasAccessTokenCaps: !!data.AccessToken,
+        hasIdTokenCaps: !!data.IdToken,
+        hasAuthResult: !!data.AuthenticationResult,
+        allKeys: Object.keys(data),
         accessTokenLength: data.accessToken ? data.accessToken.length : 0,
         idTokenLength: data.idToken ? data.idToken.length : 0,
       });
 
-      // Store tokens
-      localStorage.setItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
-      localStorage.setItem(CONFIG.STORAGE_KEYS.ID_TOKEN, data.idToken);
+      // Store tokens - handle multiple possible response formats
+      const accessToken =
+        data.accessToken ||
+        data.AccessToken ||
+        (data.AuthenticationResult && data.AuthenticationResult.AccessToken);
+      const idToken =
+        data.idToken ||
+        data.IdToken ||
+        (data.AuthenticationResult && data.AuthenticationResult.IdToken);
+
+      if (!accessToken || !idToken) {
+        console.error("❌ Missing tokens in response:", data);
+        throw new Error("Login response missing required tokens");
+      }
+
+      localStorage.setItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      localStorage.setItem(CONFIG.STORAGE_KEYS.ID_TOKEN, idToken);
 
       console.log("💾 Tokens stored in localStorage:", {
         accessTokenStored: !!localStorage.getItem(
