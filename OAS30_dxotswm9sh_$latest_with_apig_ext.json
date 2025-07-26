@@ -1,0 +1,397 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "localgigsapi",
+    "version" : "2025-07-26 11:48:12UTC"
+  },
+  "servers" : [ {
+    "url" : "https://dxotswm9sh.execute-api.us-east-1.amazonaws.com/{basePath}",
+    "variables" : {
+      "basePath" : {
+        "default" : ""
+      }
+    }
+  } ],
+  "paths" : {
+    "/events/{eventID}" : {
+      "get" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for GET /events/{eventID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "put" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for PUT /events/{eventID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "delete" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for DELETE /events/{eventID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "parameters" : [ {
+        "name" : "eventID",
+        "in" : "path",
+        "description" : "Generated path parameter for eventID",
+        "required" : true,
+        "schema" : {
+          "type" : "string"
+        }
+      } ]
+    },
+    "/users/{userID}" : {
+      "get" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for GET /users/{userID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUserService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "put" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for PUT /users/{userID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUserService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /users/{userID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUserService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "delete" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for DELETE /users/{userID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUserService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "parameters" : [ {
+        "name" : "userID",
+        "in" : "path",
+        "description" : "Generated path parameter for userID",
+        "required" : true,
+        "schema" : {
+          "type" : "string"
+        }
+      } ]
+    },
+    "/venues/{venueID}" : {
+      "get" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for GET /venues/{venueID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsVenueService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "put" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for PUT /venues/{venueID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsVenueService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "delete" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for DELETE /venues/{venueID}"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsVenueService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "parameters" : [ {
+        "name" : "venueID",
+        "in" : "path",
+        "description" : "Generated path parameter for venueID",
+        "required" : true,
+        "schema" : {
+          "type" : "string"
+        }
+      } ]
+    },
+    "/events" : {
+      "get" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for GET /events"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /events"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/venues" : {
+      "get" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for GET /venues"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsVenueService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      },
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /venues"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsVenueService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/auth/confirm" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /auth/confirm"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:AuthFunctionsLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/auth/login" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /auth/login"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:AuthFunctionsLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/auth/resend-confirmation" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /auth/resend-confirmation"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:AuthFunctionsLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/auth/signup" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /auth/signup"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:AuthFunctionsLocalGigs/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/geocode" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /geocode"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsGeocodingService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/reverse-geocode" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /reverse-geocode"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsGeocodingService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/upload" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /upload"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUploadService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    },
+    "/users" : {
+      "post" : {
+        "responses" : {
+          "default" : {
+            "description" : "Default response for POST /users"
+          }
+        },
+        "x-amazon-apigateway-integration" : {
+          "payloadFormatVersion" : "2.0",
+          "type" : "aws_proxy",
+          "httpMethod" : "POST",
+          "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:LocalGigsUserService/invocations",
+          "connectionType" : "INTERNET"
+        }
+      }
+    }
+  },
+  "components" : {
+    "x-amazon-apigateway-integrations" : {
+      "unusedIntegration_4638num" : {
+        "payloadFormatVersion" : "2.0",
+        "type" : "aws_proxy",
+        "httpMethod" : "POST",
+        "uri" : "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:127669644914:function:EventsServiceLocalGigs/invocations",
+        "connectionType" : "INTERNET"
+      }
+    }
+  },
+  "x-amazon-apigateway-cors" : {
+    "allowMethods" : [ "*" ],
+    "allowHeaders" : [ "accept", "authorization", "content-type", "content-type,accept,authorization" ],
+    "maxAge" : 0,
+    "allowCredentials" : false,
+    "allowOrigins" : [ "http://*", "https://*" ]
+  },
+  "x-amazon-apigateway-importexport-version" : "1.0"
+}

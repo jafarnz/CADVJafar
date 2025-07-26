@@ -1,103 +1,94 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Dashboard - Local Gigs</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <header class="header">
-            <div class="header-content">
-                <a href="dashboard.html" class="logo">Local Gigs</a>
-                <nav>
-                    <ul class="nav-menu">
-                        <li><a href="dashboard.html">Dashboard</a></li>
-                        <li><a href="events.html">Events</a></li>
-                        <li><a href="venues.html">Venues</a></li>
-                        <li><a href="profile.html">Profile</a></li>
-                        <li>
-                            <button class="btn logout-btn" id="logout-button">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Local Gigs</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">Local Gigs</a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="events.html">Events</a></li>
+                    <li><a href="venues.html">Venues</a></li>
+                    <li><a href="profile.html">Profile</a></li>
+                    <li>
+                        <button class="btn logout-btn" id="logout-button">
                                 Logout
                             </button>
-                        </li>
-                    </ul>
-                </nav>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>
+                    Welcome back,
+                    <span id="user-display-name">Music Lover</span>!
+                </h1>
+                <p>
+                    Discover amazing local music events with our refreshed modern interface
+                </p>
             </div>
-        </header>
 
-        <main class="dashboard">
-            <div class="container">
-                <div class="dashboard-header">
-                    <h1>
-                        Welcome back,
-                        <span id="user-display-name">Music Lover</span>!
-                    </h1>
-                    <p>
-                        Discover amazing local music events with our refreshed
-                        modern interface
-                    </p>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="card">
-                    <h2>Quick Actions</h2>
-                    <div
-                        style="
+            <!-- Quick Actions -->
+            <div class="card">
+                <h2>Quick Actions</h2>
+                <div style="
                             display: flex;
                             gap: 1rem;
                             justify-content: center;
                             flex-wrap: wrap;
-                        "
-                    >
-                        <button id="new-event-button" class="btn">
+                        ">
+                    <button id="new-event-button" class="btn">
                             Create Event
                         </button>
-                        <button id="new-venue-button" class="btn btn-secondary">
+                    <button id="new-venue-button" class="btn btn-secondary">
                             Add Venue
                         </button>
-                        <button id="findEventsBtn" class="btn btn-secondary">
+                    <button id="findEventsBtn" class="btn btn-secondary">
                             Find Events Near Me
                         </button>
-                        <button id="testAWSBtn" class="btn btn-outline">
+                    <button id="testAWSBtn" class="btn btn-outline">
                             🔧 Test AWS Services
                         </button>
-                    </div>
                 </div>
+            </div>
 
-                <!-- AWS Test Results -->
-                <div class="card" id="aws-test-results" style="display: none">
-                    <h2>AWS Services Status</h2>
-                    <div
-                        id="aws-test-content"
-                        style="
+            <!-- AWS Test Results -->
+            <div class="card" id="aws-test-results" style="display: none">
+                <h2>AWS Services Status</h2>
+                <div id="aws-test-content" style="
                             font-family: monospace;
                             background: var(--bg-secondary);
                             padding: 1rem;
                             border-radius: var(--radius-md);
                             margin-top: 1rem;
-                        "
-                    >
-                        <div id="test-output">Ready to test...</div>
-                    </div>
-                    <div style="margin-top: 1rem">
-                        <button
-                            id="hide-test-results"
-                            class="btn btn-secondary btn-sm"
-                        >
+                        ">
+                    <div id="test-output">Ready to test...</div>
+                </div>
+                <div style="margin-top: 1rem">
+                    <button id="hide-test-results" class="btn btn-secondary btn-sm">
                             Hide Results
                         </button>
-                    </div>
                 </div>
+            </div>
 
-                <!-- Map Container -->
-                <div class="card">
-                    <h2>Events Map</h2>
-                    <div class="map-container">
-                        <div id="map-container">
-                            <div
-                                id="map-status"
-                                style="
+            <!-- Map Container -->
+            <div class="card">
+                <h2>Events Map</h2>
+                <div class="map-container">
+                    <div id="map-container">
+                        <div id="map-status" style="
                                     display: flex;
                                     align-items: center;
                                     justify-content: center;
@@ -105,36 +96,29 @@
                                     color: var(--text-muted);
                                     flex-direction: column;
                                     gap: 1rem;
-                                "
-                            >
-                                <p>Loading interactive map...</p>
-                                <div
-                                    id="map-credentials-status"
-                                    style="
+                                ">
+                            <p>Loading interactive map...</p>
+                            <div id="map-credentials-status" style="
                                         font-size: 0.875rem;
                                         color: var(--text-muted);
-                                    "
-                                ></div>
-                            </div>
+                                    "></div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Events Grid -->
-                <div class="dashboard-grid">
-                    <!-- Upcoming Events -->
-                    <div class="card">
-                        <div
-                            style="
+            <!-- Events Grid -->
+            <div class="dashboard-grid">
+                <!-- Upcoming Events -->
+                <div class="card">
+                    <div style="
                                 display: flex;
                                 justify-content: space-between;
                                 align-items: center;
                                 margin-bottom: 1rem;
-                            "
-                        >
-                            <h2>Upcoming Events</h2>
-                            <a href="events.html" class="btn btn-secondary"
-                                >View All</a
+                            ">
+                        <h2>Upcoming Events</h2>
+                        <a href="events.html" class="btn btn-secondary">View All</a
                             >
                         </div>
                         <div id="event-list-container">
@@ -500,6 +484,7 @@
         </div>
 
         <script src="js/config.js"></script>
+        <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
         <script src="js/utils.js"></script>
         <script src="js/router.js"></script>
         <script src="js/auth.js"></script>

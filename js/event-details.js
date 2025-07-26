@@ -1,234 +1,260 @@
 // Event Details page functionality for Local Gigs App
 const EventDetailsPage = {
-  eventId: null,
-  event: null,
-  venue: null,
-  mapInitialized: false,
-  similarEvents: [],
+        eventId: null,
+        event: null,
+        venue: null,
+        mapInitialized: false,
+        similarEvents: [],
 
-  // Initialize the event details page
-  init: async function () {
-    console.log("Initializing event details page...");
+        // Initialize the event details page
+        init: async function() {
+            console.log("Initializing event details page...");
 
-    // Check authentication
-    if (!Utils.requireAuth()) {
-      return;
-    }
+            // Check authentication
+            if (!Utils.requireAuth()) {
+                return;
+            }
 
-    // Get event ID from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    this.eventId = urlParams.get('id');
+            // Get event ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            this.eventId = urlParams.get('id');
 
-    if (!this.eventId) {
-      this.showError();
-      return;
-    }
+            if (!this.eventId) {
+                this.showError();
+                return;
+            }
 
-    // Set up event listeners
-    this.setupEventListeners();
+            // Set up event listeners
+            this.setupEventListeners();
 
-    // Load event data
-    await this.loadEventData();
+            // Load event data
+            await this.loadEventData();
 
-    console.log("Event details page initialized successfully");
-  },
+            console.log("Event details page initialized successfully");
+        },
 
-  // Set up all event listeners
-  setupEventListeners: function () {
-    // Logout button
-    const logoutBtn = document.getElementById("logout-button");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        Utils.logout();
-      });
-    }
+        // Set up all event listeners
+        setupEventListeners: function() {
+            // Logout button
+            const logoutBtn = document.getElementById("logout-button");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    Utils.logout();
+                });
+            }
 
-    // Join Event Modal
-    const joinEventModal = document.getElementById("join-event-modal");
-    const closeJoinModal = document.getElementById("close-join-modal");
+            // Join Event Modal
+            const joinEventModal = document.getElementById("join-event-modal");
+            const closeJoinModal = document.getElementById("close-join-modal");
 
-    if (closeJoinModal && joinEventModal) {
-      closeJoinModal.addEventListener("click", () => {
-        joinEventModal.style.display = "none";
-      });
-    }
+            if (closeJoinModal && joinEventModal) {
+                closeJoinModal.addEventListener("click", () => {
+                    joinEventModal.style.display = "none";
+                });
+            }
 
-    // Share Event Modal
-    const shareEventModal = document.getElementById("share-event-modal");
-    const closeShareModal = document.getElementById("close-share-modal");
-    const copyLinkBtn = document.getElementById("copy-link-btn");
+            // Share Event Modal
+            const shareEventModal = document.getElementById("share-event-modal");
+            const closeShareModal = document.getElementById("close-share-modal");
+            const copyLinkBtn = document.getElementById("copy-link-btn");
 
-    if (closeShareModal && shareEventModal) {
-      closeShareModal.addEventListener("click", () => {
-        shareEventModal.style.display = "none";
-      });
-    }
+            if (closeShareModal && shareEventModal) {
+                closeShareModal.addEventListener("click", () => {
+                    shareEventModal.style.display = "none";
+                });
+            }
 
-    if (copyLinkBtn) {
-      copyLinkBtn.addEventListener("click", () => {
-        this.copyEventLink();
-      });
-    }
+            if (copyLinkBtn) {
+                copyLinkBtn.addEventListener("click", () => {
+                    this.copyEventLink();
+                });
+            }
 
-    // Social sharing buttons
-    const shareFacebookBtn = document.getElementById("share-facebook-btn");
-    const shareTwitterBtn = document.getElementById("share-twitter-btn");
-    const shareWhatsappBtn = document.getElementById("share-whatsapp-btn");
-    const shareEmailBtn = document.getElementById("share-email-btn");
+            // Social sharing buttons
+            const shareFacebookBtn = document.getElementById("share-facebook-btn");
+            const shareTwitterBtn = document.getElementById("share-twitter-btn");
+            const shareWhatsappBtn = document.getElementById("share-whatsapp-btn");
+            const shareEmailBtn = document.getElementById("share-email-btn");
 
-    if (shareFacebookBtn) {
-      shareFacebookBtn.addEventListener("click", () => {
-        this.shareOnFacebook();
-      });
-    }
+            if (shareFacebookBtn) {
+                shareFacebookBtn.addEventListener("click", () => {
+                    this.shareOnFacebook();
+                });
+            }
 
-    if (shareTwitterBtn) {
-      shareTwitterBtn.addEventListener("click", () => {
-        this.shareOnTwitter();
-      });
-    }
+            if (shareTwitterBtn) {
+                shareTwitterBtn.addEventListener("click", () => {
+                    this.shareOnTwitter();
+                });
+            }
 
-    if (shareWhatsappBtn) {
-      shareWhatsappBtn.addEventListener("click", () => {
-        this.shareOnWhatsApp();
-      });
-    }
+            if (shareWhatsappBtn) {
+                shareWhatsappBtn.addEventListener("click", () => {
+                    this.shareOnWhatsApp();
+                });
+            }
 
-    if (shareEmailBtn) {
-      shareEmailBtn.addEventListener("click", () => {
-        this.shareViaEmail();
-      });
-    }
+            if (shareEmailBtn) {
+                shareEmailBtn.addEventListener("click", () => {
+                    this.shareViaEmail();
+                });
+            }
 
-    // Close modals when clicking outside
-    window.addEventListener("click", (e) => {
-      if (e.target === joinEventModal) {
-        joinEventModal.style.display = "none";
-      }
-      if (e.target === shareEventModal) {
-        shareEventModal.style.display = "none";
-      }
-    });
-  },
+            // Close modals when clicking outside
+            window.addEventListener("click", (e) => {
+                if (e.target === joinEventModal) {
+                    joinEventModal.style.display = "none";
+                }
+                if (e.target === shareEventModal) {
+                    shareEventModal.style.display = "none";
+                }
+            });
+        },
 
-  // Load event data and related information
-  loadEventData: async function () {
-    try {
-      // Load event details
-      const eventUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS, this.eventId);
-      this.event = await Utils.apiCall(eventUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
+        // Load event data and related information
+        loadEventData: async function() {
+            try {
+                // Load event details
+                const eventUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS, this.eventId);
+                this.event = await Utils.apiCall(eventUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
 
-      // Load venue details if event has a venue
-      if (this.event.venueID) {
-        await this.loadVenueData();
-      }
+                // Load venue details if event has a venue
+                if (this.event.venueID) {
+                    await this.loadVenueData();
+                }
 
-      // Load similar events
-      await this.loadSimilarEvents();
+                // Load similar events
+                await this.loadSimilarEvents();
 
-      // Render the event details
-      this.renderEventDetails();
+                // Render the event details
+                this.renderEventDetails();
 
-      // Initialize map if venue has coordinates
-      if (this.venue && this.venue.latitude && this.venue.longitude) {
-        await this.initializeMap();
-      }
+                // Initialize map if venue has coordinates
+                if (this.venue && this.venue.latitude && this.venue.longitude) {
+                    await this.initializeMap();
+                }
 
-    } catch (error) {
-      console.error("Failed to load event data:", error);
-      this.showError();
-    }
-  },
+            } catch (error) {
+                console.error("Failed to load event data:", error);
+                this.showError();
+            }
+        },
 
-  // Load venue data for the event
-  loadVenueData: async function () {
-    try {
-      const venueUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES, this.event.venueID);
-      this.venue = await Utils.apiCall(venueUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
-    } catch (error) {
-      console.error("Failed to load venue data:", error);
-      this.venue = null;
-    }
-  },
+        // Load venue data for the event
+        loadVenueData: async function() {
+            try {
+                const venueUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES, this.event.venueID);
+                this.venue = await Utils.apiCall(venueUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+            } catch (error) {
+                console.error("Failed to load venue data:", error);
+                this.venue = null;
+            }
+        },
 
-  // Load similar events (same genre or nearby)
-  loadSimilarEvents: async function () {
-    try {
-      const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
-      const allEvents = await Utils.apiCall(eventsUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
+        // Load similar events (same genre or nearby)
+        loadSimilarEvents: async function() {
+            try {
+                const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+                const eventsResponse = await Utils.apiCall(eventsUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
 
-      // Filter out current event and find similar ones
-      this.similarEvents = allEvents
-        .filter(event =>
-          event.eventID !== this.event.eventID &&
-          (event.genre === this.event.genre || event.venueID === this.event.venueID)
-        )
-        .slice(0, 3); // Show up to 3 similar events
+                let allEvents = [];
 
-    } catch (error) {
-      console.error("Failed to load similar events:", error);
-      this.similarEvents = [];
-    }
-  },
+                // Handle different response formats
+                if (Array.isArray(eventsResponse)) {
+                    allEvents = eventsResponse;
+                } else if (eventsResponse && eventsResponse.events && Array.isArray(eventsResponse.events)) {
+                    allEvents = eventsResponse.events;
+                } else if (eventsResponse && eventsResponse.Items && Array.isArray(eventsResponse.Items)) {
+                    allEvents = eventsResponse.Items;
+                } else if (eventsResponse && eventsResponse.message) {
+                    try {
+                        const parsedEvents = JSON.parse(eventsResponse.message);
+                        if (Array.isArray(parsedEvents)) {
+                            allEvents = parsedEvents;
+                        }
+                    } catch (parseError) {
+                        console.error("Failed to parse events from message:", parseError);
+                    }
+                }
 
-  // Render event details
-  renderEventDetails: function () {
-    this.hideLoading();
-    this.showContent();
+                // Ensure allEvents is an array before filtering
+                if (!Array.isArray(allEvents)) {
+                    console.warn("Events data is not an array:", allEvents);
+                    allEvents = [];
+                }
 
-    // Render event header
-    this.renderEventHeader();
+                // Filter out current event and find similar ones
+                this.similarEvents = allEvents
+                    .filter(event =>
+                        event.eventID !== this.event.eventID &&
+                        (event.genre === this.event.genre || event.venueID === this.event.venueID)
+                    )
+                    .slice(0, 3); // Show up to 3 similar events
 
-    // Render event details section
-    this.renderEventDetailsSection();
+            } catch (error) {
+                console.error("Failed to load similar events:", error);
+                this.similarEvents = [];
+            }
+        },
 
-    // Render venue section
-    this.renderVenueSection();
+        // Render event details
+        renderEventDetails: function() {
+            this.hideLoading();
+            this.showContent();
 
-    // Render actions section
-    this.renderActionsSection();
+            // Render event header
+            this.renderEventHeader();
 
-    // Render similar events
-    this.renderSimilarEvents();
+            // Render event details section
+            this.renderEventDetailsSection();
 
-    // Set up share URL
-    this.setupShareUrl();
-  },
+            // Render venue section
+            this.renderVenueSection();
 
-  // Render event header
-  renderEventHeader: function () {
-    const eventHeader = document.getElementById("event-header");
-    if (!eventHeader) return;
+            // Render actions section
+            this.renderActionsSection();
 
-    const eventDate = new Date(this.event.eventDate);
-    const today = new Date();
-    const isToday = eventDate.toDateString() === today.toDateString();
-    const isPassed = eventDate < today;
+            // Render similar events
+            this.renderSimilarEvents();
 
-    let statusClass = "upcoming";
-    let statusText = "Upcoming Event";
+            // Set up share URL
+            this.setupShareUrl();
+        },
 
-    if (isToday) {
-      statusClass = "today";
-      statusText = "Today";
-    } else if (isPassed) {
-      statusClass = "passed";
-      statusText = "Event Passed";
-    }
+        // Render event header
+        renderEventHeader: function() {
+                const eventHeader = document.getElementById("event-header");
+                if (!eventHeader) return;
 
-    const imageUrl = this.event.imageUrl || "/api/placeholder/800/300";
+                const eventDate = new Date(this.event.eventDate);
+                const today = new Date();
+                const isToday = eventDate.toDateString() === today.toDateString();
+                const isPassed = eventDate < today;
 
-    eventHeader.innerHTML = `
+                let statusClass = "upcoming";
+                let statusText = "Upcoming Event";
+
+                if (isToday) {
+                    statusClass = "today";
+                    statusText = "Today";
+                } else if (isPassed) {
+                    statusClass = "passed";
+                    statusText = "Event Passed";
+                }
+
+                const imageUrl = this.event.imageUrl || "/api/placeholder/800/300";
+
+                eventHeader.innerHTML = `
       ${this.event.imageUrl ? `
         <img src="${imageUrl}" alt="${Utils.sanitizeInput(this.event.name)}"
              class="event-header-image" onerror="this.style.display='none'">

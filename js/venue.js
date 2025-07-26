@@ -1,301 +1,327 @@
 // Venues page functionality for Local Gigs App
 const VenuesPage = {
-  venues: [],
-  filteredVenues: [],
-  currentPage: 1,
-  itemsPerPage: 12,
-  isMapView: false,
-  mapInitialized: false,
-  editingVenue: null,
+        venues: [],
+        filteredVenues: [],
+        currentPage: 1,
+        itemsPerPage: 12,
+        isMapView: false,
+        mapInitialized: false,
+        editingVenue: null,
 
-  // Initialize the venues page
-  init: async function () {
-    console.log("Initializing venues page...");
+        // Initialize the venues page
+        init: async function() {
+            console.log("Initializing venues page...");
 
-    // Check authentication
-    if (!Utils.requireAuth()) {
-      return;
-    }
+            // Check authentication
+            if (!Utils.requireAuth()) {
+                return;
+            }
 
-    // Check if we should open create modal (from URL parameter)
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = urlParams.get('action');
+            // Check if we should open create modal (from URL parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
 
-    // Set up event listeners
-    this.setupEventListeners();
+            // Set up event listeners
+            this.setupEventListeners();
 
-    // Load venues data
-    await this.loadAllData();
+            // Load venues data
+            await this.loadAllData();
 
-    // Apply filters and render
-    this.applyFilters();
-    this.render();
+            // Apply filters and render
+            this.applyFilters();
+            this.render();
 
-    // Open create modal if requested
-    if (action === 'create') {
-      this.openCreateModal();
-    }
+            // Open create modal if requested
+            if (action === 'create') {
+                this.openCreateModal();
+            }
 
-    console.log("Venues page initialized successfully");
-  },
+            console.log("Venues page initialized successfully");
+        },
 
-  // Set up all event listeners
-  setupEventListeners: function () {
-    // Logout button
-    const logoutBtn = document.getElementById("logout-button");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        Utils.logout();
-      });
-    }
+        // Set up all event listeners
+        setupEventListeners: function() {
+            // Logout button
+            const logoutBtn = document.getElementById("logout-button");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    Utils.logout();
+                });
+            }
 
-    // Search input
-    const searchInput = document.getElementById("search-input");
-    if (searchInput) {
-      searchInput.addEventListener(
-        "input",
-        Utils.debounce(() => {
-          this.currentPage = 1;
-          this.applyFilters();
-          this.render();
-        }, 300)
-      );
-    }
+            // Search input
+            const searchInput = document.getElementById("search-input");
+            if (searchInput) {
+                searchInput.addEventListener(
+                    "input",
+                    Utils.debounce(() => {
+                        this.currentPage = 1;
+                        this.applyFilters();
+                        this.render();
+                    }, 300)
+                );
+            }
 
-    // Capacity filter
-    const capacityFilter = document.getElementById("capacity-filter");
-    if (capacityFilter) {
-      capacityFilter.addEventListener("change", () => {
-        this.currentPage = 1;
-        this.applyFilters();
-        this.render();
-      });
-    }
+            // Capacity filter
+            const capacityFilter = document.getElementById("capacity-filter");
+            if (capacityFilter) {
+                capacityFilter.addEventListener("change", () => {
+                    this.currentPage = 1;
+                    this.applyFilters();
+                    this.render();
+                });
+            }
 
-    // Location filter
-    const locationFilter = document.getElementById("location-filter");
-    if (locationFilter) {
-      locationFilter.addEventListener(
-        "input",
-        Utils.debounce(() => {
-          this.currentPage = 1;
-          this.applyFilters();
-          this.render();
-        }, 300)
-      );
-    }
+            // Location filter
+            const locationFilter = document.getElementById("location-filter");
+            if (locationFilter) {
+                locationFilter.addEventListener(
+                    "input",
+                    Utils.debounce(() => {
+                        this.currentPage = 1;
+                        this.applyFilters();
+                        this.render();
+                    }, 300)
+                );
+            }
 
-    // Sort select
-    const sortSelect = document.getElementById("sort-select");
-    if (sortSelect) {
-      sortSelect.addEventListener("change", () => {
-        this.applyFilters();
-        this.render();
-      });
-    }
+            // Sort select
+            const sortSelect = document.getElementById("sort-select");
+            if (sortSelect) {
+                sortSelect.addEventListener("change", () => {
+                    this.applyFilters();
+                    this.render();
+                });
+            }
 
-    // View toggle buttons
-    const toggleViewBtn = document.getElementById("toggle-view-btn");
-    const listViewBtn = document.getElementById("list-view-btn");
+            // View toggle buttons
+            const toggleViewBtn = document.getElementById("toggle-view-btn");
+            const listViewBtn = document.getElementById("list-view-btn");
 
-    if (toggleViewBtn) {
-      toggleViewBtn.addEventListener("click", () => {
-        this.toggleMapView();
-      });
-    }
+            if (toggleViewBtn) {
+                toggleViewBtn.addEventListener("click", () => {
+                    this.toggleMapView();
+                });
+            }
 
-    if (listViewBtn) {
-      listViewBtn.addEventListener("click", () => {
-        this.toggleListView();
-      });
-    }
+            if (listViewBtn) {
+                listViewBtn.addEventListener("click", () => {
+                    this.toggleListView();
+                });
+            }
 
-    // Create venue button and modal
-    const createVenueBtn = document.getElementById("create-venue-btn");
-    const venueModal = document.getElementById("venue-modal");
-    const closeVenueModal = document.getElementById("close-venue-modal");
-    const venueForm = document.getElementById("venue-form");
+            // Create venue button and modal
+            const createVenueBtn = document.getElementById("create-venue-btn");
+            const venueModal = document.getElementById("venue-modal");
+            const closeVenueModal = document.getElementById("close-venue-modal");
+            const venueForm = document.getElementById("venue-form");
 
-    if (createVenueBtn && venueModal) {
-      createVenueBtn.addEventListener("click", () => {
-        this.openCreateModal();
-      });
-    }
+            if (createVenueBtn && venueModal) {
+                createVenueBtn.addEventListener("click", () => {
+                    this.openCreateModal();
+                });
+            }
 
-    if (closeVenueModal && venueModal) {
-      closeVenueModal.addEventListener("click", () => {
-        this.closeModal();
-      });
-    }
+            if (closeVenueModal && venueModal) {
+                closeVenueModal.addEventListener("click", () => {
+                    this.closeModal();
+                });
+            }
 
-    if (venueForm) {
-      venueForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.handleVenueSubmit(e);
-      });
-    }
+            if (venueForm) {
+                venueForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    this.handleVenueSubmit(e);
+                });
+            }
 
-    // Venue details modal
-    const venueDetailsModal = document.getElementById("venue-details-modal");
-    const closeDetailsModal = document.getElementById("close-details-modal");
+            // Venue details modal
+            const venueDetailsModal = document.getElementById("venue-details-modal");
+            const closeDetailsModal = document.getElementById("close-details-modal");
 
-    if (closeDetailsModal && venueDetailsModal) {
-      closeDetailsModal.addEventListener("click", () => {
-        venueDetailsModal.style.display = "none";
-      });
-    }
+            if (closeDetailsModal && venueDetailsModal) {
+                closeDetailsModal.addEventListener("click", () => {
+                    venueDetailsModal.style.display = "none";
+                });
+            }
 
-    // Location and geocoding buttons
-    const getLocationBtn = document.getElementById("get-location-btn");
-    const geocodeBtn = document.getElementById("geocode-btn");
+            // Location and geocoding buttons
+            const getLocationBtn = document.getElementById("get-location-btn");
+            const geocodeBtn = document.getElementById("geocode-btn");
 
-    if (getLocationBtn) {
-      getLocationBtn.addEventListener("click", () => {
-        this.getCurrentLocationForVenue();
-      });
-    }
+            if (getLocationBtn) {
+                getLocationBtn.addEventListener("click", () => {
+                    this.getCurrentLocationForVenue();
+                });
+            }
 
-    if (geocodeBtn) {
-      geocodeBtn.addEventListener("click", () => {
-        this.geocodeVenueAddress();
-      });
-    }
+            if (geocodeBtn) {
+                geocodeBtn.addEventListener("click", () => {
+                    this.geocodeVenueAddress();
+                });
+            }
 
-    // Pagination
-    const prevPageBtn = document.getElementById("prev-page");
-    const nextPageBtn = document.getElementById("next-page");
+            // Pagination
+            const prevPageBtn = document.getElementById("prev-page");
+            const nextPageBtn = document.getElementById("next-page");
 
-    if (prevPageBtn) {
-      prevPageBtn.addEventListener("click", () => {
-        if (this.currentPage > 1) {
-          this.currentPage--;
-          this.render();
-        }
-      });
-    }
+            if (prevPageBtn) {
+                prevPageBtn.addEventListener("click", () => {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.render();
+                    }
+                });
+            }
 
-    if (nextPageBtn) {
-      nextPageBtn.addEventListener("click", () => {
-        const totalPages = Math.ceil(this.filteredVenues.length / this.itemsPerPage);
-        if (this.currentPage < totalPages) {
-          this.currentPage++;
-          this.render();
-        }
-      });
-    }
+            if (nextPageBtn) {
+                nextPageBtn.addEventListener("click", () => {
+                    const totalPages = Math.ceil(this.filteredVenues.length / this.itemsPerPage);
+                    if (this.currentPage < totalPages) {
+                        this.currentPage++;
+                        this.render();
+                    }
+                });
+            }
 
-    // Close modals when clicking outside
-    window.addEventListener("click", (e) => {
-      if (e.target === venueModal) {
-        this.closeModal();
-      }
-      if (e.target === venueDetailsModal) {
-        venueDetailsModal.style.display = "none";
-      }
-    });
-  },
+            // Close modals when clicking outside
+            window.addEventListener("click", (e) => {
+                if (e.target === venueModal) {
+                    this.closeModal();
+                }
+                if (e.target === venueDetailsModal) {
+                    venueDetailsModal.style.display = "none";
+                }
+            });
+        },
 
-  // Load all venues data
-  loadAllData: async function () {
-    try {
-      console.log("Loading venues...");
+        // Load all venues data
+        loadAllData: async function() {
+            try {
+                console.log("Loading venues...");
 
-      const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
-      this.venues = await Utils.apiCall(venuesUrl, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
+                const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+                const venuesResponse = await Utils.apiCall(venuesUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
 
-      console.log(`Loaded ${this.venues.length} venues`);
-    } catch (error) {
-      console.error("Failed to load venues:", error);
-      this.venues = [];
-      Utils.showError("Failed to load venues. Please try again later.");
-    }
-  },
+                // Handle different response formats
+                if (Array.isArray(venuesResponse)) {
+                    this.venues = venuesResponse;
+                } else if (venuesResponse && venuesResponse.venues && Array.isArray(venuesResponse.venues)) {
+                    this.venues = venuesResponse.venues;
+                } else if (venuesResponse && venuesResponse.Items && Array.isArray(venuesResponse.Items)) {
+                    this.venues = venuesResponse.Items;
+                } else if (venuesResponse && venuesResponse.message) {
+                    try {
+                        const parsedVenues = JSON.parse(venuesResponse.message);
+                        if (Array.isArray(parsedVenues)) {
+                            this.venues = parsedVenues;
+                            console.log("✅ Venues parsed from message field:", this.venues.length);
+                        } else {
+                            console.log("Parsed venues message is not an array:", parsedVenues);
+                            this.venues = [];
+                        }
+                    } catch (parseError) {
+                        console.error("Failed to parse venues from message:", parseError);
+                        this.venues = [];
+                    }
+                } else {
+                    console.log("Unexpected venues response format:", venuesResponse);
+                    this.venues = [];
+                }
 
-  // Apply search and filter criteria
-  applyFilters: function () {
-    const searchTerm = document.getElementById("search-input")?.value.toLowerCase() || "";
-    const capacityFilter = document.getElementById("capacity-filter")?.value || "";
-    const locationFilter = document.getElementById("location-filter")?.value.toLowerCase() || "";
-    const sortBy = document.getElementById("sort-select")?.value || "name-asc";
+                console.log(`Loaded ${this.venues.length} venues`);
+            } catch (error) {
+                console.error("Failed to load venues:", error);
+                this.venues = [];
+                Utils.showError("Failed to load venues. Please try again later.");
+            }
+        },
 
-    let filtered = [...this.venues];
+        // Apply search and filter criteria
+        applyFilters: function() {
+            const searchTerm = document.getElementById("search-input") ? .value.toLowerCase() || "";
+            const capacityFilter = document.getElementById("capacity-filter") ? .value || "";
+            const locationFilter = document.getElementById("location-filter") ? .value.toLowerCase() || "";
+            const sortBy = document.getElementById("sort-select") ? .value || "name-asc";
 
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (venue) =>
-          venue.name.toLowerCase().includes(searchTerm) ||
-          (venue.description && venue.description.toLowerCase().includes(searchTerm)) ||
-          venue.address.toLowerCase().includes(searchTerm)
-      );
-    }
+            let filtered = [...this.venues];
 
-    // Apply capacity filter
-    if (capacityFilter) {
-      filtered = filtered.filter((venue) => {
-        if (!venue.capacity) return capacityFilter === "small"; // Assume small if no capacity
-        const capacity = parseInt(venue.capacity);
-        switch (capacityFilter) {
-          case "small":
-            return capacity <= 500;
-          case "medium":
-            return capacity > 500 && capacity <= 2000;
-          case "large":
-            return capacity > 2000;
-          default:
-            return true;
-        }
-      });
-    }
+            // Apply search filter
+            if (searchTerm) {
+                filtered = filtered.filter(
+                    (venue) =>
+                    venue.name.toLowerCase().includes(searchTerm) ||
+                    (venue.description && venue.description.toLowerCase().includes(searchTerm)) ||
+                    venue.address.toLowerCase().includes(searchTerm)
+                );
+            }
 
-    // Apply location filter
-    if (locationFilter) {
-      filtered = filtered.filter((venue) =>
-        venue.address.toLowerCase().includes(locationFilter)
-      );
-    }
+            // Apply capacity filter
+            if (capacityFilter) {
+                filtered = filtered.filter((venue) => {
+                    if (!venue.capacity) return capacityFilter === "small"; // Assume small if no capacity
+                    const capacity = parseInt(venue.capacity);
+                    switch (capacityFilter) {
+                        case "small":
+                            return capacity <= 500;
+                        case "medium":
+                            return capacity > 500 && capacity <= 2000;
+                        case "large":
+                            return capacity > 2000;
+                        default:
+                            return true;
+                    }
+                });
+            }
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "name-asc":
-          return a.name.localeCompare(b.name);
-        case "name-desc":
-          return b.name.localeCompare(a.name);
-        case "capacity-asc":
-          return (a.capacity || 0) - (b.capacity || 0);
-        case "capacity-desc":
-          return (b.capacity || 0) - (a.capacity || 0);
-        default:
-          return a.name.localeCompare(b.name);
-      }
-    });
+            // Apply location filter
+            if (locationFilter) {
+                filtered = filtered.filter((venue) =>
+                    venue.address.toLowerCase().includes(locationFilter)
+                );
+            }
 
-    this.filteredVenues = filtered;
-  },
+            // Apply sorting
+            filtered.sort((a, b) => {
+                switch (sortBy) {
+                    case "name-asc":
+                        return a.name.localeCompare(b.name);
+                    case "name-desc":
+                        return b.name.localeCompare(a.name);
+                    case "capacity-asc":
+                        return (a.capacity || 0) - (b.capacity || 0);
+                    case "capacity-desc":
+                        return (b.capacity || 0) - (a.capacity || 0);
+                    default:
+                        return a.name.localeCompare(b.name);
+                }
+            });
 
-  // Render the venues list or map
-  render: function () {
-    if (this.isMapView) {
-      this.renderMapView();
-    } else {
-      this.renderListView();
-    }
-    this.updateVenuesCount();
-    this.updatePagination();
-  },
+            this.filteredVenues = filtered;
+        },
 
-  // Render list view
-  renderListView: function () {
-    const venuesGrid = document.getElementById("venues-grid");
-    if (!venuesGrid) return;
+        // Render the venues list or map
+        render: function() {
+            if (this.isMapView) {
+                this.renderMapView();
+            } else {
+                this.renderListView();
+            }
+            this.updateVenuesCount();
+            this.updatePagination();
+        },
 
-    if (this.filteredVenues.length === 0) {
-      venuesGrid.innerHTML = `
+        // Render list view
+        renderListView: function() {
+            const venuesGrid = document.getElementById("venues-grid");
+            if (!venuesGrid) return;
+
+            if (this.filteredVenues.length === 0) {
+                venuesGrid.innerHTML = `
         <div class="no-venues">
           <h3>No venues found</h3>
           <p>Try adjusting your filters or add a new venue.</p>
@@ -304,59 +330,59 @@ const VenuesPage = {
           </button>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    // Calculate pagination
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    const venuesToShow = this.filteredVenues.slice(startIndex, endIndex);
+            // Calculate pagination
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            const venuesToShow = this.filteredVenues.slice(startIndex, endIndex);
 
-    // Render venues grid
-    venuesGrid.innerHTML = `
+            // Render venues grid
+            venuesGrid.innerHTML = `
       <div class="venues-grid">
         ${venuesToShow.map((venue) => this.createVenueCard(venue)).join("")}
       </div>
     `;
 
-    // Add click listeners to venue cards
-    this.addVenueCardListeners();
-  },
+            // Add click listeners to venue cards
+            this.addVenueCardListeners();
+        },
 
-  // Render map view
-  renderMapView: async function () {
-    if (!this.mapInitialized) {
-      try {
-        const success = await MapService.init("venues-map");
-        if (success) {
-          this.mapInitialized = true;
-        } else {
-          Utils.showError("Failed to initialize map. Please try list view.");
-          this.toggleListView();
-          return;
-        }
-      } catch (error) {
-        console.error("Map initialization failed:", error);
-        Utils.showError("Map is not available. Please use list view.");
-        this.toggleListView();
-        return;
-      }
-    }
+        // Render map view
+        renderMapView: async function() {
+            if (!this.mapInitialized) {
+                try {
+                    const success = await MapService.init("venues-map");
+                    if (success) {
+                        this.mapInitialized = true;
+                    } else {
+                        Utils.showError("Failed to initialize map. Please try list view.");
+                        this.toggleListView();
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Map initialization failed:", error);
+                    Utils.showError("Map is not available. Please use list view.");
+                    this.toggleListView();
+                    return;
+                }
+            }
 
-    // Add venue markers to map
-    if (this.mapInitialized && this.filteredVenues.length > 0) {
-      MapService.addVenueMarkers(this.filteredVenues);
-    }
-  },
+            // Add venue markers to map
+            if (this.mapInitialized && this.filteredVenues.length > 0) {
+                MapService.addVenueMarkers(this.filteredVenues);
+            }
+        },
 
-  // Create HTML for venue card
-  createVenueCard: function (venue) {
-    const capacity = venue.capacity || 0;
-    const capacityClass = capacity <= 500 ? "small" : capacity <= 2000 ? "medium" : "large";
-    const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
-    const imageUrl = venue.imageUrl || "/api/placeholder/350/180";
+        // Create HTML for venue card
+        createVenueCard: function(venue) {
+                const capacity = venue.capacity || 0;
+                const capacityClass = capacity <= 500 ? "small" : capacity <= 2000 ? "medium" : "large";
+                const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
+                const imageUrl = venue.imageUrl || "/api/placeholder/350/180";
 
-    return `
+                return `
       <div class="venue-card" data-venue-id="${venue.venueID}">
         <img src="${imageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-card-image"
              onerror="this.src='/api/placeholder/350/180'">

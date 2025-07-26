@@ -1,550 +1,589 @@
 // Dashboard functionality for Local Gigs App
 const Dashboard = {
-  currentUser: null,
-  events: [],
-  venues: [],
-  mapInitialized: false,
+        currentUser: null,
+        events: [],
+        venues: [],
+        mapInitialized: false,
 
-  // Initialize the dashboard
-  init: async function () {
-    console.log("Initializing dashboard...");
+        // Initialize the dashboard
+        init: async function() {
+            console.log("Initializing dashboard...");
 
-    // Check authentication
-    if (!Utils.requireAuth()) {
-      return;
-    }
-
-    // Get current user
-    this.currentUser = Utils.getUserFromToken();
-    if (!this.currentUser) {
-      Utils.logout();
-      return;
-    }
-
-    // Set up event listeners
-    this.setupEventListeners();
-
-    // Load user data and update UI
-    await this.loadUserData();
-
-    // Load events and venues data
-    await this.loadAllData();
-
-    // Update map status
-    this.updateMapStatus("🔑 AWS credentials ready", false);
-
-    // Initialize map
-    await this.initializeMap();
-
-    // Render content
-    this.render();
-
-    console.log("✅ Dashboard initialized successfully");
-  },
-
-  // Set up all event listeners
-  setupEventListeners: function () {
-    // Logout button
-    const logoutBtn = document.getElementById("logout-button");
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        Utils.logout();
-      });
-    }
-
-    // Create Event button and modal
-    const newEventBtn = document.getElementById("new-event-button");
-    const createEventModal = document.getElementById("create-event-modal");
-    const closeEventModal = document.getElementById("close-event-modal");
-    const createEventForm = document.getElementById("create-event-form");
-
-    if (newEventBtn && createEventModal) {
-      newEventBtn.addEventListener("click", () => {
-        this.loadVenuesForDropdown();
-        createEventModal.style.display = "block";
-      });
-    }
-
-    if (closeEventModal && createEventModal) {
-      closeEventModal.addEventListener("click", () => {
-        createEventModal.style.display = "none";
-      });
-    }
-
-    if (createEventForm) {
-      createEventForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.handleCreateEvent(e);
-      });
-    }
-
-    // Create Venue button and modal
-    const newVenueBtn = document.getElementById("new-venue-button");
-    const addVenueModal = document.getElementById("add-venue-modal");
-    const closeVenueModal = document.getElementById("close-venue-modal");
-    const addVenueForm = document.getElementById("add-venue-form");
-    const getLocationBtn = document.getElementById("get-location-btn");
-
-    if (newVenueBtn && addVenueModal) {
-      newVenueBtn.addEventListener("click", () => {
-        addVenueModal.style.display = "block";
-      });
-    }
-
-    if (closeVenueModal && addVenueModal) {
-      closeVenueModal.addEventListener("click", () => {
-        addVenueModal.style.display = "none";
-      });
-    }
-
-    if (addVenueForm) {
-      addVenueForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        this.handleCreateVenue(e);
-      });
-    }
-
-    if (getLocationBtn) {
-      getLocationBtn.addEventListener("click", () => {
-        this.getCurrentLocationForVenue();
-      });
-    }
-
-    // Find Events Near Me button
-    const findEventsBtn = document.getElementById("findEventsBtn");
-    if (findEventsBtn) {
-      findEventsBtn.addEventListener("click", () => {
-        this.findEventsNearMe();
-      });
-    }
-
-    // Close modals when clicking outside
-    window.addEventListener("click", (e) => {
-      if (e.target === createEventModal) {
-        createEventModal.style.display = "none";
-      }
-      if (e.target === addVenueModal) {
-        addVenueModal.style.display = "none";
-      }
-    });
-
-    // AWS Test button
-    const testAWSBtn = document.getElementById("testAWSBtn");
-    if (testAWSBtn) {
-      testAWSBtn.addEventListener("click", () => {
-        this.runAWSTests();
-      });
-    }
-
-    // Hide test results button
-    const hideTestResults = document.getElementById("hide-test-results");
-    if (hideTestResults) {
-      hideTestResults.addEventListener("click", () => {
-        document.getElementById("aws-test-results").style.display = "none";
-      });
-    }
-  },
-
-  // Simplified AWS status check
-  testAWSCredentials: async function () {
-    try {
-      console.log("✅ AWS credentials test successful");
-      return true;
-    } catch (error) {
-      console.error("❌ AWS credentials test error:", error);
-      return false;
-    }
-  },
-
-  // Convert DynamoDB format to plain JSON
-  parseDynamoDBData: function (dynamoData) {
-    if (!dynamoData || typeof dynamoData !== "object") {
-      return dynamoData;
-    }
-
-    const convert = (item) => {
-      if (!item || typeof item !== "object") return item;
-
-      // Handle DynamoDB type descriptors
-      if (item.S !== undefined) return item.S; // String
-      if (item.N !== undefined) return parseFloat(item.N); // Number
-      if (item.BOOL !== undefined) return item.BOOL; // Boolean
-      if (item.SS !== undefined) return item.SS; // String Set
-      if (item.NS !== undefined) return item.NS.map((n) => parseFloat(n)); // Number Set
-      if (item.L !== undefined) return item.L.map(convert); // List
-      if (item.M !== undefined) {
-        // Map
-        const result = {};
-        for (const [key, value] of Object.entries(item.M)) {
-          result[key] = convert(value);
-        }
-        return result;
-      }
-
-      // Handle regular objects recursively
-      const result = {};
-      for (const [key, value] of Object.entries(item)) {
-        result[key] = convert(value);
-      }
-      return result;
-    };
-
-    return convert(dynamoData);
-  },
-
-  // Load user data from backend
-  loadUserData: async function () {
-    const userDisplayName = document.getElementById("user-display-name");
-    const userGenre = document.getElementById("user-genre");
-
-    // Set basic user info from token
-    if (userDisplayName && this.currentUser) {
-      userDisplayName.textContent = this.currentUser.email.split("@")[0];
-    }
-
-    // Try to load full user profile from backend
-    try {
-      const url = CONFIG.buildApiUrl(
-        CONFIG.API.ENDPOINTS.USERS,
-        this.currentUser.sub,
-      );
-      const userProfile = await Utils.apiCall(url, {
-        method: "GET",
-        headers: CONFIG.getAuthHeaders(),
-      });
-
-      if (userProfile) {
-        localStorage.setItem(
-          CONFIG.STORAGE_KEYS.USER_DATA,
-          JSON.stringify(userProfile),
-        );
-
-        if (userDisplayName && userProfile.name) {
-          userDisplayName.textContent = userProfile.name;
-        }
-
-        if (
-          userGenre &&
-          userProfile.preferences &&
-          userProfile.preferences.genre
-        ) {
-          userGenre.textContent = Utils.capitalize(
-            userProfile.preferences.genre,
-          );
-          userGenre.style.display = "inline-block";
-        }
-      }
-    } catch (error) {
-      // Don't log error for missing user profile - this is expected for new users
-      if (error.message && error.message.includes("User not found")) {
-        console.log("New user detected - creating profile automatically...");
-        try {
-          await createUserProfileIfMissing(this.currentUser);
-          console.log("✅ User profile created successfully");
-        } catch (createError) {
-          console.error("Failed to create user profile:", createError);
-        }
-      } else {
-        console.log("Using token data for user info");
-      }
-      // Dashboard can work with basic token info from JWT
-    }
-  },
-
-  // Load all events and venues data
-  // Load all data (events, venues)
-  loadAllData: async function () {
-    try {
-      console.log("Loading events and venues...");
-
-      // Initialize as empty arrays
-      this.events = [];
-      this.venues = [];
-
-      // Load events
-      try {
-        const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
-        const eventsResponse = await Utils.apiCall(eventsUrl, {
-          method: "GET",
-          headers: CONFIG.getAuthHeaders(),
-        });
-
-        // Ensure we have an array
-        if (Array.isArray(eventsResponse)) {
-          this.events = eventsResponse;
-        } else if (
-          eventsResponse &&
-          eventsResponse.events &&
-          Array.isArray(eventsResponse.events)
-        ) {
-          this.events = eventsResponse.events;
-        } else if (
-          eventsResponse &&
-          eventsResponse.Items &&
-          Array.isArray(eventsResponse.Items)
-        ) {
-          this.events = eventsResponse.Items;
-        } else if (eventsResponse && eventsResponse.message) {
-          try {
-            const parsedEvents = JSON.parse(eventsResponse.message);
-            if (Array.isArray(parsedEvents)) {
-              this.events = parsedEvents;
-              console.log(
-                "✅ Events parsed from message field:",
-                this.events.length,
-              );
-            } else {
-              console.log(
-                "Parsed events message is not an array:",
-                parsedEvents,
-              );
-              this.events = [];
+            // Check authentication
+            if (!Utils.requireAuth()) {
+                return;
             }
-          } catch (parseError) {
-            console.error("Failed to parse events message:", parseError);
-            this.events = [];
-          }
-        } else {
-          console.log("Events response is not an array:", eventsResponse);
-          this.events = [];
-        }
-      } catch (eventError) {
-        console.error("Failed to load events:", eventError);
-        this.events = [];
-      }
 
-      // Load venues
-      try {
-        const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
-        const venuesResponse = await Utils.apiCall(venuesUrl, {
-          method: "GET",
-          headers: CONFIG.getAuthHeaders(),
-        });
-
-        // Ensure we have an array
-        if (Array.isArray(venuesResponse)) {
-          this.venues = venuesResponse;
-        } else if (
-          venuesResponse &&
-          venuesResponse.venues &&
-          Array.isArray(venuesResponse.venues)
-        ) {
-          this.venues = venuesResponse.venues;
-        } else if (
-          venuesResponse &&
-          venuesResponse.Items &&
-          Array.isArray(venuesResponse.Items)
-        ) {
-          this.venues = venuesResponse.Items;
-        } else if (venuesResponse && venuesResponse.message) {
-          try {
-            const parsedVenues = JSON.parse(venuesResponse.message);
-            if (Array.isArray(parsedVenues)) {
-              this.venues = parsedVenues;
-              console.log(
-                "✅ Venues parsed from message field:",
-                this.venues.length,
-              );
-            } else {
-              console.log(
-                "Parsed venues message is not an array:",
-                parsedVenues,
-              );
-              this.venues = [];
+            // Get current user
+            this.currentUser = Utils.getUserFromToken();
+            if (!this.currentUser) {
+                Utils.logout();
+                return;
             }
-          } catch (parseError) {
-            console.error("Failed to parse venues message:", parseError);
-            this.venues = [];
-          }
-        } else {
-          console.log("Venues response is not an array:", venuesResponse);
-          this.venues = [];
-        }
-      } catch (venueError) {
-        console.error("Failed to load venues:", venueError);
-        this.venues = [];
-      }
 
-      console.log(
-        `Loaded ${this.events ? this.events.length : 0} events and ${this.venues ? this.venues.length : 0} venues`,
-      );
-    } catch (error) {
-      console.error("Failed to load data:", error);
-      this.events = [];
-      this.venues = [];
-    }
-  },
+            // Set up event listeners
+            this.setupEventListeners();
 
-  // Initialize the map
-  initializeMap: async function () {
-    try {
-      const mapContainer = document.getElementById("map-container");
-      if (!mapContainer) return;
+            // Load user data and update UI
+            await this.loadUserData();
 
-      const success = await MapService.init("map-container");
-      if (success && this.events.length > 0) {
-        this.mapInitialized = true;
-        MapService.addEventMarkers(this.events, this.venues);
-      }
-    } catch (error) {
-      console.error("Map initialization failed:", error);
-    }
-  },
+            // Load events and venues data
+            await this.loadAllData();
 
-  // Render dashboard content
-  render: function () {
-    this.renderEvents();
-    this.renderRecommendedEvents();
-    this.renderPopularVenues();
-    this.renderUserStats();
-  },
+            // Update map status
+            this.updateMapStatus("🔑 AWS credentials ready", false);
 
-  // Render upcoming events
-  renderEvents: function () {
-    const container = document.getElementById("event-list-container");
-    if (!container) return;
+            // Initialize map
+            await this.initializeMap();
 
-    // Parse DynamoDB data if needed and ensure events is an array
-    let parsedEvents = this.parseDynamoDBData(this.events);
-    if (!Array.isArray(parsedEvents) || parsedEvents.length === 0) {
-      container.innerHTML = `
+            // Render content
+            this.render();
+
+            console.log("✅ Dashboard initialized successfully");
+        },
+
+        // Set up all event listeners
+        setupEventListeners: function() {
+            // Logout button
+            const logoutBtn = document.getElementById("logout-button");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    Utils.logout();
+                });
+            }
+
+            // Create Event button and modal
+            const newEventBtn = document.getElementById("new-event-button");
+            const createEventModal = document.getElementById("create-event-modal");
+            const closeEventModal = document.getElementById("close-event-modal");
+            const createEventForm = document.getElementById("create-event-form");
+
+            if (newEventBtn && createEventModal) {
+                newEventBtn.addEventListener("click", () => {
+                    this.loadVenuesForDropdown();
+                    createEventModal.style.display = "block";
+                });
+            }
+
+            if (closeEventModal && createEventModal) {
+                closeEventModal.addEventListener("click", () => {
+                    createEventModal.style.display = "none";
+                });
+            }
+
+            if (createEventForm) {
+                createEventForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    this.handleCreateEvent(e);
+                });
+            }
+
+            // Create Venue button and modal
+            const newVenueBtn = document.getElementById("new-venue-button");
+            const addVenueModal = document.getElementById("add-venue-modal");
+            const closeVenueModal = document.getElementById("close-venue-modal");
+            const addVenueForm = document.getElementById("add-venue-form");
+            const getLocationBtn = document.getElementById("get-location-btn");
+
+            if (newVenueBtn && addVenueModal) {
+                newVenueBtn.addEventListener("click", () => {
+                    addVenueModal.style.display = "block";
+                });
+            }
+
+            if (closeVenueModal && addVenueModal) {
+                closeVenueModal.addEventListener("click", () => {
+                    addVenueModal.style.display = "none";
+                });
+            }
+
+            if (addVenueForm) {
+                addVenueForm.addEventListener("submit", (e) => {
+                    e.preventDefault();
+                    this.handleCreateVenue(e);
+                });
+            }
+
+            if (getLocationBtn) {
+                getLocationBtn.addEventListener("click", () => {
+                    this.getCurrentLocationForVenue();
+                });
+            }
+
+            // Find Events Near Me button
+            const findEventsBtn = document.getElementById("findEventsBtn");
+            if (findEventsBtn) {
+                findEventsBtn.addEventListener("click", () => {
+                    this.findEventsNearMe();
+                });
+            }
+
+            // Close modals when clicking outside
+            window.addEventListener("click", (e) => {
+                if (e.target === createEventModal) {
+                    createEventModal.style.display = "none";
+                }
+                if (e.target === addVenueModal) {
+                    addVenueModal.style.display = "none";
+                }
+            });
+
+            // AWS Test button
+            const testAWSBtn = document.getElementById("testAWSBtn");
+            if (testAWSBtn) {
+                testAWSBtn.addEventListener("click", () => {
+                    this.runAWSTests();
+                });
+            }
+
+            // Hide test results button
+            const hideTestResults = document.getElementById("hide-test-results");
+            if (hideTestResults) {
+                hideTestResults.addEventListener("click", () => {
+                    document.getElementById("aws-test-results").style.display = "none";
+                });
+            }
+        },
+
+        // Simplified AWS status check
+        testAWSCredentials: async function() {
+            try {
+                console.log("✅ AWS credentials test successful");
+                return true;
+            } catch (error) {
+                console.error("❌ AWS credentials test error:", error);
+                return false;
+            }
+        },
+
+        // Convert DynamoDB format to plain JSON
+        parseDynamoDBData: function(dynamoData) {
+            if (!dynamoData || typeof dynamoData !== "object") {
+                return dynamoData;
+            }
+
+            const convert = (item) => {
+                if (!item || typeof item !== "object") return item;
+
+                // Handle DynamoDB type descriptors
+                if (item.S !== undefined) return item.S; // String
+                if (item.N !== undefined) return parseFloat(item.N); // Number
+                if (item.BOOL !== undefined) return item.BOOL; // Boolean
+                if (item.SS !== undefined) return item.SS; // String Set
+                if (item.NS !== undefined) return item.NS.map((n) => parseFloat(n)); // Number Set
+                if (item.L !== undefined) return item.L.map(convert); // List
+                if (item.M !== undefined) {
+                    // Map
+                    const result = {};
+                    for (const [key, value] of Object.entries(item.M)) {
+                        result[key] = convert(value);
+                    }
+                    return result;
+                }
+
+                // Handle regular objects recursively
+                const result = {};
+                for (const [key, value] of Object.entries(item)) {
+                    result[key] = convert(value);
+                }
+                return result;
+            };
+
+            return convert(dynamoData);
+        },
+
+        // Load user data from backend
+        loadUserData: async function() {
+            const userDisplayName = document.getElementById("user-display-name");
+            const userGenre = document.getElementById("user-genre");
+
+            // Set basic user info from token
+            if (userDisplayName && this.currentUser) {
+                userDisplayName.textContent = this.currentUser.email.split("@")[0];
+            }
+
+            // Try to load full user profile from backend
+            try {
+                const url = CONFIG.buildApiUrl(
+                    CONFIG.API.ENDPOINTS.USERS,
+                    this.currentUser.sub,
+                );
+                const userProfile = await Utils.apiCall(url, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                if (userProfile) {
+                    localStorage.setItem(
+                        CONFIG.STORAGE_KEYS.USER_DATA,
+                        JSON.stringify(userProfile),
+                    );
+
+                    if (userDisplayName && userProfile.name) {
+                        userDisplayName.textContent = userProfile.name;
+                    }
+
+                    if (
+                        userGenre &&
+                        userProfile.preferences &&
+                        userProfile.preferences.genre
+                    ) {
+                        userGenre.textContent = Utils.capitalize(
+                            userProfile.preferences.genre,
+                        );
+                        userGenre.style.display = "inline-block";
+                    }
+                }
+            } catch (error) {
+                // Don't log error for missing user profile - this is expected for new users
+                if (error.message && error.message.includes("User not found")) {
+                    console.log("New user detected - creating profile automatically...");
+                    try {
+                        await createUserProfileIfMissing(this.currentUser);
+                        console.log("✅ User profile created successfully");
+
+                        // Try to reload the user profile after a short delay
+                        setTimeout(async() => {
+                            try {
+                                const url = CONFIG.buildApiUrl(
+                                    CONFIG.API.ENDPOINTS.USERS,
+                                    this.currentUser.sub,
+                                );
+                                const userProfile = await Utils.apiCall(url, {
+                                    method: "GET",
+                                    headers: CONFIG.getAuthHeaders(),
+                                });
+
+                                if (userProfile) {
+                                    localStorage.setItem(
+                                        CONFIG.STORAGE_KEYS.USER_DATA,
+                                        JSON.stringify(userProfile),
+                                    );
+
+                                    if (userDisplayName && userProfile.name) {
+                                        userDisplayName.textContent = userProfile.name;
+                                    }
+
+                                    if (
+                                        userGenre &&
+                                        userProfile.preferences &&
+                                        userProfile.preferences.genre
+                                    ) {
+                                        userGenre.textContent = Utils.capitalize(
+                                            userProfile.preferences.genre,
+                                        );
+                                        userGenre.style.display = "inline-block";
+                                    }
+                                }
+                            } catch (retryError) {
+                                console.log("Could not reload user profile after creation:", retryError);
+                            }
+                        }, 2000); // Wait 2 seconds before retry
+
+                    } catch (createError) {
+                        console.error("Failed to create user profile:", createError);
+                    }
+                } else {
+                    console.log("Using token data for user info");
+                }
+                // Dashboard can work with basic token info from JWT
+            }
+        },
+
+        // Load all events and venues data
+        // Load all data (events, venues)
+        loadAllData: async function() {
+            try {
+                console.log("Loading events and venues...");
+
+                // Initialize as empty arrays
+                this.events = [];
+                this.venues = [];
+
+                // Load events
+                try {
+                    const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+                    const eventsResponse = await Utils.apiCall(eventsUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+
+                    // Ensure we have an array
+                    if (Array.isArray(eventsResponse)) {
+                        this.events = eventsResponse;
+                    } else if (
+                        eventsResponse &&
+                        eventsResponse.events &&
+                        Array.isArray(eventsResponse.events)
+                    ) {
+                        this.events = eventsResponse.events;
+                    } else if (
+                        eventsResponse &&
+                        eventsResponse.Items &&
+                        Array.isArray(eventsResponse.Items)
+                    ) {
+                        this.events = eventsResponse.Items;
+                    } else if (eventsResponse && eventsResponse.message) {
+                        try {
+                            const parsedEvents = JSON.parse(eventsResponse.message);
+                            if (Array.isArray(parsedEvents)) {
+                                this.events = parsedEvents;
+                                console.log(
+                                    "✅ Events parsed from message field:",
+                                    this.events.length,
+                                );
+                            } else {
+                                console.log(
+                                    "Parsed events message is not an array:",
+                                    parsedEvents,
+                                );
+                                this.events = [];
+                            }
+                        } catch (parseError) {
+                            console.error("Failed to parse events message:", parseError);
+                            this.events = [];
+                        }
+                    } else {
+                        console.log("Events response is not an array:", eventsResponse);
+                        this.events = [];
+                    }
+                } catch (eventError) {
+                    console.error("Failed to load events:", eventError);
+                    this.events = [];
+                }
+
+                // Load venues
+                try {
+                    const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+                    const venuesResponse = await Utils.apiCall(venuesUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+
+                    // Ensure we have an array
+                    if (Array.isArray(venuesResponse)) {
+                        this.venues = venuesResponse;
+                    } else if (
+                        venuesResponse &&
+                        venuesResponse.venues &&
+                        Array.isArray(venuesResponse.venues)
+                    ) {
+                        this.venues = venuesResponse.venues;
+                    } else if (
+                        venuesResponse &&
+                        venuesResponse.Items &&
+                        Array.isArray(venuesResponse.Items)
+                    ) {
+                        this.venues = venuesResponse.Items;
+                    } else if (venuesResponse && venuesResponse.message) {
+                        try {
+                            const parsedVenues = JSON.parse(venuesResponse.message);
+                            if (Array.isArray(parsedVenues)) {
+                                this.venues = parsedVenues;
+                                console.log(
+                                    "✅ Venues parsed from message field:",
+                                    this.venues.length,
+                                );
+                            } else {
+                                console.log(
+                                    "Parsed venues message is not an array:",
+                                    parsedVenues,
+                                );
+                                this.venues = [];
+                            }
+                        } catch (parseError) {
+                            console.error("Failed to parse venues message:", parseError);
+                            this.venues = [];
+                        }
+                    } else {
+                        console.log("Venues response is not an array:", venuesResponse);
+                        this.venues = [];
+                    }
+                } catch (venueError) {
+                    console.error("Failed to load venues:", venueError);
+                    this.venues = [];
+                }
+
+                console.log(
+                    `Loaded ${this.events ? this.events.length : 0} events and ${this.venues ? this.venues.length : 0} venues`,
+                );
+            } catch (error) {
+                console.error("Failed to load data:", error);
+                this.events = [];
+                this.venues = [];
+            }
+        },
+
+        // Initialize the map
+        initializeMap: async function() {
+            try {
+                const mapContainer = document.getElementById("map-container");
+                if (!mapContainer) return;
+
+                const success = await MapService.init("map-container");
+                if (success && this.events.length > 0) {
+                    this.mapInitialized = true;
+                    MapService.addEventMarkers(this.events, this.venues);
+                }
+            } catch (error) {
+                console.error("Map initialization failed:", error);
+            }
+        },
+
+        // Render dashboard content
+        render: function() {
+            this.renderEvents();
+            this.renderRecommendedEvents();
+            this.renderPopularVenues();
+            this.renderUserStats();
+        },
+
+        // Render upcoming events
+        renderEvents: function() {
+            const container = document.getElementById("event-list-container");
+            if (!container) return;
+
+            // Parse DynamoDB data if needed and ensure events is an array
+            let parsedEvents = this.parseDynamoDBData(this.events);
+            if (!Array.isArray(parsedEvents) || parsedEvents.length === 0) {
+                container.innerHTML = `
         <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No events found. Create your first event!</p>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    // Sort events by date (upcoming first)
-    const upcomingEvents = parsedEvents
-      .filter((event) => {
-        try {
-          return (
-            event && event.eventDate && new Date(event.eventDate) >= new Date()
-          );
-        } catch (e) {
-          return false;
-        }
-      })
-      .sort((a, b) => {
-        try {
-          return new Date(a.eventDate) - new Date(b.eventDate);
-        } catch (e) {
-          return 0;
-        }
-      })
-      .slice(0, 3); // Show only first 3
+            // Sort events by date (upcoming first)
+            const upcomingEvents = parsedEvents
+                .filter((event) => {
+                    try {
+                        return (
+                            event && event.eventDate && new Date(event.eventDate) >= new Date()
+                        );
+                    } catch (e) {
+                        return false;
+                    }
+                })
+                .sort((a, b) => {
+                    try {
+                        return new Date(a.eventDate) - new Date(b.eventDate);
+                    } catch (e) {
+                        return 0;
+                    }
+                })
+                .slice(0, 3); // Show only first 3
 
-    if (upcomingEvents.length === 0) {
-      container.innerHTML = `
+            if (upcomingEvents.length === 0) {
+                container.innerHTML = `
         <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No upcoming events. Check back later!</p>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    container.innerHTML = upcomingEvents
-      .map((event) => this.createEventCard(event))
-      .join("");
-  },
+            container.innerHTML = upcomingEvents
+                .map((event) => this.createEventCard(event))
+                .join("");
+        },
 
-  // Render recommended events based on user preferences
-  renderRecommendedEvents: function () {
-    const container = document.getElementById("recommended-events");
-    if (!container) return;
+        // Render recommended events based on user preferences
+        renderRecommendedEvents: function() {
+            const container = document.getElementById("recommended-events");
+            if (!container) return;
 
-    // Ensure events is an array
-    if (!Array.isArray(this.events) || this.events.length === 0) {
-      container.innerHTML = `
+            // Ensure events is an array
+            if (!Array.isArray(this.events) || this.events.length === 0) {
+                container.innerHTML = `
         <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No recommendations available.</p>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    // For now, just show random events
-    const randomEvents = [...this.events]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 2);
+            // For now, just show random events
+            const randomEvents = [...this.events]
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 2);
 
-    if (randomEvents.length === 0) {
-      container.innerHTML = `
+            if (randomEvents.length === 0) {
+                container.innerHTML = `
         <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No recommendations available.</p>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    container.innerHTML = randomEvents
-      .map((event) => this.createEventCard(event))
-      .join("");
-  },
+            container.innerHTML = randomEvents
+                .map((event) => this.createEventCard(event))
+                .join("");
+        },
 
-  // Render popular venues
-  renderPopularVenues: function () {
-    const container = document.getElementById("popular-venues");
-    if (!container) return;
+        // Render popular venues
+        renderPopularVenues: function() {
+            const container = document.getElementById("popular-venues");
+            if (!container) return;
 
-    if (!Array.isArray(this.venues) || this.venues.length === 0) {
-      container.innerHTML = `
+            if (!Array.isArray(this.venues) || this.venues.length === 0) {
+                container.innerHTML = `
         <div class="text-center" style="padding: 2rem; color: var(--text-muted);">
           <p>No venues found. Add your first venue!</p>
         </div>
       `;
-      return;
-    }
+                return;
+            }
 
-    const popularVenues = this.venues.slice(0, 3);
-    container.innerHTML = popularVenues
-      .map((venue) => this.createVenueCard(venue))
-      .join("");
-  },
+            const popularVenues = this.venues.slice(0, 3);
+            container.innerHTML = popularVenues
+                .map((venue) => this.createVenueCard(venue))
+                .join("");
+        },
 
-  // Render user statistics
-  renderUserStats: function () {
-    const eventsAttended = document.getElementById("events-attended");
-    const eventsCreated = document.getElementById("events-created");
+        // Render user statistics
+        renderUserStats: function() {
+            const eventsAttended = document.getElementById("events-attended");
+            const eventsCreated = document.getElementById("events-created");
 
-    if (eventsAttended) {
-      eventsAttended.textContent = "0"; // TODO: Implement actual stats
-    }
-    if (eventsCreated) {
-      eventsCreated.textContent = this.events.length.toString();
-    }
-  },
+            if (eventsAttended) {
+                eventsAttended.textContent = "0"; // TODO: Implement actual stats
+            }
+            if (eventsCreated) {
+                eventsCreated.textContent = this.events.length.toString();
+            }
+        },
 
-  // Create HTML for event card
-  createEventCard: function (event) {
-    const venue = this.venues.find((v) => v.venueID === event.venueID);
-    const eventDate = event.eventDate
-      ? Utils.formatDate(event.eventDate)
-      : "TBA";
-    const eventTime = event.eventTime ? Utils.formatTime(event.eventTime) : "";
+        // Create HTML for event card
+        createEventCard: function(event) {
+                const venue = this.venues.find((v) => v.venueID === event.venueID);
+                const eventDate = event.eventDate ?
+                    Utils.formatDate(event.eventDate) :
+                    "TBA";
+                const eventTime = event.eventTime ? Utils.formatTime(event.eventTime) : "";
 
-    // Handle image URL - check if it's already a full URL or needs S3 prefix
-    let imageHtml = "";
-    if (event.imageUrl) {
-      const fullImageUrl = event.imageUrl.startsWith("http")
-        ? event.imageUrl
-        : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${event.imageUrl}`;
-      imageHtml = `<div class="event-image-container">
+                // Handle image URL - check if it's already a full URL or needs S3 prefix
+                let imageHtml = "";
+                if (event.imageUrl) {
+                    const fullImageUrl = event.imageUrl.startsWith("http") ?
+                        event.imageUrl :
+                        `https://local-gigs-static.s3.us-east-1.amazonaws.com/${event.imageUrl}`;
+                    imageHtml = `<div class="event-image-container">
         <img src="${fullImageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image"
              onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDM1MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzNTAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjhmOWZhIi8+CjxwYXRoIGQ9Ik0xNzUgMTAwQzE4My4yODQgMTAwIDE5MCA5My4yODQzIDE5MCA4NUMxOTAgNzYuNzE1NyAxODMuMjg0IDcwIDE3NSA3MEMxNjYuNzE2IDcwIDE2MCA3Ni43MTU3IDE2MCA4NUMxNjAgOTMuMjg0MyAxNjYuNzE2IDEwMCAxNzUgMTAwWiIgZmlsbD0iIzY2Nzg4YSIvPgo8cGF0aCBkPSJNMTM1IDEyMEwxNjAgOTVMMTkwIDEyNUwyMjUgOTBMMjU1IDEyMFYxNTBIMTM1VjEyMFoiIGZpbGw9IiM2Njc4OGEiLz4KPC9zdmc+'; this.classList.add('placeholder-image');">
       </div>`;
-    } else {
-      imageHtml = `<div class="event-image-container">
+                } else {
+                    imageHtml = `<div class="event-image-container">
         <div class="event-image-placeholder">
           <div class="placeholder-icon">🎵</div>
           <div class="placeholder-text">No Image</div>
         </div>
       </div>`;
-    }
+                }
 
-    return `
+                return `
       <div class="event-card" onclick="window.location.href='event-details.html?id=${event.eventID}'">
         ${imageHtml}
         <div class="event-content">
