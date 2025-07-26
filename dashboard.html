@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <header class="header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">Local Gigs</a>
+                <nav></nav>
+                    <ul class="nav-menu">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="events.html">Events</a></li>
+                        <li><a href="venues.html">Venues</a></li>
+                        <li><a href="profile.html">Profile</a></li>
+                        <li><button class="btn logout-btn">Logout</button></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <div class="container">
+                <div class="dashboard-header">
+                    <h1>Welcome back, <span id="userDisplayName">Music Lover</span>!</h1>
+                    <p>Discover amazing local music events happening around you</p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <h2>Quick Actions</h2>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button id="createEventBtn" class="btn">Create Event</button>
+                        <button id="addVenueBtn" class="btn btn-secondary">Add Venue</button>
+                        <button id="findEventsBtn" class="btn btn-secondary">Find Events Near Me</button>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div class="card">
+                    <h2>Events Map</h2>
+                    <div class="map-container">
+                        <div id="map">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+                                <p>Loading map...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events Grid -->
+                <div class="dashboard-grid">
+                    <!-- Upcoming Events -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2>Upcoming Events</h2>
+                            <a href="events.html" class="btn btn-secondary">View All</a>
+                        </div>
+                        <div id="upcomingEvents">
+                            <div class="loading-placeholder">
+                                <p>Loading events...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Events -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2>Recommended for You</h2>
+                            <span id="userGenre" class="genre-tag"></span>
+                        </div>
+                        <div id="recommendedEvents">
+                            <div class="loading-placeholder">
+                                <p>Loading recommendations...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Venues -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2>Popular Venues</h2>
+                            <a href="venues.html" class="btn btn-secondary">View All</a>
+                        </div>
+                        <div id="popularVenues">
+                            <div class="loading-placeholder">
+                                <p>Loading venues...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Stats -->
+                    <div class="card">
+                        <h2>Your Activity</h2>
+                        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                            <div class="stat-item text-center">
+                                <div class="stat-number" id="eventsAttended">0</div>
+                                <div class="stat-label">Events Attended</div>
+                            </div>
+                            <div class="stat-item text-center">
+                                <div class="stat-number" id="eventsCreated">0</div>
+                                <div class="stat-label">Events Created</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create Event Modal -->
+        <div id="createEventModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeEventModal">&times;</span>
+                <h2>Create New Event</h2>
+                <div id="eventModalMessages"></div>
+                <form id="createEventForm">
+                    <div class="form-group">
+                        <label for="eventName">Event Name *</label>
+                        <input type="text" id="eventName" name="name" class="form-control" required placeholder="Enter event name" maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventDescription">Description</label>
+                        <textarea id="eventDescription" name="description" class="form-control" rows="4" placeholder="Describe your event..." maxlength="500"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="eventDate">Event Date *</label>
+                            <input type="date" id="eventDate" name="eventDate" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="eventTime">Event Time *</label>
+                            <input type="time" id="eventTime" name="eventTime" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventVenue">Venue *</label>
+                        <select id="eventVenue" name="venueID" class="form-control" required>
+                            <option value="">Select a venue...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">Create Event</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Venue Modal -->
+        <div id="addVenueModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeVenueModal">&times;</span>
+                <h2>Add New Venue</h2>
+                <div id="venueModalMessages"></div>
+                <form id="addVenueForm">
+                    <div class="form-group">
+                        <label for="venueName">Venue Name *</label>
+                        <input type="text" id="venueName" name="name" class="form-control" required placeholder="Enter venue name" maxlength="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venueAddress">Address *</label>
+                        <input type="text" id="venueAddress" name="address" class="form-control" required placeholder="Enter venue address" maxlength="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venueCapacity">Capacity</label>
+                        <input type="number" id="venueCapacity" name="capacity" class="form-control" min="1" max="100000" placeholder="Maximum capacity">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="venueLatitude">Latitude</label>
+                            <input type="number" id="venueLatitude" name="latitude" class="form-control" step="0.000001" placeholder="1.3521">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="venueLongitude">Longitude</label>
+                            <input type="number" id="venueLongitude" name="longitude" class="form-control" step="0.000001" placeholder="103.8198">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" id="getLocationBtn" class="btn btn-secondary" style="width: 100%; margin-bottom: 1rem;">
+                            Get My Current Location
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">Add Venue</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/dashboard.js"></script>
+
+        <style>
+            .genre-tag {
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+
+            .loading-placeholder {
+                text-align: center;
+                padding: 2rem;
+                color: #666;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+                font-weight: bold;
+                color: #667eea;
+                margin-bottom: 0.5rem;
+            }
+
+            .stat-label {
+                color: #666;
+                font-size: 0.9rem;
+            }
+
+            .event-item {
+                padding: 1rem;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                transition: all 0.3s ease;
+            }
+
+            .event-item:hover {
+                border-color: #667eea;
+                transform: translateY(-2px);
+            }
+
+            .event-item h4 {
+                margin: 0 0 0.5rem 0;
+                color: #333;
+            }
+
+            .event-item .event-meta {
+                color: #666;
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .venue-item {
+                padding: 1rem;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                transition: all 0.3s ease;
+            }
+
+            .venue-item:hover {
+                border-color: #667eea;
+                transform: translateY(-2px);
+            }
+
+            .venue-item h4 {
+                margin: 0 0 0.5rem 0;
+                color: #333;
+            }
+
+            .venue-item .venue-meta {
+                color: #666;
+                font-size: 0.9rem;
+            }
+        </style>
+    </body>
+</html>
