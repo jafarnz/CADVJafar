@@ -1,114 +1,579 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Email Confirmation - Local Gigs</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <div class="auth-container">
-            <div class="auth-card">
-                <h1></h1>Confirm Your Email</h1>
-                <p class="text-center mb-2">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Confirmation - Local Gigs</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card confirm-card">
+            <div class="auth-header">
+                <div class="logo-icon" style="margin: 0 auto 16px auto">LG</div>
+                <h1 class="auth-title">Confirm Your Email</h1>
+                <p class="auth-subtitle">
                     We've sent a verification code to your email address. Please enter it below to activate your account.
                 </p>
+            </div>
 
-                <div id="confirmMessages"></div>
+            <!-- Status Indicator -->
+            <div class="status-indicator">
+                <div class="status-icon">📧</div>
+                <div class="status-text">Check your inbox for the verification code</div>
+            </div>
 
-                <form id="confirmForm">
-                    <div class="form-group">
-                        <label for="confirmationCode">Verification Code *</label>
+            <div id="confirmMessages"></div>
+
+            <form id="confirmForm">
+                <div class="form-group">
+                    <label for="confirmationCode" class="form-label">Verification Code</label>
+                    <div class="code-input-container">
                         <input
                             type="text"
                             id="confirmationCode"
                             name="confirmationCode"
-                            class="form-control"
+                            class="form-control code-input"
                             required
-                            placeholder="Enter 6-digit verification code"
+                            placeholder="Enter 6-digit code"
                             maxlength="6"
                             pattern="[0-9]{6}"
                             autocomplete="one-time-code"
-                            style="text-align: center; font-size: 1.2rem; letter-spacing: 0.2rem;"
                         />
-                        <small style="color: #666; display: block; margin-top: 0.5rem;">
-                            Check your email inbox and spam folder for the verification code
-                        </small>
+                        <div class="input-decoration">
+                            <div class="input-highlight"></div>
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Confirm Email
-                        </button>
+                    <div class="form-text">
+                        Check your email inbox and spam folder for the verification code
                     </div>
-                </form>
-
-                <div class="auth-links">
-                    <p>
-                        Didn't receive the code?
-                        <a href="#" id="resendConfirmation">Resend verification code</a>
-                    </p>
-                    <p>
-                        <a href="login.html">Back to Login</a>
-                    </p>
-                    <p>
-                        <a href="index.html">Back to Home</a>
-                    </p>
                 </div>
 
-                <div class="help-section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
-                    <h4 style="color: #667eea; margin-bottom: 1rem;">Having trouble?</h4>
-                    <ul style="color: #666; font-size: 0.9rem; line-height: 1.6;">
-                        <li>Check your spam/junk folder</li>
-                        <li>Make sure you entered the correct email address</li>
-                        <li>The code expires after 24 hours</li>
-                        <li>Contact support if you continue having issues</li>
-                    </ul>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-full btn-lg">
+                        Confirm Email →
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button type="button" id="manualConfirmBtn" class="btn btn-outline btn-full">
+                        Having Issues? Manual Confirmation
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-links">
+                <p></p>
+                    Didn't receive the code?
+                    <a href="#" id="resendConfirmation">Resend verification code</a>
+                </p>
+                <p>
+                    <a href="login.html">← Back to Sign In</a>
+                </p>
+                <p>
+                    <a href="index.html">← Back to Home</a>
+                </p>
+            </div>
+
+            <!-- Manual Confirmation Section -->
+            <div id="manualConfirmSection" class="manual-confirm-section hidden">
+                <div class="manual-header">
+                    <h4>Manual Confirmation</h4>
+                    <p>This</p> is a temporary workaround for API Gateway CORS issues. Please contact your administrator to fix the /auth/confirm endpoint configuration.</p>
+                </div>
+
+                <div class="manual-details">
+                    <div class="detail-group">
+                        <label class="detail-label">Username:</label>
+                        <input type="text" id="manualUsername" class="form-control" readonly>
+                    </div>
+                    <div class="detail-group">
+                        <label class="detail-label">Confirmation Code:</label>
+                        <input type="text" id="manualCode" class="form-control" readonly>
+                    </div>
+                </div>
+
+                <button type="button" id="proceedWithoutConfirm" class="btn btn-warning btn-full">
+                    Skip Confirmation (Testing Only)
+                </button>
+            </div>
+
+            <!-- Help Section -->
+            <div class="help-section">
+                <h4 style="color: var(--primary-color); margin-bottom: 16px; font-size: 16px;">
+                    🆘 Having trouble?
+                </h4>
+                <div class="help-grid">
+                    <div class="help-item">
+                        <span class="help-icon">📨</span>
+                        <span></span>Check your spam/junk folder</span>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">✉️</span>
+                        <span>Make sure you entered the correct email</span>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">⏰</span>
+                        <span>Code expires after 24 hours</span>
+                    </div>
+                    <div class="help-item">
+                        <span class="help-icon">🛠️</span>
+                        <span>If you see CORS errors, use Manual Confirmation</span>
+                    </div>
+                </div>
+
+                <div class="contact-support">
+                    <p>Still having issues? <a href="mailto:support@localgigs.com">Contact Support</a></p>
                 </div>
             </div>
         </div>
+    </div>
 
-        <script src="js/config.js"></script>
-        <script src="js/utils.js"></script>
-        <script src="js/auth.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Check if we have a username stored from signup
-                const username = localStorage.getItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
-                if (!username) {
-                    Utils.showError('Session expired. Please sign up again.');
-                    setTimeout(() => {
-                        window.location.href = 'signup.html';
-                    }, 2000);
-                    return;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we have a username stored from signup
+            const username = localStorage.getItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
+            if (!username) {
+                Utils.showError('Session expired. Please sign up again.', 'confirmMessages');
+                setTimeout(() => {
+                    window.location.href = 'signup.html';
+                }, 2000);
+                return;
+            }
+
+            // Initialize the page
+            initializeConfirmPage(username);
+            setupEventListeners(username);
+        });
+
+        function initializeConfirmPage(username) {
+            // Auto-format the confirmation code input
+            const confirmationCodeInput = document.getElementById('confirmationCode');
+
+            // Add input formatting
+            confirmationCodeInput.addEventListener('input', function(e) {
+                // Remove any non-numeric characters
+                this.value = this.value.replace(/[^0-9]/g, '');
+
+                // Limit to 6 digits
+                if (this.value.length > 6) {
+                    this.value = this.value.slice(0, 6);
                 }
 
-                // Auto-format the confirmation code input
-                const confirmationCodeInput = document.getElementById('confirmationCode');
-                confirmationCodeInput.addEventListener('input', function(e) {
-                    // Remove any non-numeric characters
-                    this.value = this.value.replace(/[^0-9]/g, '');
-
-                    // Limit to 6 digits
-                    if (this.value.length > 6) {
-                        this.value = this.value.slice(0, 6);
-                    }
-                });
-
-                // Auto-submit when 6 digits are entered
-                confirmationCodeInput.addEventListener('input', function(e) {
-                    if (this.value.length === 6) {
-                        // Small delay to let user see the complete code
-                        setTimeout(() => {
-                            document.getElementById('confirmForm').dispatchEvent(new Event('submit'));
-                        }, 500);
-                    }
-                });
-
-                // Focus the input field on page load
-                confirmationCodeInput.focus();
+                // Update visual feedback
+                updateCodeInputFeedback(this);
             });
-        </script>
-    </body>
+
+            // Auto-submit when 6 digits are entered
+            confirmationCodeInput.addEventListener('input', function(e) {
+                if (this.value.length === 6) {
+                    // Add visual confirmation
+                    this.style.borderColor = 'var(--primary-color)';
+
+                    // Small delay to let user see the complete code
+                    setTimeout(() => {
+                        document.getElementById('confirmForm').dispatchEvent(new Event('submit'));
+                    }, 500);
+                }
+            });
+
+            // Focus the input field on page load
+            confirmationCodeInput.focus();
+
+            // Add visual enhancements
+            addInputEnhancements();
+        }
+
+        function setupEventListeners(username) {
+            // Manual confirmation button handler
+            const manualConfirmBtn = document.getElementById('manualConfirmBtn');
+            const manualConfirmSection = document.getElementById('manualConfirmSection');
+            const manualUsername = document.getElementById('manualUsername');
+            const manualCode = document.getElementById('manualCode');
+            const proceedWithoutConfirm = document.getElementById('proceedWithoutConfirm');
+
+            manualConfirmBtn.addEventListener('click', function() {
+                // Toggle manual section
+                if (manualConfirmSection.classList.contains('hidden')) {
+                    manualConfirmSection.classList.remove('hidden');
+                    manualConfirmSection.classList.add('fade-in');
+
+                    // Populate fields
+                    manualUsername.value = username || 'Not available';
+                    manualCode.value = document.getElementById('confirmationCode').value || 'Enter code above';
+
+                    // Update button text
+                    this.textContent = 'Hide Manual Confirmation';
+                    this.classList.remove('btn-outline');
+                    this.classList.add('btn-secondary');
+
+                    // Scroll to manual section
+                    setTimeout(() => {
+                        manualConfirmSection.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                } else {
+                    manualConfirmSection.classList.add('hidden');
+                    this.textContent = 'Having Issues? Manual Confirmation';
+                    this.classList.add('btn-outline');
+                    this.classList.remove('btn-secondary');
+                }
+            });
+
+            // Proceed without confirmation (testing only)
+            proceedWithoutConfirm.addEventListener('click', function() {
+                if (confirm('WARNING: Skipping email confirmation is only for testing purposes. Your account may not be fully activated. Continue anyway?')) {
+                    Utils.showSuccess('Proceeding without confirmation...', 'confirmMessages');
+
+                    // Clear session storage and redirect
+                    localStorage.removeItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
+
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                }
+            });
+        }
+
+        function updateCodeInputFeedback(input) {
+            const length = input.value.length;
+            const container = input.closest('.code-input-container');
+
+            // Update progress indicator
+            if (length === 0) {
+                input.style.borderColor = 'var(--border-color)';
+                container.classList.remove('valid', 'progress');
+            } else if (length < 6) {
+                input.style.borderColor = 'var(--accent-color)';
+                container.classList.add('progress');
+                container.classList.remove('valid');
+            } else {
+                input.style.borderColor = 'var(--primary-color)';
+                container.classList.add('valid');
+                container.classList.remove('progress');
+            }
+        }
+
+        function addInputEnhancements() {
+            // Add typing animation to placeholder
+            const codeInput = document.getElementById('confirmationCode');
+
+            // Enhanced focus/blur effects
+            codeInput.addEventListener('focus', function() {
+                this.closest('.code-input-container').classList.add('focused');
+            });
+
+            codeInput.addEventListener('blur', function() {
+                this.closest('.code-input-container').classList.remove('focused');
+            });
+        }
+
+        // Resend confirmation functionality
+        document.getElementById('resendConfirmation').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const button = this;
+            const originalText = button.textContent;
+
+            // Disable button temporarily
+            button.style.pointerEvents = 'none';
+            button.style.opacity = '0.6';
+            button.textContent = 'Sending...';
+
+            // Simulate resend (replace with actual API call)
+            setTimeout(() => {
+                Utils.showSuccess('Verification code resent! Check your email.', 'confirmMessages');
+
+                // Reset button
+                button.style.pointerEvents = 'auto';
+                button.style.opacity = '1';
+                button.textContent = originalText;
+
+                // Start countdown
+                startResendCountdown(button);
+            }, 1000);
+        });
+
+        function startResendCountdown(button) {
+            let countdown = 60;
+            const originalText = button.textContent;
+
+            const interval = setInterval(() => {
+                button.textContent = `Resend in ${countdown}s`;
+                button.style.pointerEvents = 'none';
+                button.style.opacity = '0.6';
+
+                countdown--;
+
+                if (countdown < 0) {
+                    clearInterval(interval);
+                    button.textContent = originalText;
+                    button.style.pointerEvents = 'auto';
+                    button.style.opacity = '1';
+                }
+            }, 1000);
+        }
+    </script>
+
+    <style>
+        .confirm-card {
+            max-width: 450px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+        }
+
+        .status-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .code-input-container {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .code-input {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.3em;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            transition: var(--transition);
+        }
+
+        .code-input:focus {
+            letter-spacing: 0.4em;
+            transform: scale(1.02);
+        }
+
+        .code-input-container.focused .input-highlight {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+
+        .code-input-container.progress .code-input {
+            background: rgba(79, 172, 254, 0.05);
+        }
+
+        .code-input-container.valid .code-input {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+        }
+
+        .input-decoration {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            overflow: hidden;
+        }
+
+        .input-highlight {
+            height: 100%;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: var(--transition);
+            opacity: 0;
+        }
+
+        .manual-confirm-section {
+            margin-top: 32px;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid #f59e0b;
+        }
+
+        .manual-header h4 {
+            color: #f59e0b;
+            margin-bottom: 8px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .manual-header h4::before {
+            content: '⚠️';
+        }
+
+        .manual-header p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .manual-details {
+            margin: 16px 0;
+        }
+
+        .detail-group {
+            margin-bottom: 12px;
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .help-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .help-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .help-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+        }
+
+        .help-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            opacity: 0.8;
+        }
+
+        .contact-support {
+            text-align: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .contact-support p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .contact-support a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-support a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-container {
+            background: var(--primary-gradient);
+            position: relative;
+        }
+
+        .auth-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="%23ffffff08" points="0,1000 1000,0 1000,1000"/></svg>');
+            pointer-events: none;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .confirm-card {
+                margin: 16px;
+                padding: 24px;
+            }
+
+            .auth-title {
+                font-size: 24px;
+            }
+
+            .code-input {
+                font-size: 20px;
+                letter-spacing: 0.2em;
+            }
+
+            .code-input:focus {
+                letter-spacing: 0.3em;
+            }
+
+            .help-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-indicator {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .manual-confirm-section {
+                padding: 16px;
+            }
+
+            .code-input {
+                font-size: 18px;
+                padding: 14px;
+            }
+
+            .help-item {
+                font-size: 12px;
+            }
+        }
+    </style>
+</body>
 </html>

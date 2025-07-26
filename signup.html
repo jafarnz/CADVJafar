@@ -1,24 +1,30 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign Up - Local Gigs</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <div class="auth-container">
-            <div class="auth-card">
-                <h1>Join Local Gigs</h1>
-                <p class="text-center mb-2">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up - Local Gigs</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card signup-card">
+            <div class="auth-header">
+                <div class="logo-icon" style="margin: 0 auto 16px auto">LG</div>
+                <h1 class="auth-title">Join Local Gigs</h1>
+                <p class="auth-subtitle">
                     Create your account to discover amazing local music events
                 </p>
+            </div>
 
-                <div id="signupMessages"></div>
+            <div id="signupMessages"></div>
 
-                <form id="signupForm">
+            <form id="signupForm">
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="username" class="form-label">Username</label>
                         <input
                             type="text"
                             id="username"
@@ -26,40 +32,45 @@
                             class="form-control"
                             required
                             autocomplete="username"
-                            placeholder="Choose a unique username"
+                            placeholder="Choose username"
                             minlength="3"
                             maxlength="20"
                         />
+                        <div class="form-text">3-20 characters, letters and numbers only</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            class="form-control"
-                            required
-                            autocomplete="email"
-                            placeholder="Enter your email address"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="preferredUsername">Display Name</label>
+                        <label for="preferredUsername" class="form-label">Display Name</label>
                         <input
                             type="text"
                             id="preferredUsername"
                             name="preferredUsername"
                             class="form-control"
                             required
-                            placeholder="How should others see you?"
+                            placeholder="Your display name"
                             maxlength="50"
                         />
+                        <div class="form-text">How others will see you</div>
                     </div>
+                </div>
 
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-control"
+                        required
+                        autocomplete="email"
+                        placeholder="Enter your email address"
+                    />
+                    <div class="form-text">We'll send you a verification code</div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input
                             type="password"
                             id="password"
@@ -67,19 +78,31 @@
                             class="form-control"
                             required
                             autocomplete="new-password"
-                            placeholder="Create a strong password"
+                            placeholder="Create password"
                             minlength="8"
                         />
                         <div class="password-requirements">
-                            <small>
-                                Password must be at least 8 characters and
-                                contain uppercase, lowercase, and numbers
-                            </small>
+                            <div class="requirement-item" id="length-req">
+                                <span class="requirement-icon">○</span>
+                                <span>At least 8 characters</span>
+                            </div>
+                            <div class="requirement-item" id="upper-req">
+                                <span class="requirement-icon">○</span>
+                                <span>One uppercase letter</span>
+                            </div>
+                            <div class="requirement-item" id="lower-req">
+                                <span class="requirement-icon">○</span>
+                                <span>One lowercase letter</span>
+                            </div>
+                            <div class="requirement-item" id="number-req">
+                                <span class="requirement-icon">○</span>
+                                <span>One number</span>
+                            </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
                         <input
                             type="password"
                             id="confirmPassword"
@@ -87,110 +110,323 @@
                             class="form-control"
                             required
                             autocomplete="new-password"
-                            placeholder="Confirm your password"
+                            placeholder="Confirm password"
                             minlength="8"
                         />
+                        <div class="form-text" id="confirm-feedback"></div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <div
-                            style="
-                                display: flex;
-                                align-items: center;
-                                gap: 10px;
-                            "
-                        >
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
                             <input
                                 type="checkbox"
                                 id="termsAccepted"
                                 name="termsAccepted"
                                 required
+                                class="checkbox-input"
                             />
-                            <label
-                                for="termsAccepted"
-                                style="margin: 0; font-weight: normal"
-                            >
-                                I agree to the
-                                <a href="#" target="_blank">Terms of Service</a>
-                                and
-                                <a href="#" target="_blank">Privacy Policy</a>
-                            </label>
-                        </div>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">
+                                I agree to the <a href="#" target="_blank">Terms of Service</a>
+                                and <a href="#" target="_blank">Privacy Policy</a>
+                            </span>
+                        </label>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Create Account
-                        </button>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-full btn-lg">
+                        Create Account →
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-links">
+                <p>
+                    Already have an account?
+                    <a href="login.html">Sign in here</a>
+                </p>
+                <p></p>
+                    <a href="index.html">← Back to home</a>
+                </p>
+            </div>
+
+            <div class="signup-benefits">
+                <h4 style="color: var(--primary-color); margin-bottom: 16px; font-size: 16px;">
+                    🎵 What you'll get
+                </h4>
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🎯</span>
+                        <span></span>Personalized event recommendations</span>
                     </div>
-                </form>
-
-                <div class="auth-links">
-                    <p>
-                        Already have an account?
-                        <a href="login.html">Sign in here</a>
-                    </p>
-                    <p><a href="index.html">Back to Home</a></p>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">📍</span>
+                        <span>Local events near you</span>
+                    </div>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🎤</span>
+                        <span>Create and manage events</span>
+                    </div>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🤝</span>
+                        <span>Connect with music lovers</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <script src="js/config.js"></script>
-        <script src="js/utils.js"></script>
-        <script src="js/auth.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
 
-        <script>
-            // Real-time password validation
-            document
-                .getElementById("password")
-                .addEventListener("input", function () {
-                    const password = this.value;
-                    const validation = Utils.validatePassword(password);
-                    const requirements = document.querySelector(
-                        ".password-requirements small",
-                    );
+    <script></script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const confirmFeedback = document.getElementById('confirm-feedback');
 
-                    if (password.length > 0) {
-                        if (validation.isValid) {
-                            requirements.style.color = "#51cf66";
-                            requirements.textContent =
-                                "✓ Password meets all requirements";
-                        } else {
-                            requirements.style.color = "#ff6b6b";
-                            let missing = [];
-                            if (!validation.minLength)
-                                missing.push("8+ characters");
-                            if (!validation.hasUpperCase)
-                                missing.push("uppercase letter");
-                            if (!validation.hasLowerCase)
-                                missing.push("lowercase letter");
-                            if (!validation.hasNumbers) missing.push("number");
-                            requirements.textContent = `Missing: ${missing.join(", ")}`;
-                        }
-                    } else {
-                        requirements.style.color = "#666";
-                        requirements.textContent =
-                            "Password must be at least 8 characters and contain uppercase, lowercase, and numbers";
-                    }
-                });
+            // Password requirements validation
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const validation = Utils.validatePassword(password);
+
+                // Update requirement indicators
+                updateRequirement('length-req', validation.minLength);
+                updateRequirement('upper-req', validation.hasUpperCase);
+                updateRequirement('lower-req', validation.hasLowerCase);
+                updateRequirement('number-req', validation.hasNumbers);
+
+                // Update input border
+                if (password.length > 0) {
+                    this.style.borderColor = validation.isValid ? 'var(--primary-color)' : '#f56565';
+                } else {
+                    this.style.borderColor = 'var(--border-color)';
+                }
+            });
 
             // Confirm password validation
-            document
-                .getElementById("confirmPassword")
-                .addEventListener("input", function () {
-                    const password = document.getElementById("password").value;
-                    const confirmPassword = this.value;
+            confirmPasswordInput.addEventListener('input', function() {
+                const password = passwordInput.value;
+                const confirmPassword = this.value;
 
-                    if (confirmPassword.length > 0) {
-                        if (password === confirmPassword) {
-                            this.style.borderColor = "#51cf66";
-                        } else {
-                            this.style.borderColor = "#ff6b6b";
-                        }
+                if (confirmPassword.length > 0) {
+                    if (password === confirmPassword) {
+                        this.style.borderColor = 'var(--primary-color)';
+                        confirmFeedback.textContent = '✓ Passwords match';
+                        confirmFeedback.style.color = '#10b981';
                     } else {
-                        this.style.borderColor = "#e0e0e0";
+                        this.style.borderColor = '#f56565';
+                        confirmFeedback.textContent = '✗ Passwords do not match';
+                        confirmFeedback.style.color = '#f56565';
                     }
-                });
-        </script>
-    </body>
+                } else {
+                    this.style.borderColor = 'var(--border-color)';
+                    confirmFeedback.textContent = '';
+                }
+            });
+
+            function updateRequirement(elementId, isValid) {
+                const element = document.getElementById(elementId);
+                const icon = element.querySelector('.requirement-icon');
+
+                if (isValid) {
+                    element.style.color = '#10b981';
+                    icon.textContent = '✓';
+                    icon.style.color = '#10b981';
+                } else {
+                    element.style.color = 'var(--text-secondary)';
+                    icon.textContent = '○';
+                    icon.style.color = 'var(--text-muted)';
+                }
+            }
+
+            // Auto-generate username from display name
+            document.getElementById('preferredUsername').addEventListener('input', function() {
+                const displayName = this.value;
+                const usernameInput = document.getElementById('username');
+
+                if (!usernameInput.value && displayName) {
+                    // Generate username: remove spaces, convert to lowercase, add random number
+                    const baseUsername = displayName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    if (baseUsername.length >= 3) {
+                        const randomNum = Math.floor(Math.random() * 999);
+                        usernameInput.value = baseUsername.substring(0, 15) + randomNum;
+                    }
+                }
+            });
+        });
+    </script>
+
+    <style>
+        .signup-card {
+            max-width: 500px;
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        .password-requirements {
+            margin-top: 8px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-light);
+        }
+
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .requirement-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .checkbox-group {
+            margin: 16px 0;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .checkbox-input {
+            display: none;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-input:checked + .checkbox-custom {
+            background: var(--primary-gradient);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-input:checked + .checkbox-custom::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .checkbox-text {
+            color: var(--text-secondary);
+        }
+
+        .checkbox-text a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .checkbox-text a:hover {
+            text-decoration: underline;
+        }
+
+        .signup-benefits {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .benefit-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .auth-container {
+            background: var(--primary-gradient);
+            position: relative;
+        }
+
+        .auth-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="%23ffffff08" points="0,1000 1000,0 1000,1000"/></svg>');
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .signup-card {
+                margin: 16px;
+                padding: 24px;
+            }
+
+            .auth-title {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .checkbox-label {
+                font-size: 13px;
+            }
+
+            .password-requirements {
+                padding: 8px;
+            }
+
+            .requirement-item {
+                font-size: 11px;
+            }
+        }
+    </style>
+</body>
 </html>

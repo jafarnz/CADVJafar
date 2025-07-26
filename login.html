@@ -3,22 +3,31 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Login - Local Gigs</title>
+        <title>Sign In - Local Gigs</title>
         <link rel="stylesheet" href="css/style.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     </head>
     <body>
         <div class="auth-container">
             <div class="auth-card">
-                <h1>Welcome Back</h1>
-                <p class="text-center mb-2">
-                    Sign in to your Local Gigs account
-                </p>
+                <div class="auth-header">
+                    <div class="logo-icon" style="margin: 0 auto 16px auto">
+                        LG
+                    </div>
+                    <h1 class="auth-title">Welcome back</h1>
+                    <p class="auth-subtitle">
+                        Sign in to your Local Gigs account
+                    </p>
+                </div>
 
                 <div id="loginMessages"></div>
 
                 <form id="loginForm">
                     <div class="form-group">
-                        <label for="username">Username or Email</label>
+                        <label for="username" class="form-label"
+                            >Email address</label
+                        >
                         <input
                             type="text"
                             id="username"
@@ -26,12 +35,14 @@
                             class="form-control"
                             required
                             autocomplete="username"
-                            placeholder="Enter your username or email"
+                            placeholder="Enter your email"
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password" class="form-label"
+                            >Password</label
+                        >
                         <input
                             type="password"
                             id="password"
@@ -44,8 +55,8 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Sign In
+                        <button type="submit" class="btn btn-primary btn-full">
+                            Sign in →
                         </button>
                     </div>
                 </form>
@@ -56,9 +67,41 @@
                         <a href="signup.html">Sign up here</a>
                     </p>
                     <p>
-                        <a href="forgot-password.html">Forgot your password?</a>
+                        <a href="index.html">← Back to home</a>
                     </p>
-                    <p><a href="index.html">Back to Home</a></p>
+                </div>
+
+                <div class="help-section">
+                    <h4
+                        style="
+                            color: var(--primary-color);
+                            margin-bottom: 12px;
+                            font-size: 16px;
+                        "
+                    >
+                        Having trouble?
+                    </h4>
+                    <ul
+                        style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                            line-height: 1.6;
+                            list-style: none;
+                            padding: 0;
+                        "
+                    >
+                        <li style="margin-bottom: 8px">
+                            • Make sure you're using the correct email and
+                            password
+                        </li>
+                        <li style="margin-bottom: 8px">
+                            • Check if Caps Lock is on
+                        </li>
+                        <li style="margin-bottom: 8px">
+                            • Try refreshing the page if you see errors
+                        </li>
+                        <li>• Contact support if you continue having issues</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -66,5 +109,44 @@
         <script src="js/config.js"></script>
         <script src="js/utils.js"></script>
         <script src="js/auth.js"></script>
+
+        <style>
+            .help-section {
+                margin-top: 32px;
+                padding-top: 24px;
+                border-top: 1px solid var(--border-light);
+            }
+
+            .auth-container {
+                background: var(--primary-gradient);
+                position: relative;
+            }
+
+            .auth-container::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="%23ffffff08" points="0,1000 1000,0 1000,1000"/></svg>');
+                pointer-events: none;
+            }
+
+            .auth-card {
+                animation: slideIn 0.5s ease-out;
+            }
+
+            @media (max-width: 480px) {
+                .auth-card {
+                    margin: 16px;
+                    padding: 24px;
+                }
+
+                .auth-title {
+                    font-size: 24px;
+                }
+            }
+        </style>
     </body>
 </html>

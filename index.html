@@ -1,297 +1,1068 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Local Gigs - Discover Amazing Music Events</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <header class="header">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Local Gigs - Discover Amazing Music Events</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
             <div class="header-content">
-                <a href="index.html" class="logo">Local Gigs</a>
-                <nav></nav>
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">LG</div>
+                    Local Gigs
+                </a>
+                <nav>
                     <ul class="nav-menu">
-                        <li><a href="#features">Features</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#features" class="nav-link">Features</a></li>
+                        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                        <li><a href="#about" class="nav-link">About</a></li>
                         <li id="auth-nav">
-                            <a href="login.html" class="btn">Login</a>
-                            <a href="signup.html" class="btn btn-secondary">Sign Up</a>
+                            <a href="login.html" class="btn btn-ghost">Sign In</a>
+                            <a href="signup.html" class="btn btn-primary">Get Started</a>
                         </li>
                         <li id="user-nav" class="hidden">
-                            <a href="dashboard.html" class="btn">Dashboard</a>
-                            <button class="btn btn-secondary logout-btn">Logout</button>
+                            <a href="dashboard.html" class="btn btn-primary">Dashboard</a>
+                            <button class="btn btn-ghost logout-btn">Sign Out</button>
                         </li>
                     </ul>
                 </nav>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main>
-            <!-- Hero Section -->
-            <section class="hero" style="padding: 4rem 0; text-align: center; color: white;">
-                <div class="container">
-                    <h1 style="font-size: 3.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-                        Discover Local Music Events
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class</main>="hero-content">
+                    <div class="hero-badge">
+                        🎵 Welcome to the future of music discovery
+                    </div>
+                    <h1 class="hero-title">
+                        Connect. <span class="text-gradient">Discover.</span> Experience.
                     </h1>
-                    <p style="font-size: 1.2rem; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                        Find amazing live music events happening near you. From intimate acoustic sessions to massive festivals,
-                        Local Gigs connects you with the vibrant music scene in your area.
+                    <p class="hero-description">
+                        The ultimate platform for <strong>music lovers</strong> to find live events,
+                        share experiences, and connect with your local music scene.
                     </p>
-                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                        <a href="signup.html" class="btn" style="font-size: 1.1rem; padding: 1rem 2rem;">
-                            Get Started
+                    <p class="hero-subtitle">
+                        Your musical journey starts here with Local Gigs.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="signup.html" class="btn btn-primary btn-lg">
+                            <span>🚀</span> Get Started
                         </a>
-                        <a href="#features" class="btn btn-secondary" style="font-size: 1.1rem; padding: 1rem 2rem;">
-                            Learn More
+                        <a href="#features" class="btn btn-ghost btn-lg">
+                            <span>🎯</span> Learn More
                         </a>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- Features Section -->
-            <section id="features" style="padding: 4rem 0; background: rgba(255,255,255,0.1);">
-                <div class="container">
-                    <h2 style="text-align: center; color: white; margin-bottom: 3rem; font-size: 2.5rem;">
-                        Why Choose Local Gigs?
+            <!-- Floating elements for visual appeal -->
+            <div class="hero-decorations">
+                <div class="floating-element note-1">♪</div>
+                <div class="floating-element note-2">♫</div>
+                <div class="floating-element note-3">♪</div>
+                <div class="floating-element note-4">♬</div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">⭐ Everything you need</div>
+                    <h2 class="section-title">
+                        Powerful features for music lovers
                     </h2>
-                    <div class="dashboard-grid">
-                        <div class="card">
-                            <div style="text-align: center; padding: 1rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">🎵</div>
-                                <h3 style="color: #667eea; margin-bottom: 1rem;">Discover Events</h3>
-                                <p style="color: #666;">
-                                    Browse and discover music events happening in your area. From rock concerts to jazz nights,
-                                    find events that match your taste.
-                                </p>
-                            </div>
-                        </div>
+                    <p class="section-description">
+                        Discover, create, and share amazing music experiences with our comprehensive platform designed for the modern music community.
+                    </p>
+                </div>
 
-                        <div class="card">
-                            <div style="text-align: center; padding: 1rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
-                                <h3 style="color: #667eea; margin-bottom: 1rem;">Location-Based</h3>
-                                <p style="color: #666;">
-                                    See events on an interactive map and find venues near you. Never miss out on great music
-                                    happening in your neighborhood.
-                                </p>
-                            </div>
-                        </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎵</div>
+                        <h3 class="feature-title">Discover Events</h3>
+                        <p class="feature-description">
+                            Browse and discover music events happening in your area. From rock concerts to jazz nights, find events that match your taste.
+                        </p>
+                        <div class="feature-highlight">Smart Recommendations</div>
+                    </div>
 
-                        <div class="card">
-                            <div style="text-align: center; padding: 1rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">🎤</div>
-                                <h3 style="color: #667eea; margin-bottom: 1rem;">Create Events</h3>
-                                <p style="color: #666;">
-                                    Organize your own music events and reach local music lovers. Perfect for artists,
-                                    venues, and event organizers.
-                                </p>
-                            </div>
-                        </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📍</div>
+                        <h3 class="feature-title">Location-Based</h3>
+                        <p class="feature-description">
+                            See events on an interactive map and find venues near you. Never miss out on great music happening in your neighborhood.
+                        </p>
+                        <div class="feature-highlight">Real-time Updates</div>
+                    </div>
 
-                        <div class="card">
-                            <div style="text-align: center; padding: 1rem;">
-                                <div style="font-size: 3rem; margin-bottom: 1rem;">💝</div>
-                                <h3 style="color: #667eea; margin-bottom: 1rem;">Personalized</h3>
-                                <p style="color: #666;">
-                                    Get event recommendations based on your music preferences. Discover new artists and
-                                    genres tailored to your taste.
-                                </p>
-                            </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🎤</div>
+                        <h3 class="feature-title">Create Events</h3>
+                        <p class="feature-description">
+                            Organize your own music events and reach local music lovers. Perfect for artists, venues, and event organizers.
+                        </p>
+                        <div class="feature-highlight">Easy Management</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">💝</div>
+                        <h3 class="feature-title">Personalized</h3>
+                        <p class="feature-description">
+                            Get event recommendations based on your music preferences. Discover new artists and genres tailored to your taste.
+                        </p>
+                        <div class="feature-highlight">AI-Powered</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🤝</div>
+                        <h3 class="feature-title">Connect</h3>
+                        <p class="feature-description">
+                            Meet fellow music enthusiasts and build lasting connections through shared musical experiences and interests.
+                        </p>
+                        <div class="feature-highlight">Community Driven</div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📱</div>
+                        <h3 class="feature-title">Mobile Ready</h3>
+                        <p class="feature-description">
+                            Access Local Gigs anywhere, anytime. Our responsive design works perfectly on all your devices.
+                        </p>
+                        <div class="feature-highlight">Cross-Platform</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="container">
+                <div class="stats-card">
+                    <h2 class="stats-title">Join Our Growing Community</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">1000+</div>
+                            <div class="stat-label">Events Listed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">100+</div>
+                            <div class="stat-label">Venues</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">50+</div>
+                            <div class="stat-label">Cities</div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- Stats Section -->
-            <section style="padding: 3rem 0;">
-                <div class="container">
-                    <div class="card">
-                        <h2 style="text-align: center; margin-bottom: 2rem; color: #333;">Join Our Growing Community</h2>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center;">
-                            <div>
-                                <div</div> style="font-size: 2.5rem; font-weight: bold; color: #667eea; margin-bottom: 0.5rem;">1000+</div>
-                                <div style="color: #666;">Events Listed</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 2.5rem; font-weight: bold; color: #667eea; margin-bottom: 0.5rem;">500+</div>
-                                <div style="color: #666;">Active Users</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 2.5rem; font-weight: bold; color: #667eea; margin-bottom: 0.5rem;">100+</div>
-                                <div style="color: #666;">Venues</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 2.5rem; font-weight: bold; color: #667eea; margin-bottom: 0.5rem;">50+</div>
-                                <div style="color: #666;">Cities</div>
-                            </div>
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="how-it-works-section">
+            <div class="container">
+                <div class="section-header">
+                    <div class="section-badge">🎯 Simple & Effective</div>
+                    <h2 class="section-title">How Local Gigs Works</h2>
+                    <p class="section-description">
+                        Get started in just three simple steps and begin your musical journey today.
+                    </p>
+                </div>
+
+                <div class="steps-container">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Sign Up</h3>
+                            <p class="step-description">
+                                Create your free account and set your music preferences to get personalized recommendations.
+                            </p>
                         </div>
+                        <div class="step-icon">👤</div>
+                    </div>
+
+                    <div class="step-connector"></div>
+
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Explore</h3>
+                            <p class="step-description">
+                                Browse events on our interactive map or search by genre, date, and location to find perfect matches.
+                            </p>
+                        </div>
+                        <div class="step-icon">🔍</div>
+                    </div>
+
+                    <div class="step-connector"></div>
+
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3 class="step-title">Experience</h3>
+                            <p class="step-description">
+                                Get event details, directions, and connect with other music lovers. Enjoy amazing live music!
+                            </p>
+                        </div>
+                        <div class="step-icon">🎉</div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- How It Works Section -->
-            <section style="padding: 4rem 0; background: rgba(255,255,255,0.1);">
-                <div class="container">
-                    <h2 style="text-align: center; color: white; margin-bottom: 3rem; font-size: 2.5rem;">
-                        How It Works
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-                        <div class="card" style="text-align: center;">
-                            <div style="background: #667eea; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 auto 1rem;">1</div>
-                            <h3 style="color: #333; margin-bottom: 1rem;">Sign Up</h3>
-                            <p style="color: #666;">Create your free account and set your music preferences to get personalized recommendations.</p>
-                        </div>
-
-                        <div class="card" style="text-align: center;">
-                            <div style="background: #667eea; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 auto 1rem;">2</div>
-                            <h3 style="color: #333; margin-bottom: 1rem;">Explore</h3>
-                            <p style="color: #666;">Browse events on our interactive map or search by genre, date, and location to find perfect matches.</p>
-                        </div>
-
-                        <div class="card" style="text-align: center;">
-                            <div style="background: #667eea; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 auto 1rem;">3</div>
-                            <h3 style="color: #333; margin-bottom: 1rem;">Attend</h3>
-                            <p style="color: #666;">Get event details, directions, and connect with other music lovers. Enjoy amazing live music!</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- About Section -->
-            <section id="about" style="padding: 4rem 0;">
-                <div class="container">
-                    <div class="card" style="max-width: 800px; margin: 0 auto; text-align: center;">
-                        <h2 style="color: #333; margin-bottom: 2rem; font-size: 2.5rem;">About Local Gigs</h2>
-                        <p style="color: #666; font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem;">
+        <!-- About Section -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <div class="section-badge">🎶 Our Story</div>
+                        <h2 class="section-title">About Local Gigs</h2>
+                        <p class="about-description">
                             Local Gigs is your gateway to discovering incredible live music experiences in your area.
                             We believe that music brings people together and that every community has amazing talents
-                            waiting to be discovered. Our platform connects music lovers with local artists, venues,
-                            and events, creating a vibrant ecosystem where everyone can find their perfect musical experience.
+                            waiting to be discovered.
                         </p>
-                        <p style="color: #666; font-size: 1.1rem; line-height: 1.8;">
-                            Whether you're a music enthusiast looking for your next favorite band, an artist wanting to
-                            reach new audiences, or a venue owner promoting your space, Local Gigs provides the tools
-                            and community to make meaningful musical connections happen.
+                        <p class="about-description">
+                            Our platform connects music lovers with local artists, venues, and events, creating a
+                            vibrant ecosystem where everyone can find their perfect musical experience. Whether you're
+                            a music enthusiast, artist, or venue owner, Local Gigs provides the tools to make
+                            meaningful musical connections happen.
                         </p>
+                        <div class="about-features">
+                            <div class="about-feature">
+                                <span class="feature-check">✓</span>
+                                <span></span>Community-driven platform</span>
+                            </div>
+                            <div class="about-feature">
+                                <span class="feature-check">✓</span>
+                                <span>Real-time event updates</span>
+                            </div>
+                            <div class="about-feature">
+                                <span class="feature-check">✓</span>
+                                <span>Free for all users</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- CTA Section -->
-            <section style="padding: 4rem 0; background: rgba(255,255,255,0.1);">
-                <div class="container">
-                    <div class="card" style="text-align: center; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #333; margin-bottom: 1rem; font-size: 2.5rem;">Ready to Get Started?</h2>
-                        <p style="color: #666; font-size: 1.1rem; margin-bottom: 2rem;">
-                            Join thousands of music lovers and discover amazing local events. It's free and takes less than a minute to sign up.
-                        </p>
-                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                            <a href="signup.html" class="btn" style="font-size: 1.1rem; padding: 1rem 2rem;">
-                                Sign Up Now
-                            </a>
-                            <a href="login.html" class="btn btn-secondary" style="font-size: 1.1rem; padding: 1rem 2rem;">
-                                Already a Member?
-                            </a>
+                    <div class="about-visual">
+                        <div class="about-card">
+                            <div class="card-icon">🎵</div>
+                            <div class="card-content">
+                                <h4>Music Discovery</h4>
+                                <p>Find your next favorite artist</p>
+                            </div>
+                        </div>
+                        <div class="about-card">
+                            <div class="card-icon">🎤</div>
+                            <div class="card-content">
+                                <h4>Event Creation</h4>
+                                <p>Share your musical events</p>
+                            </div>
+                        </div>
+                        <div class="about-card">
+                            <div class="card-icon">🤝</div>
+                            <div class="card-content">
+                                <h4>Community</h4>
+                                <p>Connect with music lovers</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
-        </main>
+            </div>
+        </section>
 
-        <!-- Footer -->
-        <footer style="background: rgba(0,0,0,0.8); color: white; padding: 2rem 0; margin-top: 2rem;">
+        <!-- CTA Section -->
+        <section class="cta-section">
             <div class="container">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-                    <div>
-                        <h3 style="color: #667eea; margin-bottom: 1rem;">Local Gigs</h3>
-                        <p style="color: #ccc; line-height: 1.6;">
-                            Connecting music lovers with amazing local events. Discover, create, and enjoy live music in your community.
-                        </p>
+                <div class="cta-content">
+                    <h2 class="cta-title">Ready to Get Started?</h2>
+                    <p class="cta-description">
+                        Join thousands of music lovers and discover amazing local events.
+                        It's free and takes less than a minute to sign up.
+                    </p>
+                    <div class="cta-actions">
+                        <a href="signup.html" class="btn btn-primary btn-lg">
+                            <span>🚀</span> Sign Up Now
+                        </a>
+                        <a href="login.html" class="btn btn-outline btn-lg">
+                            Already a Member?
+                        </a>
                     </div>
-                    <div>
-                        <h4 style="color: white; margin-bottom: 1rem;">Quick Links</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin-bottom: 0.5rem;"><a href="#features" style="color: #ccc; text-decoration: none;">Features</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="#about" style="color: #ccc; text-decoration: none;">About</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="signup.html" style="color: #ccc; text-decoration: none;">Sign Up</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="login.html" style="color: #ccc; text-decoration: none;">Login</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 style="color: white; margin-bottom: 1rem;">Support</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc; text-decoration: none;">Help Center</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc; text-decoration: none;">Contact Us</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc; text-decoration: none;">Privacy Policy</a></li>
-                            <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #ccc; text-decoration: none;">Terms of Service</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div style="border-top: 1px solid #444; margin-top: 2rem; padding-top: 1rem; text-align: center;">
-                    <p style="color: #ccc; margin: 0;">
-                        © 2025 Local Gigs. All rights reserved. Made with ❤️ for music lovers.
+                    <p class="cta-note">
+                        No credit card required • Free forever • Join 500+ music lovers
                     </p>
                 </div>
             </div>
-        </footer>
+        </section>
+    </main>
 
-        <script src="js/config.js"></script>
-        <script src="js/utils.js"></script>
-        <script src="js/auth.js"></script>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="logo-icon">LG</div>
+                        Local Gigs
+                    </div>
+                    <p class="footer-description">
+                        Connecting music lovers with amazing local events. Discover, create, and enjoy live music in your community.
+                    </p>
+                </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Check if user is already logged in
-                if (Utils.isAuthenticated()) {
-                    // Show user navigation
-                    Utils.hide('auth-nav');
-                    Utils.show('user-nav');
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4 class="footer-title">Platform</h4>
+                        <ul class="footer-list">
+                            <li><a href="#features">Features</a></li>
+                            <li><a href="#how-it-works">How It Works</a></li>
+                            <li><a href="signup.html">Sign Up</a></li>
+                            <li><a href="login.html">Sign In</a></li>
+                        </ul>
+                    </div>
 
-                    // Update CTA buttons
-                    const ctaButtons = document.querySelectorAll('a[href="signup.html"], a[href="login.html"]');
-                    ctaButtons.forEach(btn => {
-                        if (btn.textContent.includes('Sign Up') || btn.textContent.includes('Get Started')) {
-                            btn.href = 'dashboard.html';
-                            btn.textContent = 'Go to Dashboard';
-                        }
-                    });
-                }
+                    <div class="footer-column">
+                        <h4 class="footer-title">Support</h4>
+                        <ul class="footer-list">
+                            <li><a href="#">Help Center</a></li>
+                            <li><a href="#">Contact Us</a></li>
+                            <li><a href="#">Community</a></li>
+                            <li><a href="#">Status</a></li>
+                        </ul>
+                    </div>
 
-                // Smooth scrolling for anchor links
-                document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                    anchor.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        const target = document.querySelector(this.getAttribute('href'));
-                        if (target) {
-                            target.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
-                        }
-                    });
+                    <div class="footer-column">
+                        <h4 class="footer-title">Legal</h4>
+                        <ul class="footer-list">
+                            <li><a href="#">Privacy Policy</a></li>
+                            <li><a href="#">Terms of Service</a></li>
+                            <li><a href="#">Cookie Policy</a></li>
+                            <li><a href="#">Disclaimer</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    © 2025 Local Gigs. All rights reserved. Made with ❤️ for music lovers.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            if (Utils.isAuthenticated()) {
+                // Show user navigation
+                Utils.hide('auth-nav');
+                Utils.show('user-nav');
+
+                // Update CTA buttons
+                const ctaButtons = document.querySelectorAll('a[href="signup.html"]');
+                ctaButtons.forEach(btn => {
+                    if (btn.textContent.includes('Sign Up') || btn.textContent.includes('Get Started')) {
+                        btn.href = 'dashboard.html';
+                        btn.innerHTML = '<span>📊</span> Go to Dashboard';
+                    }
                 });
+            }
 
-                // Add animation to feature cards on scroll
-                const observerOptions = {
-                    threshold: 0.1,
-                    rootMargin: '0px 0px -50px 0px'
-                };
-
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('fade-in');
-                        }
-                    });
-                }, observerOptions);
-
-                // Observe all cards
-                document.querySelectorAll('.card').forEach(card => {
-                    observer.observe(card);
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
                 });
             });
-        </script>
-    </body>
-</html>
+
+            // Add scroll-based animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -100px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+
+                        // Add staggered animation for feature cards
+                        if (entry.target.classList.contains('feature-card')) {
+                            const cards = entry.target.parentElement.children;
+                            Array.from(cards).forEach((card, index) => {
+                                setTimeout(() => {
+                                    card.classList.add('slide-in');
+                                }, index * 100);
+                            });
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            // Observe elements for animations
+            document.querySelectorAll('.feature-card, .step-card, .about-card, .stats-card').forEach(element => {
+                observer.observe(element);
+            });
+
+            // Add active state to navigation
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= (sectionTop - 200)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Floating animation for hero decorations
+            function animateFloatingElements() {
+                const elements = document.querySelectorAll('.floating-element');
+                elements.forEach((element, index) => {
+                    const delay = index * 0.5;
+                    const duration = 3 + (index * 0.5);
+                    element.style.animationDelay = `${delay}s`;
+                    element.style.animationDuration = `${duration}s`;
+                });
+            }
+
+            animateFloatingElements();
+        });
+    </script>
+
+    <style>
+        /* Additional custom styles for the landing page */
+        .hero-section {
+            padding: 120px 0 80px 0;
+            background: var(--primary-gradient);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 20px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-decorations {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-element {
+            position: absolute;
+            font-size: 24px;
+            opacity: 0.1;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .note-1 { top: 20%; left: 10%; }
+        .note-2 { top: 30%; right: 15%; animation-delay: 1s; }
+        .note-3 { bottom: 30%; left: 20%; animation-delay: 2s; }
+        .note-4 { bottom: 20%; right: 10%; animation-delay: 3s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .features-section {
+            padding: 80px 0;
+            background: var(--bg-secondary);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 64px auto;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .section-description {
+            font-size: 18px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-gradient);
+            transform: scaleX(0);
+            transition: var(--transition);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .feature-highlight {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stats-section {
+            padding: 60px 0;
+            background: var(--bg-primary);
+        }
+
+        .stats-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: 48px 32px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 32px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+        }
+
+        .stat-item {
+            padding: 16px;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .how-it-works-section {
+            padding: 80px 0;
+            background: var(--bg-secondary);
+        }
+
+        .steps-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .step-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            text-align: center;
+            max-width: 280px;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 auto 16px auto;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .step-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .step-icon {
+            font-size: 24px;
+            opacity: 0.6;
+        }
+
+        .step-connector {
+            width: 80px;
+            height: 2px;
+            background: var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .about-section {
+            padding: 80px 0;
+            background: var(--bg-primary);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .about-text {
+            max-width: 500px;
+        }
+
+        .about-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .about-features {
+            margin-top: 32px;
+        }
+
+        .about-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .feature-check {
+            width: 20px;
+            height: 20px;
+            background: var(--success-gradient);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .about-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .about-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: var(--transition);
+        }
+
+        .about-card:hover {
+            transform: translateX(8px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .card-content h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .card-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .cta-section {
+            padding: 80px 0;
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .cta-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-title {
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cta-description {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            opacity: 0.9;
+        }
+
+        .cta-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .cta-note {
+            font-size: 14px;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .footer {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 60px 0 24px 0;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 64px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand {
+            max-width: 300px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .footer-description {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .footer-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .footer-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-list li {
+            margin-bottom: 8px;
+        }
+
+        .footer-list a {
+            color: #ccc;
+            text-decoration: none;
+            font-size: 14px;
+            transition: var(--transition-fast);
+        }
+
+        .footer-list a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #333;
+            padding-top: 24px;
+            text-align: center;
+        }
+
+        .footer-copyright {
+            font-size: 14px;
+            color: #999;
+            margin: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 48px;
+                text-align: center;
+            }
+
+            .steps-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .step-connector {
+                width: 2px;
+                height: 60px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 40px;
+            }
+
+            .hero-description {
+                font-size: 18px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .footer-links {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 24px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .cta-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-links {
+                grid-template-columns: 1fr;
+            }
+
+            .step-connector {
+                display: none;
+            }
+        }
