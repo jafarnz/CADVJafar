@@ -846,8 +846,8 @@ const ProfilePage = {
 
             const profileData = {
                 userID: this.userProfile.userID,
-                name: this.userProfile.name,
-                email: this.userProfile.email,
+                name: this.userProfile.name || "",
+                email: this.userProfile.email || "",
                 bio: this.userProfile.bio || null,
                 location: this.userProfile.location || null,
                 website: this.userProfile.website || null,
@@ -856,12 +856,20 @@ const ProfilePage = {
                 createdAt: this.userProfile.createdAt || new Date().toISOString(),
             };
 
-            console.log("🔄 Updating user profile with new image URL:", {
-                userID: this.userProfile.userID,
-                imageUrl: imageUrl
+            console.log("🔄 Profile data being sent for image update:", {
+                userID: profileData.userID,
+                name: profileData.name,
+                email: profileData.email,
+                bio: profileData.bio,
+                location: profileData.location,
+                website: profileData.website,
+                preferences: profileData.preferences,
+                profilePictureUrl: profileData.profilePictureUrl,
+                createdAt: profileData.createdAt
             });
 
             const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, this.userProfile.userID);
+            console.log("🔗 API URL for update:", url);
 
             try {
                 await Utils.apiCall(url, {

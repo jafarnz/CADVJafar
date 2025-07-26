@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
+
 <body>
     <div class="auth-container">
         <div class="auth-card profile-setup-card">
@@ -65,15 +67,7 @@
 
                     <div class="form-group">
                         <label for="name" class="form-label">Full Name *</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            class="form-control"
-                            required
-                            placeholder="Enter your full name"
-                            maxlength="100"
-                        />
+                        <input type="text" id="name" name="name" class="form-control" required placeholder="Enter your full name" maxlength="100" />
                         <div class="form-text">This is how you'll appear to other users</div>
                     </div>
 
@@ -190,8 +184,8 @@
                                     <h4>Location Benefits</h4>
                                     <ul>
                                         <li>Discover</ul> events happening nearby</li>
-                                        <li>Get personalized distance-based recommendations</li>
-                                        <li>Never miss local music events again</li>
+                                    <li>Get personalized distance-based recommendations</li>
+                                    <li>Never miss local music events again</li>
                                     </ul>
                                 </div>
                             </div>
@@ -223,17 +217,18 @@
 
     <style>
         /* Profile Picture Upload Styling */
+        
         .profile-picture-upload {
             margin-bottom: 2rem;
         }
-
+        
         .image-upload-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 1rem;
         }
-
+        
         .image-preview-wrapper {
             position: relative;
             width: 150px;
@@ -248,62 +243,69 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-
+        
         .image-preview-wrapper:hover {
             border-color: var(--primary-black);
             background: #f0f0f0;
         }
-
+        
         .profile-picture-preview {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
+        
         .upload-placeholder {
             text-align: center;
             color: #6c757d;
             padding: 1rem;
         }
-
+        
         .upload-icon {
             font-size: 2rem;
             margin-bottom: 0.5rem;
         }
-
+        
         .upload-placeholder p {
             margin: 0.5rem 0;
             font-weight: 500;
         }
-
+        
         .upload-placeholder small {
             color: #9ca3af;
             font-size: 0.75rem;
         }
-
+        
         .upload-actions {
             display: flex;
             gap: 0.75rem;
         }
-
-        .upload-btn, .remove-btn {
+        
+        .upload-btn,
+        .remove-btn {
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
         }
-
         /* Step styling improvements */
+        
         .setup-step {
             display: none;
             animation: fadeIn 0.3s ease-in-out;
         }
-
+        
         .setup-step.active {
             display: block;
         }
-
+        
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 
@@ -326,7 +328,10 @@
                     if (!file) return;
 
                     try {
-                        Utils.s3.validateImageFile(file);
+                        // Check file size (5MB limit)
+                        if (file.size > 5 * 1024 * 1024) {
+                            throw new Error("Image file must be less than 5MB");
+                        }
 
                         selectedProfilePicture = file;
 
@@ -383,7 +388,7 @@
 
                 // Get form data
                 const name = document.getElementById('name').value;
-                const selectedGenre = document.querySelector('.genre-option.selected')?.dataset.genre;
+                const selectedGenre = document.querySelector('.genre-option.selected') ? .dataset.genre;
                 const notifications = document.getElementById('emailNotifications').checked;
                 const shareLocation = document.getElementById('shareLocation').checked;
 
@@ -392,7 +397,7 @@
                 // Upload profile picture if selected
                 if (selectedProfilePicture) {
                     try {
-                        profilePictureUrl = await Utils.s3.uploadProfilePicture(selectedProfilePicture, currentUser.sub);
+                        profilePictureUrl = await Utils.uploadImage(selectedProfilePicture, "users");
                         console.log('Profile picture uploaded:', profilePictureUrl);
                     } catch (uploadError) {
                         console.error('Profile picture upload failed:', uploadError);
@@ -414,7 +419,7 @@
 
                 // Add profile picture URL if uploaded
                 if (profilePictureUrl) {
-                    profileData.profilePicture = profilePictureUrl;
+                    profileData.profilePictureUrl = profilePictureUrl;
                 }
 
                 // Save to backend
@@ -571,7 +576,9 @@
                     updateProgress();
 
                     // Scroll to top
-                    document.querySelector('.auth-card').scrollIntoView({ behavior: 'smooth' });
+                    document.querySelector('.auth-card').scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 }
             }
         }
@@ -589,7 +596,9 @@
                 updateProgress();
 
                 // Scroll to top
-                document.querySelector('.auth-card').scrollIntoView({ behavior: 'smooth' });
+                document.querySelector('.auth-card').scrollIntoView({
+                    behavior: 'smooth'
+                });
             }
         }
 
@@ -645,11 +654,11 @@
             max-width: 600px;
             animation: scaleIn 0.5s ease-out;
         }
-
+        
         .progress-container {
             margin-bottom: 32px;
         }
-
+        
         .progress-bar {
             width: 100%;
             height: 6px;
@@ -658,61 +667,61 @@
             overflow: hidden;
             margin-bottom: 8px;
         }
-
+        
         .progress-fill {
             height: 100%;
             background: var(--primary-gradient);
             border-radius: 3px;
             transition: width 0.5s ease;
         }
-
+        
         .progress-text {
             text-align: center;
             font-size: 12px;
             color: var(--text-secondary);
             font-weight: 500;
         }
-
+        
         .setup-step {
             display: none;
         }
-
+        
         .setup-step.active {
             display: block;
             animation: fadeIn 0.3s ease-out;
         }
-
+        
         .step-header {
             text-align: center;
             margin-bottom: 32px;
         }
-
+        
         .step-icon {
             font-size: 48px;
             margin-bottom: 16px;
         }
-
+        
         .step-title {
             font-size: 24px;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 8px;
         }
-
+        
         .step-description {
             font-size: 14px;
             color: var(--text-secondary);
             max-width: 400px;
             margin: 0 auto;
         }
-
+        
         .genre-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
             margin-top: 16px;
         }
-
+        
         .genre-option {
             padding: 20px 16px;
             text-align: center;
@@ -724,7 +733,7 @@
             position: relative;
             overflow: hidden;
         }
-
+        
         .genre-option::before {
             content: '';
             position: absolute;
@@ -735,17 +744,17 @@
             background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
             transition: left 0.5s ease;
         }
-
+        
         .genre-option:hover::before {
             left: 100%;
         }
-
+        
         .genre-option:hover {
             border-color: var(--primary-color);
             transform: translateY(-4px);
             box-shadow: var(--shadow-lg);
         }
-
+        
         .genre-option.selected {
             border-color: var(--primary-color);
             background: var(--primary-color);
@@ -753,26 +762,26 @@
             transform: translateY(-4px);
             box-shadow: var(--shadow-lg);
         }
-
+        
         .genre-content {
             position: relative;
             z-index: 1;
         }
-
+        
         .genre-emoji {
             font-size: 24px;
             margin-bottom: 8px;
         }
-
+        
         .genre-name {
             font-size: 14px;
             font-weight: 500;
         }
-
+        
         .settings-group {
             margin-bottom: 24px;
         }
-
+        
         .toggle-group {
             display: flex;
             align-items: center;
@@ -784,32 +793,32 @@
             margin-bottom: 16px;
             transition: var(--transition);
         }
-
+        
         .toggle-group:hover {
             border-color: var(--primary-color);
             box-shadow: var(--shadow-sm);
         }
-
+        
         .toggle-content {
             flex: 1;
         }
-
+        
         .toggle-title {
             font-size: 16px;
             font-weight: 500;
             color: var(--text-primary);
             margin-bottom: 4px;
         }
-
+        
         .toggle-description {
             font-size: 13px;
             color: var(--text-secondary);
         }
-
+        
         .location-info {
             margin-top: 24px;
         }
-
+        
         .info-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-light);
@@ -819,24 +828,24 @@
             gap: 16px;
             transition: var(--transition);
         }
-
+        
         .info-icon {
             font-size: 32px;
             flex-shrink: 0;
         }
-
+        
         .info-content h4 {
             font-size: 16px;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 8px;
         }
-
+        
         .info-content ul {
             list-style: none;
             padding: 0;
         }
-
+        
         .info-content li {
             font-size: 13px;
             color: var(--text-secondary);
@@ -844,7 +853,7 @@
             position: relative;
             padding-left: 16px;
         }
-
+        
         .info-content li::before {
             content: '✓';
             position: absolute;
@@ -852,7 +861,7 @@
             color: var(--primary-color);
             font-weight: 600;
         }
-
+        
         .step-actions {
             display: flex;
             gap: 12px;
@@ -860,25 +869,25 @@
             margin-top: 32px;
             flex-wrap: wrap;
         }
-
+        
         .setup-footer {
             margin-top: 32px;
             padding-top: 24px;
             border-top: 1px solid var(--border-light);
             text-align: center;
         }
-
+        
         .footer-text {
             font-size: 13px;
             color: var(--text-secondary);
             margin: 0;
         }
-
+        
         .auth-container {
             background: var(--primary-gradient);
             position: relative;
         }
-
+        
         .auth-container::before {
             content: "";
             position: absolute;
@@ -889,56 +898,48 @@
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><polygon fill="%23ffffff08" points="0,1000 1000,0 1000,1000"/></svg>');
             pointer-events: none;
         }
-
+        
         @media (max-width: 768px) {
             .profile-setup-card {
                 margin: 16px;
                 padding: 24px;
             }
-
             .step-title {
                 font-size: 20px;
             }
-
             .genre-grid {
                 grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             }
-
             .step-actions {
                 flex-direction: column;
             }
-
             .step-actions .btn {
                 width: 100%;
             }
-
             .toggle-group {
                 padding: 16px;
             }
-
             .info-card {
                 flex-direction: column;
                 text-align: center;
             }
         }
-
+        
         @media (max-width: 480px) {
             .genre-option {
                 padding: 16px 12px;
             }
-
             .genre-emoji {
                 font-size: 20px;
             }
-
             .genre-name {
                 font-size: 12px;
             }
-
             .step-icon {
                 font-size: 40px;
             }
         }
     </style>
 </body>
+
 </html>
