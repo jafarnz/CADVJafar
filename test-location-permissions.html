@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AWS Location Service Permissions</title>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+    <script src="js/config.js"></script>
+</head>
+<body>
+    <h1>AWS Location Service Permission Test</h1>
+    <div id="results"></div>
+    <button onclick="testPermissions()">Test Permissions</button>
+
+    <script>
+        async function testPermissions() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing permissions...</p>';
+
+            try {
+                // Get tokens
+                const accessToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
+                const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+
+                if (!accessToken && !idToken) {
+                    resultsDiv.innerHTML = '<p style="color: red;">❌ No auth tokens found. Please log in first.</p>';
+                    return;
+                }
+
+                // Configure AWS
+                AWS.config.region = CONFIG.COGNITO.REGION;
+                AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
+                    Logins: {
+                        [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]: idToken || accessToken
+                    }
+                });
+
+                // Refresh credentials
+                await new Promise((resolve, reject) => {
+                    AWS.config.credentials.refresh((error) => {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+
+                resultsDiv.innerHTML += '<p style="color: green;">✅ Credentials refreshed successfully</p>';
+
+                // Test Location Service access
+                const location = new AWS.Location({
+                    region: CONFIG.LOCATION.REGION,
+                    credentials: AWS.config.credentials
+                });
+
+                // Test 1: Describe Map
+                try {
+                    const mapResult = await location.describeMap({
+                        MapName: CONFIG.LOCATION.MAP_NAME
+                    }).promise();
+
+                    resultsDiv.innerHTML += '<p style="color: green;">✅ Map access successful</p>';
+                    resultsDiv.innerHTML += `<pre>${JSON.stringify(mapResult, null, 2)}</pre>`;
+                } catch (mapError) {
+                    resultsDiv.innerHTML += `<p style="color: red;">❌ Map access failed: ${mapError.message}</p>`;
+                }
+
+                // Test 2: Describe Place Index
+                try {
+                    const placeResult = await location.describePlaceIndex({
+                        IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME
+                    }).promise();
+
+                    resultsDiv.innerHTML += '<p style="color: green;">✅ Place index access successful</p>';
+                    resultsDiv.innerHTML += `<pre>${JSON.stringify(placeResult, null, 2)}</pre>`;
+                } catch (placeError) {
+                    resultsDiv.innerHTML += `<p style="color: red;">❌ Place index access failed: ${placeError.message}</p>`;
+                }
+
+                // Show credential details
+                resultsDiv.innerHTML += '<h3>Credential Details:</h3>';
+                resultsDiv.innerHTML += `<pre>${JSON.stringify({
+                    accessKeyId: AWS.config.credentials.accessKeyId,
+                    identityId: AWS.config.credentials.identityId,
+                    sessionToken: AWS.config.credentials.sessionToken ? 'Present' : 'Missing'
+                }, null, 2)}</pre>`;
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">❌ Test failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
