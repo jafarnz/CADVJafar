@@ -49,7 +49,7 @@
                                 <div class="upload-placeholder" id="uploadPlaceholder">
                                     <div class="upload-icon">📷</div>
                                     <p>Click to add your photo</p>
-                                    <small></small>JPEG, PNG, or GIF (max 5MB)</small>
+                                    <small>JPEG, PNG, or GIF (max 5MB)</small>
                                 </div>
                             </div>
                             <input type="file" id="profilePictureInput" name="profilePicture" accept="image/*" style="display: none;">
@@ -183,9 +183,9 @@
                                 <div class="info-content">
                                     <h4>Location Benefits</h4>
                                     <ul>
-                                        <li>Discover</ul> events happening nearby</li>
-                                    <li>Get personalized distance-based recommendations</li>
-                                    <li>Never miss local music events again</li>
+                                        <li>Discover events happening nearby</li>
+                                        <li>Get personalized distance-based recommendations</li>
+                                        <li>Never miss local music events again</li>
                                     </ul>
                                 </div>
                             </div>
@@ -389,7 +389,7 @@
                 // Get form data
                 const name = document.getElementById('name').value;
                 const selectedGenre = document.querySelector('.genre-option.selected')?.dataset.genre;
-                const notifications = document.getElementById('emailNotifications').checked;
+                const notifications = document.getElementById('notifications').checked;
                 const shareLocation = document.getElementById('shareLocation').checked;
 
                 let profilePictureUrl = null;
