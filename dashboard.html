@@ -661,6 +661,16 @@
 
             // Event image upload handling
             document.addEventListener('DOMContentLoaded', function() {
+                // Initialize Auth module first
+                Auth.init();
+
+                // Wait for Auth to complete initialization before starting Dashboard
+                setTimeout(() => {
+                    // Only initialize Dashboard if user is authenticated
+                    if (Utils.isAuthenticated()) {
+                        Dashboard.init();
+                    }
+                }, 200);
                 // Event image upload
                 const eventImageInput = document.getElementById('eventImageInput');
                 const eventImagePreview = document.getElementById('eventImagePreview');

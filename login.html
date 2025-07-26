@@ -540,6 +540,9 @@
 
             // Check if user is already logged in
             document.addEventListener("DOMContentLoaded", function () {
+                // Initialize Auth module
+                Auth.init();
+
                 const accessToken = localStorage.getItem(
                     CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
                 );

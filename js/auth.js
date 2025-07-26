@@ -2,8 +2,20 @@
 const Auth = {
   // Initialize authentication
   init: function () {
-    this.checkAuthState();
+    // Set up event listeners immediately
     this.setupEventListeners();
+
+    // Delay auth state check to avoid race conditions
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        this.checkAuthState();
+      });
+    } else {
+      // Document is already loaded
+      setTimeout(() => {
+        this.checkAuthState();
+      }, 100);
+    }
   },
 
   // Check current authentication state
@@ -11,13 +23,23 @@ const Auth = {
     const isAuth = Utils.isAuthenticated();
     const currentPage = window.location.pathname.split("/").pop();
 
+    console.log("🔐 Auth.checkAuthState:", {
+      isAuthenticated: isAuth,
+      currentPage: currentPage,
+      accessToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
+      idToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
+    });
+
     // Redirect logic based on auth state and current page
     if (isAuth) {
+      console.log("✅ User is authenticated");
       if (currentPage === "login.html" || currentPage === "signup.html") {
+        console.log("📍 On login/signup page, checking profile setup...");
         // Check if user has completed profile setup
         this.checkProfileSetup();
       }
     } else {
+      console.log("❌ User is NOT authenticated");
       // Not authenticated - redirect to login if on protected pages
       const protectedPages = [
         "dashboard.html",
@@ -27,6 +49,7 @@ const Auth = {
         "profile-setup.html",
       ];
       if (protectedPages.includes(currentPage)) {
+        console.log("🚫 On protected page, redirecting to login...");
         window.location.href = "login.html";
       }
     }
@@ -36,27 +59,36 @@ const Auth = {
   checkProfileSetup: async function () {
     try {
       const user = Utils.getUserFromToken();
+      console.log("👤 checkProfileSetup - User from token:", user);
+
       if (!user) {
+        console.log("❌ No user found in token, redirecting to login");
         window.location.href = "login.html";
         return;
       }
 
+      console.log("🔍 Checking user profile in backend...");
       // Check if user profile exists in backend
       const response = await Utils.apiCall(
         CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
         { method: "GET" },
       );
 
+      console.log("📡 Profile check response:", response);
+
       if (response && response.preferences) {
         // Profile exists, redirect to dashboard
+        console.log("✅ Profile exists, redirecting to dashboard");
         window.location.href = "dashboard.html";
       } else {
         // Profile doesn't exist, redirect to profile setup
+        console.log("📝 Profile missing, redirecting to profile setup");
         window.location.href = "profile-setup.html";
       }
     } catch (error) {
-      console.error("Error checking profile setup:", error);
+      console.error("❌ Error checking profile setup:", error);
       // If error (like 404), assume profile needs to be set up
+      console.log("📝 Error occurred, redirecting to profile setup");
       window.location.href = "profile-setup.html";
     }
   },
@@ -139,14 +171,31 @@ const Auth = {
         throw new Error(data.error || "Login failed");
       }
 
+      console.log("🔑 Login successful! Response data:", {
+        hasAccessToken: !!data.accessToken,
+        hasIdToken: !!data.idToken,
+        accessTokenLength: data.accessToken ? data.accessToken.length : 0,
+        idTokenLength: data.idToken ? data.idToken.length : 0,
+      });
+
       // Store tokens
       localStorage.setItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
       localStorage.setItem(CONFIG.STORAGE_KEYS.ID_TOKEN, data.idToken);
 
+      console.log("💾 Tokens stored in localStorage:", {
+        accessTokenStored: !!localStorage.getItem(
+          CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+        ),
+        idTokenStored: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
+        isAuthenticatedCheck: Utils.isAuthenticated(),
+      });
+
       Utils.showSuccess("Login successful! Redirecting...", "loginMessages");
 
       // Check profile setup after successful login
+      console.log("⏱️ Starting profile setup check in 1 second...");
       setTimeout(() => {
+        console.log("🔄 Calling checkProfileSetup()...");
         this.checkProfileSetup();
       }, 1000);
     } catch (error) {
