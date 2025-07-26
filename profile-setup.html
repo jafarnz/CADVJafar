@@ -11,7 +11,8 @@
             <div class="auth-card profile-setup">
                 <h1>Complete Your Profile</h1>
                 <p class="text-center mb-2">
-                    Tell us about yourself to get personalized music recommendations
+                    Tell us about yourself to get personalized music
+                    recommendations
                 </p>
 
                 <div id="profileMessages"></div>
@@ -37,8 +38,15 @@
                         <h3>Music Preferences</h3>
                         <div class="form-group">
                             <label>Preferred Music Genre *</label>
-                            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
-                                Choose your favorite genre to get personalized event recommendations
+                            <p
+                                style="
+                                    color: #666;
+                                    font-size: 0.9rem;
+                                    margin-bottom: 1rem;
+                                "
+                            >
+                                Choose your favorite genre to get personalized
+                                event recommendations
                             </p>
                             <div id="genreOptions" class="genre-options">
                                 <!-- Genre options will be populated by JavaScript -->
@@ -49,15 +57,35 @@
                     <div class="setup-step">
                         <h3>Notification Settings</h3>
                         <div class="form-group">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div></div>
-                                    <label style="margin: 0; font-weight: 500;">Email Notifications</label>
-                                    <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0 0 0;">
-                                        Get notified about new events in your preferred genre
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <div>
+                                    <label style="margin: 0; font-weight: 500"
+                                        >Email Notifications</label
+                                    >
+                                    <p
+                                        style="
+                                            color: #666;
+                                            font-size: 0.9rem;
+                                            margin: 0.5rem 0 0 0;
+                                        "
+                                    >
+                                        Get notified about new events in your
+                                        preferred genre
                                     </p>
                                 </div>
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="notifications" name="notifications" checked>
+                                    <input
+                                        type="checkbox"
+                                        id="notifications"
+                                        name="notifications"
+                                        checked
+                                    />
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -67,15 +95,34 @@
                     <div class="setup-step">
                         <h3>Location Preferences</h3>
                         <div class="form-group">
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <div></div>
-                                    <label style="margin: 0; font-weight: 500;">Share Location</label>
-                                    <p style="color: #666; font-size: 0.9rem; margin: 0.5rem 0 0 0;">
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <div>
+                                    <label style="margin: 0; font-weight: 500"
+                                        >Share Location</label
+                                    >
+                                    <p
+                                        style="
+                                            color: #666;
+                                            font-size: 0.9rem;
+                                            margin: 0.5rem 0 0 0;
+                                        "
+                                    >
                                         Allow us to show events near you
                                     </p>
                                 </div>
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="shareLocation" name="shareLocation" checked>
+                                    <input
+                                        type="checkbox"
+                                        id="shareLocation"
+                                        name="shareLocation"
+                                        checked
+                                    />
                                     <span class="slider"></span>
                                 </label>
                             </div>
@@ -90,8 +137,15 @@
                 </form>
 
                 <div class="auth-links">
-                    <p style="text-align: center; color: #666; font-size: 0.9rem;">
-                        You can change these preferences later in your profile settings
+                    <p
+                        style="
+                            text-align: center;
+                            color: #666;
+                            font-size: 0.9rem;
+                        "
+                    >
+                        You can change these preferences later in your profile
+                        settings
                     </p>
                 </div>
             </div>
@@ -102,47 +156,57 @@
         <script src="js/auth.js"></script>
 
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener("DOMContentLoaded", function () {
                 // Check if user is authenticated
                 if (!Utils.isAuthenticated()) {
-                    window.location.href = 'login.html';
+                    window.location.href = "login.html";
                     return;
                 }
 
                 // Get user info to pre-fill email if needed
                 const user = Utils.getUserFromToken();
                 if (user && user.preferredUsername) {
-                    document.getElementById('name').value = user.preferredUsername;
+                    document.getElementById("name").value =
+                        user.preferredUsername;
                 }
 
                 // Setup location detection
-                const shareLocationToggle = document.getElementById('shareLocation');
-                shareLocationToggle.addEventListener('change', function() {
+                const shareLocationToggle =
+                    document.getElementById("shareLocation");
+                shareLocationToggle.addEventListener("change", function () {
                     if (this.checked) {
                         Utils.getCurrentLocation()
-                            .then(location => {
-                                console.log('User location:', location);
+                            .then((location) => {
+                                console.log("User location:", location);
                                 // Store location for later use
-                                sessionStorage.setItem('userLocation', JSON.stringify(location));
+                                sessionStorage.setItem(
+                                    "userLocation",
+                                    JSON.stringify(location),
+                                );
                             })
-                            .catch(error => {
-                                console.error('Location access denied:', error);
-                                Utils.showError('Location access denied. You can enable this later in settings.');
+                            .catch((error) => {
+                                console.error("Location access denied:", error);
+                                Utils.showError(
+                                    "Location access denied. You can enable this later in settings.",
+                                );
                                 this.checked = false;
                             });
                     } else {
-                        sessionStorage.removeItem('userLocation');
+                        sessionStorage.removeItem("userLocation");
                     }
                 });
 
                 // Auto-detect location if toggle is enabled
                 if (shareLocationToggle.checked) {
                     Utils.getCurrentLocation()
-                        .then(location => {
-                            sessionStorage.setItem('userLocation', JSON.stringify(location));
+                        .then((location) => {
+                            sessionStorage.setItem(
+                                "userLocation",
+                                JSON.stringify(location),
+                            );
                         })
-                        .catch(error => {
-                            console.log('Location not available:', error);
+                        .catch((error) => {
+                            console.log("Location not available:", error);
                             shareLocationToggle.checked = false;
                         });
                 }

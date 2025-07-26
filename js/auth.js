@@ -329,20 +329,66 @@ const Auth = {
   handleProfileSetup: async function (event) {
     event.preventDefault();
 
+    console.log("Profile setup started");
+    console.log("Event target:", event.target);
+
     const user = Utils.getUserFromToken();
     if (!user) {
+      console.error("No user found in token");
       window.location.href = "login.html";
       return;
     }
 
+    console.log("User from token:", user);
+
     const formData = new FormData(event.target);
-    const name = formData.get("name").trim();
+    const name = formData.get("name")?.trim();
     const selectedGenre = document.querySelector(
       'input[name="genre"]:checked',
     )?.value;
-    const notifications = document.getElementById("notifications").checked;
-    const shareLocation = document.getElementById("shareLocation").checked;
-    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const notifications = document.getElementById("notifications")?.checked;
+    const shareLocation = document.getElementById("shareLocation")?.checked;
+
+    console.log("Form data:", {
+      name,
+      selectedGenre,
+      notifications,
+      shareLocation,
+    });
+
+    // Try multiple ways to find the submit button with detailed logging
+    let submitBtn = null;
+
+    // Method 1: From event target
+    submitBtn = event.target.querySelector('button[type="submit"]');
+    console.log("Submit button from event target:", submitBtn);
+
+    // Method 2: From form ID
+    if (!submitBtn) {
+      submitBtn = document.querySelector(
+        '#profileSetupForm button[type="submit"]',
+      );
+      console.log("Submit button from form ID:", submitBtn);
+    }
+
+    // Method 3: Any submit button on page
+    if (!submitBtn) {
+      submitBtn = document.querySelector('button[type="submit"]');
+      console.log("Submit button from document:", submitBtn);
+    }
+
+    // Method 4: Create a dummy button if none found
+    if (!submitBtn) {
+      console.warn("No submit button found, creating dummy for loading states");
+      submitBtn = {
+        tagName: "BUTTON",
+        disabled: false,
+        textContent: "",
+        classList: { add: () => {}, remove: () => {} },
+      };
+    }
+
+    console.log("Final submit button:", submitBtn);
 
     // Validation
     if (!name) {
@@ -356,6 +402,7 @@ const Auth = {
     }
 
     try {
+      console.log("Starting API call...");
       Utils.showLoading(submitBtn, "Setting up profile...");
 
       // Create user profile
@@ -370,13 +417,17 @@ const Auth = {
         },
       };
 
-      const response = await Utils.apiCall(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS),
-        {
-          method: "POST",
-          body: JSON.stringify(profileData),
-        },
-      );
+      console.log("Profile data to send:", profileData);
+
+      const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+      console.log("API URL:", apiUrl);
+
+      const response = await Utils.apiCall(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(profileData),
+      });
+
+      console.log("API response:", response);
 
       // Store user preferences locally
       localStorage.setItem(
@@ -387,6 +438,8 @@ const Auth = {
         CONFIG.STORAGE_KEYS.PREFERENCES,
         JSON.stringify(profileData.preferences),
       );
+
+      console.log("Data stored locally");
 
       Utils.showSuccess(
         "Profile setup complete! Welcome to Local Gigs!",
@@ -399,11 +452,26 @@ const Auth = {
       }, 2000);
     } catch (error) {
       console.error("Profile setup error:", error);
-      Utils.showError(
-        error.message || "Profile setup failed. Please try again.",
-        "profileMessages",
-      );
+
+      let errorMessage = "Profile setup failed. Please try again.";
+
+      if (error.message.includes("CORS")) {
+        errorMessage =
+          "Configuration error: The users API endpoint needs CORS setup.";
+      } else if (error.message.includes("Failed to fetch")) {
+        errorMessage =
+          "Unable to connect to the server. Please check if the /users endpoint is configured.";
+      } else if (error.message.includes("404")) {
+        errorMessage =
+          "API endpoint not found. The /users endpoint may not be configured.";
+      } else {
+        errorMessage =
+          error.message || "Profile setup failed. Please try again.";
+      }
+
+      Utils.showError(errorMessage, "profileMessages");
     } finally {
+      console.log("Cleaning up loading state...");
       Utils.hideLoading(submitBtn, "Complete Setup");
     }
   },
