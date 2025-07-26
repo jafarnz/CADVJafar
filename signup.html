@@ -566,9 +566,12 @@
                 try {
                     const signupData = {
                         username: username,
-                        preferredUsername: preferredUsername || username, // Use username as fallback
                         email: email,
                         password: password,
+                        // Cognito requires preferred_username, use the display name or fallback to username
+                        preferred_username: (preferredUsername && preferredUsername.trim() !== '') 
+                            ? preferredUsername.trim() 
+                            : username
                     };
 
                     const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.SIGNUP);

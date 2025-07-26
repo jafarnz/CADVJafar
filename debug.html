@@ -114,6 +114,7 @@
             <button class="btn-test" onclick="testEventsAPI()">Test Events API</button>
             <button class="btn-test" onclick="testVenuesAPI()">Test Venues API</button>
             <button class="btn-test" onclick="testUploadAPI()">Test Upload API</button>
+            <button class="btn-test" onclick="testSignupAPI()">Test Signup API</button>
         </div>
 
         <div class="debug-section">
@@ -337,6 +338,39 @@
 
             } catch (error) {
                 addResult('api-status', `❌ Upload test setup failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSignupAPI() {
+            try {
+                addResult('api-status', 'Testing Signup API with sample data...', 'info');
+                
+                const testUsername = 'testuser' + Date.now();
+                const testEmail = `test${Date.now()}@example.com`;
+                
+                const signupData = {
+                    username: testUsername,
+                    email: testEmail,
+                    password: 'TestPassword123!',
+                    preferred_username: testUsername // Required by Cognito
+                };
+
+                const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.SIGNUP);
+                addResult('api-status', `Testing: ${url}`, 'info');
+                addResult('api-status', `Test data: ${JSON.stringify(signupData, null, 2)}`, 'info');
+
+                const response = await Utils.apiCall(url, {
+                    method: "POST",
+                    headers: CONFIG.getBasicHeaders(),
+                    body: JSON.stringify(signupData),
+                });
+
+                addResult('api-status', '✅ Signup API working', 'success');
+                addResult('api-status', `Response: ${JSON.stringify(response, null, 2)}`, 'info');
+                addResult('api-status', '⚠️ Note: This created a test user that may need cleanup', 'error');
+
+            } catch (error) {
+                addResult('api-status', `❌ Signup API failed: ${error.message}`, 'error');
             }
         }
 
