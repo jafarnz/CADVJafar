@@ -1,4 +1,4 @@
-// Simplified Map integration using Amazon Location Auth Helper
+// Simplified Map integration using Amazon Location Service API Key
 const MapService = {
     map: null,
     markers: [],
@@ -6,7 +6,6 @@ const MapService = {
     venueMarkers: [],
     userLocationMarker: null,
     isInitialized: false,
-    authHelper: null,
 
     // Initialize the map
     init: async function(containerId = "map") {
@@ -17,20 +16,24 @@ const MapService = {
                 return false;
             }
 
-            console.log("🗺️ Starting map initialization...");
+            console.log("🗺️ Starting map initialization with API Key...");
+
+            // Check API key configuration
+            if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
+                throw new Error("API Key not configured. Please set CONFIG.LOCATION.API_KEY");
+            }
 
             // Load required libraries
             await this.loadMapLibreGL();
-            await this.loadAmazonLocationAuthHelper();
 
-            // Initialize with Amazon Location Service only
-            await this.initializeWithLocationService(containerId);
+            // Initialize with Amazon Location Service using API Key
+            await this.initializeWithApiKey(containerId);
 
             console.log("✅ Map initialized successfully");
             return true;
         } catch (error) {
             console.error("❌ Map initialization failed:", error);
-            this.displayMapError("Map authentication failed. Please ensure you're logged in and AWS Location Service is properly configured.");
+            this.displayMapError(`Map initialization failed: ${error.message}`);
             return false;
         }
     },
@@ -50,320 +53,31 @@ const MapService = {
             link.rel = "stylesheet";
             document.head.appendChild(link);
 
-            // Load AWS SDK first
-            const awsScript = document.createElement("script");
-            awsScript.src = "https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js";
-            awsScript.onload = () => {
-                // Then load MapLibre GL
-                const script = document.createElement("script");
-                script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
-                script.onload = () => {
-                    console.log("✅ MapLibre GL and AWS SDK loaded");
-                    resolve();
-                };
-                script.onerror = () => {
-                    reject(new Error("Failed to load MapLibre GL"));
-                };
-                document.head.appendChild(script);
-            };
-            awsScript.onerror = () => {
-                reject(new Error("Failed to load AWS SDK"));
-            };
-            document.head.appendChild(awsScript);
-        });
-    },
-
-    // Load Amazon Location Auth Helper
-    loadAmazonLocationAuthHelper: function() {
-        return new Promise((resolve, reject) => {
-            // Check if already loaded and properly accessible
-            if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
-                console.log("✅ Amazon Location Auth Helper already loaded");
+            // Load MapLibre GL
+            const script = document.createElement("script");
+            script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
+            script.onload = () => {
+                console.log("✅ MapLibre GL loaded");
                 resolve();
-                return;
-            }
-
-            // Try multiple CDN sources and versions
-            const sources = [
-                "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.0.5/dist/amazonLocationAuthHelper.js",
-                "https://cdn.jsdelivr.net/npm/@aws/amazon-location-utilities-auth-helper@1.0.5/dist/amazonLocationAuthHelper.js",
-                "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@latest/dist/amazonLocationAuthHelper.js",
-                "https://cdn.jsdelivr.net/npm/@aws/amazon-location-utilities-auth-helper@latest/dist/amazonLocationAuthHelper.js",
-            ];
-
-            let sourceIndex = 0;
-            let timeoutId;
-
-            const tryLoadSource = () => {
-                if (sourceIndex >= sources.length) {
-                    console.warn("❌ All auth helper sources failed, using manual implementation");
-                    // Create a manual auth helper implementation
-                    this.createManualAuthHelper();
-                    resolve();
-                    return;
-                }
-
-                const script = document.createElement("script");
-                script.src = sources[sourceIndex];
-                
-                // Set timeout for each attempt
-                timeoutId = setTimeout(() => {
-                    console.warn(`⏰ Timeout loading from ${sources[sourceIndex]}, trying next...`);
-                    script.remove();
-                    sourceIndex++;
-                    tryLoadSource();
-                }, 5000);
-
-                script.onload = () => {
-                    clearTimeout(timeoutId);
-                    
-                    // Verify the auth helper is properly loaded
-                    setTimeout(() => {
-                        if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
-                            console.log("✅ Amazon Location Auth Helper loaded from:", sources[sourceIndex]);
-                            resolve();
-                        } else {
-                            console.warn(`⚠️ Auth helper loaded but not accessible from ${sources[sourceIndex]}, trying next...`);
-                            sourceIndex++;
-                            tryLoadSource();
-                        }
-                    }, 100);
-                };
-
-                script.onerror = () => {
-                    clearTimeout(timeoutId);
-                    console.warn(`❌ Failed to load from ${sources[sourceIndex]}, trying next...`);
-                    sourceIndex++;
-                    tryLoadSource();
-                };
-
-                document.head.appendChild(script);
             };
-
-            tryLoadSource();
+            script.onerror = () => {
+                reject(new Error("Failed to load MapLibre GL"));
+            };
+            document.head.appendChild(script);
         });
     },
 
-    // Manual auth helper implementation as fallback
-    createManualAuthHelper: function() {
-        console.log("🔧 Creating manual auth helper implementation");
-        
-        window.amazonLocationAuthHelper = {
-            withCredentials: async function(config) {
-                console.log("🔐 Using manual auth helper with credentials");
-                
-                return {
-                    transformRequest: (url, resourceType) => {
-                        console.log("🔄 Manual transform request for:", url, "Resource type:", resourceType);
-                        
-                        // For AWS Location Service requests, we need proper AWS Signature Version 4
-                        if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
-                            console.log("🔐 Processing AWS Location Service request");
-                            
-                            // Let AWS SDK handle the signing by using the Location Service client
-                            // For map style requests, we need to return the URL with proper auth
-                            if (config.credentials && config.credentials.accessKeyId) {
-                                console.log("✅ Using AWS credentials for request signing");
-                                
-                                // For map style descriptor requests, add auth parameters
-                                if (url.includes('style-descriptor')) {
-                                    const urlObj = new URL(url);
-                                    
-                                    // Add AWS signature parameters
-                                    const now = new Date();
-                                    const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, '');
-                                    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-                                    
-                                    urlObj.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
-                                    urlObj.searchParams.set('X-Amz-Credential', `${config.credentials.accessKeyId}/${dateStamp}/${config.region}/geo/aws4_request`);
-                                    urlObj.searchParams.set('X-Amz-Date', amzDate);
-                                    urlObj.searchParams.set('X-Amz-SignedHeaders', 'host');
-                                    
-                                    if (config.credentials.sessionToken) {
-                                        urlObj.searchParams.set('X-Amz-Security-Token', config.credentials.sessionToken);
-                                    }
-                                    
-                                    // Note: In a real implementation, you'd calculate the actual signature
-                                    // For now, we'll rely on the AWS SDK's built-in signing
-                                    console.log("🔑 Enhanced URL with AWS auth parameters:", urlObj.toString());
-                                    
-                                    return { 
-                                        url: urlObj.toString(),
-                                        headers: {
-                                            'Authorization': `AWS4-HMAC-SHA256 Credential=${config.credentials.accessKeyId}/${dateStamp}/${config.region}/geo/aws4_request`
-                                        }
-                                    };
-                                }
-                            }
-                            
-                            return { url };
-                        }
-                        
-                        return { url };
-                    },
-                    credentials: config.credentials
-                };
-            }
-        };
-    },
-
-    // Initialize map with Amazon Location Service
-    initializeWithLocationService: async function(containerId) {
+    // Initialize map with Amazon Location Service API Key
+    initializeWithApiKey: async function(containerId) {
         try {
-            console.log("🔐 Initializing AWS credentials for Location Service...");
+            console.log("🔐 Initializing with API Key authentication...");
 
-            // Get access token for authenticated access
-            const accessToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN);
-            const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+            // Create the map style URL with API key
+            const styleUrl = `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor?key=${CONFIG.LOCATION.API_KEY}`;
 
-            if (!accessToken && !idToken) {
-                throw new Error("No authentication tokens found. Please log in first.");
-            }
+            console.log("🗺️ Creating map with API Key authentication...");
 
-            console.log("🔑 Setting up Cognito credentials for Location Service...");
-
-            // Initialize AWS SDK with Cognito credentials
-            if (typeof AWS !== 'undefined') {
-                AWS.config.region = CONFIG.COGNITO.REGION;
-                AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
-                    Logins: {
-                        [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]: idToken || accessToken
-                    }
-                });
-
-                // Refresh credentials and get them
-                await new Promise((resolve, reject) => {
-                    AWS.config.credentials.refresh((error) => {
-                        if (error) {
-                            console.error("Failed to refresh AWS credentials:", error);
-                            reject(new Error(`AWS credentials refresh failed: ${error.message}`));
-                        } else {
-                            console.log("✅ AWS credentials refreshed successfully");
-                            console.log("🔍 Credential details:", {
-                                accessKeyId: AWS.config.credentials.accessKeyId ? 'Present' : 'Missing',
-                                secretAccessKey: AWS.config.credentials.secretAccessKey ? 'Present' : 'Missing',
-                                sessionToken: AWS.config.credentials.sessionToken ? 'Present' : 'Missing',
-                                identityId: AWS.config.credentials.identityId || 'Not set',
-                                region: CONFIG.COGNITO.REGION
-                            });
-                            resolve();
-                        }
-                    });
-                });
-            } else {
-                throw new Error("AWS SDK not loaded");
-            }
-
-            // Create auth helper with Cognito credentials
-            console.log("🔗 Creating auth helper with credentials...");
-            
-            let authHelperSuccess = false;
-            
-            // Try the standard auth helper first
-            if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
-                try {
-                    this.authHelper = await window.amazonLocationAuthHelper.withCredentials({
-                        region: CONFIG.COGNITO.REGION,
-                        credentials: AWS.config.credentials
-                    });
-                    authHelperSuccess = true;
-                    console.log("✅ Standard auth helper created successfully");
-                } catch (error) {
-                    console.warn("⚠️ Standard auth helper failed, trying alternative:", error.message);
-                }
-            }
-            
-            // If standard auth helper failed, use manual implementation
-            if (!authHelperSuccess) {
-                console.log("🔧 Using enhanced manual auth implementation");
-                this.authHelper = {
-                    transformRequest: (url, resourceType) => {
-                        console.log("🔄 Enhanced transform request for:", url, "Type:", resourceType);
-                        
-                        // For AWS Location Service requests
-                        if (url.includes('amazonaws.com') || url.includes('geo.') || url.includes('maps.geo.')) {
-                            console.log("🔐 Processing AWS Location Service request with enhanced auth");
-                            
-                            if (AWS.config.credentials && AWS.config.credentials.accessKeyId) {
-                                // For map style requests, add proper authentication
-                                if (url.includes('style-descriptor')) {
-                                    const urlObj = new URL(url);
-                                    
-                                    // Add AWS authentication parameters
-                                    const now = new Date();
-                                    const dateStamp = now.toISOString().slice(0, 10).replace(/-/g, '');
-                                    const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
-                                    
-                                    urlObj.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
-                                    urlObj.searchParams.set('X-Amz-Credential', `${AWS.config.credentials.accessKeyId}/${dateStamp}/${CONFIG.LOCATION.REGION}/geo/aws4_request`);
-                                    urlObj.searchParams.set('X-Amz-Date', amzDate);
-                                    urlObj.searchParams.set('X-Amz-SignedHeaders', 'host');
-                                    
-                                    if (AWS.config.credentials.sessionToken) {
-                                        urlObj.searchParams.set('X-Amz-Security-Token', AWS.config.credentials.sessionToken);
-                                        console.log("🎫 Added session token to request");
-                                    }
-                                    
-                                    console.log("✅ Enhanced URL with auth params:", urlObj.toString());
-                                    return { url: urlObj.toString() };
-                                }
-                                
-                                // For other AWS requests, add basic auth headers
-                                const headers = {};
-                                if (AWS.config.credentials.sessionToken) {
-                                    headers['X-Amz-Security-Token'] = AWS.config.credentials.sessionToken;
-                                }
-                                
-                                return { url, headers };
-                            }
-                        }
-                        
-                        return { url };
-                    },
-                    credentials: AWS.config.credentials
-                };
-                console.log("✅ Enhanced manual auth helper created with session token support");
-            }
-
-            console.log("🗺️ Creating map with Amazon Location Service...");
-
-            // Use AWS Location Service SDK to get the style URL with proper authentication
-            console.log("🔐 Creating AWS Location client with credentials...");
-            const location = new AWS.Location({
-                region: CONFIG.LOCATION.REGION,
-                credentials: AWS.config.credentials
-            });
-
-            // Get a properly signed style URL using the AWS SDK
-            let signedStyleUrl;
-            try {
-                console.log("🔗 Getting signed style URL from AWS Location Service...");
-                
-                // Create a request to get the map style
-                const request = location.getMapStyleDescriptor({
-                    MapName: CONFIG.LOCATION.MAP_NAME
-                });
-
-                // Get the signed URL from the request
-                const httpRequest = request.build();
-                signedStyleUrl = httpRequest.endpoint.href + httpRequest.pathname;
-                
-                // Add query parameters if any
-                if (httpRequest.search) {
-                    signedStyleUrl += httpRequest.search;
-                }
-                
-                console.log("✅ Generated signed style URL:", signedStyleUrl);
-                
-            } catch (error) {
-                console.warn("⚠️ Failed to generate signed style URL, falling back to manual approach:", error.message);
-                
-                // Fallback to the original approach
-                signedStyleUrl = `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`;
-            }
-
-            // Create the map with proper authentication
+            // Create the map with API key authentication
             const mapConfig = {
                 container: containerId,
                 center: [
@@ -371,41 +85,34 @@ const MapService = {
                     CONFIG.APP.DEFAULT_COORDINATES.LAT,
                 ],
                 zoom: CONFIG.APP.MAP_ZOOM,
-                style: signedStyleUrl
-            };
-
-            // Use a simple transform request that relies on the AWS SDK
-            mapConfig.transformRequest = (url, resourceType) => {
-                console.log("🔄 SDK-based transform request for:", url, "Type:", resourceType);
-                
-                // For AWS Location Service requests, let the AWS SDK handle authentication
-                if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
-                    console.log("🔐 AWS Location Service request detected");
+                style: styleUrl,
+                transformRequest: (url, resourceType) => {
+                    console.log("🔄 Transform request for:", url);
                     
-                    // If we have credentials, add the session token to headers
-                    if (AWS.config.credentials && AWS.config.credentials.sessionToken) {
-                        const headers = {
-                            'X-Amz-Security-Token': AWS.config.credentials.sessionToken
-                        };
+                    // For AWS Location Service requests, add API key
+                    if (url.includes('amazonaws.com') || url.includes('maps.geo.')) {
+                        console.log("🔐 Adding API key to AWS request");
                         
-                        console.log("🎫 Added session token to headers");
-                        return { url, headers };
+                        // Check if URL already has query parameters
+                        const separator = url.includes('?') ? '&' : '?';
+                        const authenticatedUrl = `${url}${separator}key=${CONFIG.LOCATION.API_KEY}`;
+                        
+                        console.log("✅ Authenticated URL created");
+                        return { url: authenticatedUrl };
                     }
+                    
+                    return { url };
                 }
-                
-                return { url };
             };
 
             console.log("📍 Map configuration:", {
                 region: CONFIG.LOCATION.REGION,
                 mapName: CONFIG.LOCATION.MAP_NAME,
                 center: mapConfig.center,
-                zoom: mapConfig.zoom,
-                styleUrl: mapConfig.style
+                zoom: mapConfig.zoom
             });
 
             this.map = new maplibregl.Map(mapConfig);
-            console.log("✅ Map created successfully with AWS SDK signed URL");
 
             // Add map controls
             this.map.addControl(new maplibregl.NavigationControl(), "top-left");
@@ -426,9 +133,9 @@ const MapService = {
             await this.waitForMapLoad();
 
             this.isInitialized = true;
-            console.log("✅ Map fully initialized with Amazon Location Service");
+            console.log("✅ Map fully initialized with API Key");
         } catch (error) {
-            console.error("❌ Failed to initialize map with Location Service:", error);
+            console.error("❌ Failed to initialize map with API Key:", error);
             throw error;
         }
     },
@@ -635,7 +342,7 @@ const MapService = {
         }
     },
 
-    // Search for places using your Location Lambda API
+    // Search for places using API key
     searchPlaces: async function(query, biasPosition = null) {
         try {
             console.log("🔍 Searching for places:", query);
@@ -643,85 +350,173 @@ const MapService = {
             const searchData = {
                 text: query,
                 maxResults: 10,
-                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
+                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
+                key: CONFIG.LOCATION.API_KEY
             };
 
             if (biasPosition) {
                 searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
             }
 
-            const response = await Utils.apiCall(
-                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'places/search'), 
-                {
-                    method: 'GET',
-                    headers: CONFIG.getAuthHeaders(),
-                    queryParams: searchData
-                }
-            );
+            // Build URL with query parameters
+            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
+            const urlParams = new URLSearchParams(searchData);
+            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
 
-            console.log("🎯 Places search results:", response);
-            return response.results || [];
+            const response = await fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log("🎯 Places search results:", result);
+            return result.Results || [];
         } catch (error) {
             console.error("❌ Places search failed:", error);
             throw error;
         }
     },
 
-    // Reverse geocoding using your Location Lambda API
+    // Reverse geocoding using API key
     reverseGeocode: async function(lng, lat) {
         try {
             console.log("🔄 Reverse geocoding:", { lng, lat });
 
-            const response = await Utils.apiCall(
-                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'reverse-geocode'), 
-                {
-                    method: 'POST',
-                    headers: CONFIG.getAuthHeaders(),
-                    body: JSON.stringify({
-                        longitude: lng,
-                        latitude: lat,
-                        indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
-                    })
-                }
-            );
+            const url = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/position?key=${CONFIG.LOCATION.API_KEY}`;
 
-            console.log("📍 Reverse geocoding result:", response);
-            return response;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    Position: [lng, lat],
+                    MaxResults: 1
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Reverse geocoding failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log("📍 Reverse geocoding result:", result);
+            return result.Results && result.Results[0] || null;
         } catch (error) {
             console.error("❌ Reverse geocoding failed:", error);
             throw error;
         }
     },
 
-    // Geocode address using your Location Lambda API
+    // Geocode address using API key
     geocodeAddress: async function(address, biasPosition = null) {
         try {
             console.log("🏠 Geocoding address:", address);
 
-            const geocodeData = {
-                address: address,
-                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME
+            const searchData = {
+                text: address,
+                maxResults: 1,
+                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
+                key: CONFIG.LOCATION.API_KEY
             };
 
             if (biasPosition) {
-                geocodeData.biasPosition = [biasPosition.lng, biasPosition.lat];
+                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
             }
 
-            const response = await Utils.apiCall(
-                CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.LOCATION, 'geocode'), 
-                {
-                    method: 'POST',
-                    headers: CONFIG.getAuthHeaders(),
-                    body: JSON.stringify(geocodeData)
-                }
-            );
+            // Build URL with query parameters
+            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
+            const urlParams = new URLSearchParams(searchData);
+            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
 
-            console.log("📍 Geocoding result:", response);
-            return response;
+            const response = await fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Geocoding failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log("📍 Geocoding result:", result);
+            return result.Results && result.Results[0] || null;
         } catch (error) {
             console.error("❌ Geocoding failed:", error);
             throw error;
         }
+    },
+
+    // Location picker for venue/event creation
+    enableLocationPicker: function(callback) {
+        console.log("📍 Enabling location picker mode");
+        
+        if (!this.isInitialized) {
+            console.error("Map not initialized");
+            return;
+        }
+
+        // Change cursor to crosshair
+        this.map.getCanvas().style.cursor = 'crosshair';
+
+        // Add click handler for location picking
+        const pickLocationHandler = async (e) => {
+            const { lng, lat } = e.lngLat;
+            console.log("📍 Location picked:", { lng, lat });
+
+            try {
+                // Reverse geocode to get address
+                const locationInfo = await this.reverseGeocode(lng, lat);
+                
+                const result = {
+                    coordinates: [lng, lat],
+                    address: locationInfo ? (locationInfo.Place?.Label || 'Unknown location') : 'Unknown location',
+                    country: locationInfo ? locationInfo.Place?.Country : null,
+                    region: locationInfo ? locationInfo.Place?.Region : null
+                };
+
+                // Add temporary marker
+                const marker = new maplibregl.Marker({ color: '#ff6b6b' })
+                    .setLngLat([lng, lat])
+                    .addTo(this.map);
+
+                // Remove click handler
+                this.map.off('click', pickLocationHandler);
+                this.map.getCanvas().style.cursor = '';
+
+                console.log("✅ Location picker result:", result);
+                callback(result, marker);
+
+            } catch (error) {
+                console.error("❌ Failed to get location info:", error);
+                callback({
+                    coordinates: [lng, lat],
+                    address: 'Unknown location',
+                    country: null,
+                    region: null
+                }, null);
+            }
+        };
+
+        // Add the click handler
+        this.map.on('click', pickLocationHandler);
+
+        console.log("✅ Location picker enabled - click on map to select location");
+    },
+
+    // Disable location picker
+    disableLocationPicker: function() {
+        this.map.getCanvas().style.cursor = '';
+        this.map.off('click'); // Remove all click handlers
+        console.log("✅ Location picker disabled");
     },
 
     // Venue functions using your Lambda APIs
@@ -867,7 +662,6 @@ const MapService = {
         this.venueMarkers = [];
         this.userLocationMarker = null;
         this.isInitialized = false;
-        this.authHelper = null;
     },
 };
 
