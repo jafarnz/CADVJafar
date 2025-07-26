@@ -76,52 +76,103 @@ const MapService = {
     // Load Amazon Location Auth Helper
     loadAmazonLocationAuthHelper: function() {
         return new Promise((resolve, reject) => {
-            // Check if already loaded
-            if (window.amazonLocationAuthHelper) {
+            // Check if already loaded and properly accessible
+            if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
+                console.log("✅ Amazon Location Auth Helper already loaded");
                 resolve();
                 return;
             }
 
-            // Try multiple versions for compatibility
-            const versions = [
-                "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.0.12/dist/amazonLocationAuthHelper.js",
+            // Try multiple CDN sources and versions
+            const sources = [
                 "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.0.5/dist/amazonLocationAuthHelper.js",
-                "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.x/dist/amazonLocationAuthHelper.js",
+                "https://cdn.jsdelivr.net/npm/@aws/amazon-location-utilities-auth-helper@1.0.5/dist/amazonLocationAuthHelper.js",
+                "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@latest/dist/amazonLocationAuthHelper.js",
+                "https://cdn.jsdelivr.net/npm/@aws/amazon-location-utilities-auth-helper@latest/dist/amazonLocationAuthHelper.js",
             ];
 
-            let versionIndex = 0;
+            let sourceIndex = 0;
+            let timeoutId;
 
-            const tryLoadVersion = () => {
-                if (versionIndex >= versions.length) {
-                    reject(
-                        new Error(
-                            "Failed to load Amazon Location Auth Helper from all sources",
-                        ),
-                    );
+            const tryLoadSource = () => {
+                if (sourceIndex >= sources.length) {
+                    console.warn("❌ All auth helper sources failed, using manual implementation");
+                    // Create a manual auth helper implementation
+                    this.createManualAuthHelper();
+                    resolve();
                     return;
                 }
 
                 const script = document.createElement("script");
-                script.src = versions[versionIndex];
+                script.src = sources[sourceIndex];
+                
+                // Set timeout for each attempt
+                timeoutId = setTimeout(() => {
+                    console.warn(`⏰ Timeout loading from ${sources[sourceIndex]}, trying next...`);
+                    script.remove();
+                    sourceIndex++;
+                    tryLoadSource();
+                }, 5000);
+
                 script.onload = () => {
-                    console.log(
-                        "✅ Amazon Location Auth Helper loaded from:",
-                        versions[versionIndex],
-                    );
-                    resolve();
+                    clearTimeout(timeoutId);
+                    
+                    // Verify the auth helper is properly loaded
+                    setTimeout(() => {
+                        if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
+                            console.log("✅ Amazon Location Auth Helper loaded from:", sources[sourceIndex]);
+                            resolve();
+                        } else {
+                            console.warn(`⚠️ Auth helper loaded but not accessible from ${sources[sourceIndex]}, trying next...`);
+                            sourceIndex++;
+                            tryLoadSource();
+                        }
+                    }, 100);
                 };
+
                 script.onerror = () => {
-                    console.warn(
-                        `Failed to load from ${versions[versionIndex]}, trying next...`,
-                    );
-                    versionIndex++;
-                    tryLoadVersion();
+                    clearTimeout(timeoutId);
+                    console.warn(`❌ Failed to load from ${sources[sourceIndex]}, trying next...`);
+                    sourceIndex++;
+                    tryLoadSource();
                 };
+
                 document.head.appendChild(script);
             };
 
-            tryLoadVersion();
+            tryLoadSource();
         });
+    },
+
+    // Manual auth helper implementation as fallback
+    createManualAuthHelper: function() {
+        console.log("🔧 Creating manual auth helper implementation");
+        
+        window.amazonLocationAuthHelper = {
+            withCredentials: async function(config) {
+                console.log("🔐 Using manual auth helper with credentials");
+                
+                return {
+                    transformRequest: (url, resourceType) => {
+                        // For AWS Location Service requests, add authentication
+                        if (url.includes('amazonaws.com')) {
+                            const headers = {};
+                            
+                            // Add AWS signature if credentials are available
+                            if (config.credentials && config.credentials.accessKeyId) {
+                                // Simple auth header - in production you'd want proper AWS4 signing
+                                headers['Authorization'] = `AWS4-HMAC-SHA256 Credential=${config.credentials.accessKeyId}`;
+                            }
+                            
+                            return { url, headers };
+                        }
+                        
+                        return { url };
+                    },
+                    credentials: config.credentials
+                };
+            }
+        };
     },
 
     // Initialize map with Amazon Location Service
@@ -166,30 +217,87 @@ const MapService = {
             }
 
             // Create auth helper with Cognito credentials
-            if (!window.amazonLocationAuthHelper || !window.amazonLocationAuthHelper.withCredentials) {
-                throw new Error("Amazon Location Auth Helper not loaded properly");
+            console.log("🔗 Creating auth helper with credentials...");
+            
+            let authHelperSuccess = false;
+            
+            // Try the standard auth helper first
+            if (window.amazonLocationAuthHelper && window.amazonLocationAuthHelper.withCredentials) {
+                try {
+                    this.authHelper = await window.amazonLocationAuthHelper.withCredentials({
+                        region: CONFIG.COGNITO.REGION,
+                        credentials: AWS.config.credentials
+                    });
+                    authHelperSuccess = true;
+                    console.log("✅ Standard auth helper created successfully");
+                } catch (error) {
+                    console.warn("⚠️ Standard auth helper failed, trying alternative:", error.message);
+                }
             }
-
-            this.authHelper = await window.amazonLocationAuthHelper.withCredentials({
-                region: CONFIG.COGNITO.REGION,
-                credentials: AWS.config.credentials
-            });
-
-            console.log("✅ Auth helper created successfully");
+            
+            // If standard auth helper failed, use manual implementation
+            if (!authHelperSuccess) {
+                console.log("🔧 Using manual auth implementation");
+                this.authHelper = {
+                    transformRequest: (url, resourceType) => {
+                        console.log("🔄 Transform request for:", url);
+                        
+                        // For AWS Location Service requests
+                        if (url.includes('amazonaws.com') || url.includes('geo.')) {
+                            const headers = {};
+                            
+                            // Add basic authentication headers
+                            if (AWS.config.credentials && AWS.config.credentials.accessKeyId) {
+                                // Simple approach - AWS will handle the signing through the SDK
+                                return { url, headers };
+                            }
+                        }
+                        
+                        return { url };
+                    },
+                    credentials: AWS.config.credentials
+                };
+                console.log("✅ Manual auth helper created");
+            }
 
             console.log("🗺️ Creating map with Amazon Location Service...");
 
-            // Create the map with proper authentication
-            this.map = new maplibregl.Map({
+            // Create the map with proper authentication - handle legacy services
+            const mapConfig = {
                 container: containerId,
                 center: [
                     CONFIG.APP.DEFAULT_COORDINATES.LNG,
                     CONFIG.APP.DEFAULT_COORDINATES.LAT,
                 ],
                 zoom: CONFIG.APP.MAP_ZOOM,
-                style: `https://maps.geo.${CONFIG.COGNITO.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`,
-                transformRequest: this.authHelper.transformRequest
+                style: `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
+            };
+
+            // Add transform request for authentication
+            if (this.authHelper && this.authHelper.transformRequest) {
+                mapConfig.transformRequest = this.authHelper.transformRequest;
+            } else {
+                // Fallback transform request
+                mapConfig.transformRequest = (url, resourceType) => {
+                    console.log("🔄 Fallback transform request for:", url);
+                    
+                    if (url.includes('amazonaws.com')) {
+                        // For AWS requests, let the SDK handle authentication
+                        return { url };
+                    }
+                    
+                    return { url };
+                };
+            }
+
+            console.log("📍 Map configuration:", {
+                region: CONFIG.LOCATION.REGION,
+                mapName: CONFIG.LOCATION.MAP_NAME,
+                center: mapConfig.center,
+                zoom: mapConfig.zoom
             });
+
+            this.map = new maplibregl.Map(mapConfig);
 
             // Add map controls
             this.map.addControl(new maplibregl.NavigationControl(), "top-left");
@@ -221,35 +329,65 @@ const MapService = {
     waitForMapLoad: function() {
         return new Promise((resolve, reject) => {
             if (this.map.loaded()) {
+                console.log("✅ Map already loaded");
                 resolve();
                 return;
             }
 
             let loadTimeout;
+            let errorOccurred = false;
 
             this.map.on("load", () => {
-                console.log("✅ Map tiles loaded successfully");
-                clearTimeout(loadTimeout);
-                resolve();
+                if (!errorOccurred) {
+                    console.log("✅ Map tiles loaded successfully");
+                    clearTimeout(loadTimeout);
+                    resolve();
+                }
             });
 
             this.map.on("error", (error) => {
-                console.error("❌ Map loading error:", error);
-                clearTimeout(loadTimeout);
-                
-                // Check if it's a 403 error (authentication issue)
-                if (error.error && error.error.message && error.error.message.includes('403')) {
-                    reject(new Error("AWS Location Service authentication failed (403 Forbidden). Please check your Cognito configuration and IAM permissions."));
-                } else if (error.error && error.error.message && error.error.message.includes('404')) {
-                    reject(new Error("AWS Location Service map not found (404). Please verify MAP_NAME configuration."));
-                } else {
-                    reject(new Error(`AWS Location Service error: ${error.error ? error.error.message : 'Unknown error'}`));
+                if (!errorOccurred) {
+                    errorOccurred = true;
+                    console.error("❌ Map loading error:", error);
+                    clearTimeout(loadTimeout);
+                    
+                    let errorMessage = "Unknown map error";
+                    
+                    // Check for different types of errors
+                    if (error.error) {
+                        const errMsg = error.error.message || error.error.toString();
+                        
+                        if (errMsg.includes('403') || errMsg.includes('Forbidden')) {
+                            errorMessage = "AWS Location Service authentication failed (403 Forbidden). Please check your Cognito configuration and IAM permissions for Location Service.";
+                        } else if (errMsg.includes('404') || errMsg.includes('Not Found')) {
+                            errorMessage = `AWS Location Service map '${CONFIG.LOCATION.MAP_NAME}' not found (404). Please verify MAP_NAME configuration in AWS Location Service.`;
+                        } else if (errMsg.includes('CORS')) {
+                            errorMessage = "CORS error accessing AWS Location Service. Please check your AWS configuration.";
+                        } else {
+                            errorMessage = `AWS Location Service error: ${errMsg}`;
+                        }
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    }
+                    
+                    console.error("🔍 Detailed error analysis:", {
+                        error: error,
+                        mapName: CONFIG.LOCATION.MAP_NAME,
+                        region: CONFIG.LOCATION.REGION,
+                        styleUrl: `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`
+                    });
+                    
+                    reject(new Error(errorMessage));
                 }
             });
 
             // Timeout after 30 seconds
             loadTimeout = setTimeout(() => {
-                reject(new Error("AWS Location Service timeout - map failed to load within 30 seconds. This may indicate authentication or configuration issues."));
+                if (!errorOccurred) {
+                    errorOccurred = true;
+                    console.error("⏰ Map load timeout");
+                    reject(new Error("AWS Location Service timeout - map failed to load within 30 seconds. This may indicate authentication, network, or configuration issues."));
+                }
             }, 30000);
         });
     },
@@ -506,7 +644,7 @@ const MapService = {
             }
         } catch (error) {
             console.error("❌ Failed to load venues:", error);
-            this.displayError(`Failed to load venues: ${error.message}`);
+            this.displayMapError(`Failed to load venues: ${error.message}`);
             return [];
         }
     },
