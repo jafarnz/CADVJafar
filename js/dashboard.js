@@ -3,397 +3,366 @@ const Dashboard = {
   currentUser: null,
   events: [],
   venues: [],
-  userStats: {
-    eventsAttended: 0,
-    eventsCreated: 0,
-  },
+  mapInitialized: false,
 
-  // Initialize dashboard
-  init: function () {
+  // Initialize the dashboard
+  init: async function () {
+    console.log("Initializing dashboard...");
+
     // Check authentication
     if (!Utils.requireAuth()) {
       return;
     }
 
+    // Get current user
     this.currentUser = Utils.getUserFromToken();
     if (!this.currentUser) {
       Utils.logout();
       return;
     }
 
+    // Set up event listeners
     this.setupEventListeners();
-    this.loadUserData();
-    this.loadDashboardData();
-    this.initializeMap();
+
+    // Load user data and update UI
+    await this.loadUserData();
+
+    // Load events and venues data
+    await this.loadAllData();
+
+    // Initialize map
+    await this.initializeMap();
+
+    // Render content
+    this.render();
+
+    console.log("Dashboard initialized successfully");
   },
 
-  // Setup event listeners
+  // Set up all event listeners
   setupEventListeners: function () {
-    // Quick action buttons
-    const createEventBtn = document.getElementById("createEventBtn");
-    if (createEventBtn) {
-      createEventBtn.addEventListener(
-        "click",
-        this.showCreateEventModal.bind(this),
-      );
+    // Logout button
+    const logoutBtn = document.getElementById("logout-button");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        Utils.logout();
+      });
     }
 
-    const addVenueBtn = document.getElementById("addVenueBtn");
-    if (addVenueBtn) {
-      addVenueBtn.addEventListener("click", this.showAddVenueModal.bind(this));
+    // Create Event button and modal
+    const newEventBtn = document.getElementById("new-event-button");
+    const createEventModal = document.getElementById("create-event-modal");
+    const closeEventModal = document.getElementById("close-event-modal");
+    const createEventForm = document.getElementById("create-event-form");
+
+    if (newEventBtn && createEventModal) {
+      newEventBtn.addEventListener("click", () => {
+        this.loadVenuesForDropdown();
+        createEventModal.style.display = "block";
+      });
     }
 
+    if (closeEventModal && createEventModal) {
+      closeEventModal.addEventListener("click", () => {
+        createEventModal.style.display = "none";
+      });
+    }
+
+    if (createEventForm) {
+      createEventForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleCreateEvent(e);
+      });
+    }
+
+    // Create Venue button and modal
+    const newVenueBtn = document.getElementById("new-venue-button");
+    const addVenueModal = document.getElementById("add-venue-modal");
+    const closeVenueModal = document.getElementById("close-venue-modal");
+    const addVenueForm = document.getElementById("add-venue-form");
+    const getLocationBtn = document.getElementById("get-location-btn");
+
+    if (newVenueBtn && addVenueModal) {
+      newVenueBtn.addEventListener("click", () => {
+        addVenueModal.style.display = "block";
+      });
+    }
+
+    if (closeVenueModal && addVenueModal) {
+      closeVenueModal.addEventListener("click", () => {
+        addVenueModal.style.display = "none";
+      });
+    }
+
+    if (addVenueForm) {
+      addVenueForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.handleCreateVenue(e);
+      });
+    }
+
+    if (getLocationBtn) {
+      getLocationBtn.addEventListener("click", () => {
+        this.getCurrentLocationForVenue();
+      });
+    }
+
+    // Find Events Near Me button
     const findEventsBtn = document.getElementById("findEventsBtn");
     if (findEventsBtn) {
-      findEventsBtn.addEventListener("click", this.findNearbyEvents.bind(this));
-    }
-
-    // Modal close buttons
-    const closeEventModal = document.getElementById("closeEventModal");
-    if (closeEventModal) {
-      closeEventModal.addEventListener(
-        "click",
-        this.hideCreateEventModal.bind(this),
-      );
-    }
-
-    const closeVenueModal = document.getElementById("closeVenueModal");
-    if (closeVenueModal) {
-      closeVenueModal.addEventListener(
-        "click",
-        this.hideAddVenueModal.bind(this),
-      );
-    }
-
-    // Form submissions
-    const createEventForm = document.getElementById("createEventForm");
-    if (createEventForm) {
-      createEventForm.addEventListener(
-        "submit",
-        this.handleCreateEvent.bind(this),
-      );
-    }
-
-    const addVenueForm = document.getElementById("addVenueForm");
-    if (addVenueForm) {
-      addVenueForm.addEventListener("submit", this.handleAddVenue.bind(this));
-    }
-
-    // Get location button
-    const getLocationBtn = document.getElementById("getLocationBtn");
-    if (getLocationBtn) {
-      getLocationBtn.addEventListener(
-        "click",
-        this.getCurrentLocationForVenue.bind(this),
-      );
+      findEventsBtn.addEventListener("click", () => {
+        this.findEventsNearMe();
+      });
     }
 
     // Close modals when clicking outside
-    window.addEventListener("click", (event) => {
-      const eventModal = document.getElementById("createEventModal");
-      const venueModal = document.getElementById("addVenueModal");
-
-      if (event.target === eventModal) {
-        this.hideCreateEventModal();
+    window.addEventListener("click", (e) => {
+      if (e.target === createEventModal) {
+        createEventModal.style.display = "none";
       }
-      if (event.target === venueModal) {
-        this.hideAddVenueModal();
+      if (e.target === addVenueModal) {
+        addVenueModal.style.display = "none";
       }
     });
   },
 
-  // Load user data and display
+  // Load user data from backend
   loadUserData: async function () {
+    const userDisplayName = document.getElementById("user-display-name");
+    const userGenre = document.getElementById("user-genre");
+
+    // Set basic user info from token
+    if (userDisplayName && this.currentUser) {
+      userDisplayName.textContent = this.currentUser.email.split("@")[0];
+    }
+
+    // Try to load full user profile from backend
     try {
-      // Display user name
-      const userDisplayName = document.getElementById("userDisplayName");
-      if (userDisplayName && this.currentUser) {
-        userDisplayName.textContent =
-          this.currentUser.preferredUsername ||
-          this.currentUser.username ||
-          "Music Lover";
-      }
-
-      // Load user preferences and show genre tag
-      const userPreferences = JSON.parse(
-        localStorage.getItem(CONFIG.STORAGE_KEYS.PREFERENCES) || "{}",
+      const url = CONFIG.buildApiUrl(
+        CONFIG.API.ENDPOINTS.USERS,
+        this.currentUser.sub,
       );
-      const userGenreElement = document.getElementById("userGenre");
-      if (userGenreElement && userPreferences.genre) {
-        userGenreElement.textContent =
-          userPreferences.genre.charAt(0).toUpperCase() +
-          userPreferences.genre.slice(1);
-      }
+      const userProfile = await Utils.apiCall(url, {
+        method: "GET",
+        headers: CONFIG.getAuthHeaders(),
+      });
 
-      // Try to load user profile data from backend
-      try {
-        const response = await Utils.apiCall(
-          CONFIG.buildApiUrl(
-            CONFIG.API.ENDPOINTS.USER_BY_ID,
-            this.currentUser.sub,
-          ),
-          { method: "GET" },
+      if (userProfile) {
+        localStorage.setItem(
+          CONFIG.STORAGE_KEYS.USER_DATA,
+          JSON.stringify(userProfile),
         );
 
-        if (response) {
-          localStorage.setItem(
-            CONFIG.STORAGE_KEYS.USER_DATA,
-            JSON.stringify(response),
-          );
-
-          // Update display with fresh data
-          if (response.name && userDisplayName) {
-            userDisplayName.textContent = response.name;
-          }
-          if (
-            response.preferences &&
-            userGenreElement &&
-            response.preferences.genre
-          ) {
-            userGenreElement.textContent =
-              response.preferences.genre.charAt(0).toUpperCase() +
-              response.preferences.genre.slice(1);
-          }
+        if (userDisplayName && userProfile.name) {
+          userDisplayName.textContent = userProfile.name;
         }
-      } catch (error) {
-        console.log("User profile not found in backend, using token data");
-        // This is fine - user might not have completed profile setup
+
+        if (
+          userGenre &&
+          userProfile.preferences &&
+          userProfile.preferences.genre
+        ) {
+          userGenre.textContent = Utils.capitalize(
+            userProfile.preferences.genre,
+          );
+          userGenre.style.display = "inline-block";
+        }
       }
     } catch (error) {
-      console.error("Error loading user data:", error);
+      console.log("User profile not found in backend, using token data");
+      // This is not critical - dashboard can work with basic token info
     }
   },
 
-  // Load dashboard data
-  loadDashboardData: async function () {
+  // Load all events and venues data
+  loadAllData: async function () {
     try {
-      await Promise.all([
-        this.loadEvents(),
-        this.loadVenues(),
-        this.loadUserStats(),
-      ]);
+      console.log("Loading events and venues...");
 
-      this.displayUpcomingEvents();
-      this.displayRecommendedEvents();
-      this.displayPopularVenues();
-      this.displayUserStats();
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-      Utils.showError(
-        "Failed to load dashboard data. Please refresh the page.",
+      // Load events
+      const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+      this.events = await Utils.apiCall(eventsUrl, {
+        method: "GET",
+        headers: CONFIG.getAuthHeaders(),
+      });
+
+      // Load venues
+      const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+      this.venues = await Utils.apiCall(venuesUrl, {
+        method: "GET",
+        headers: CONFIG.getAuthHeaders(),
+      });
+
+      console.log(
+        `Loaded ${this.events.length} events and ${this.venues.length} venues`,
       );
-    }
-  },
-
-  // Load events from API
-  loadEvents: async function () {
-    try {
-      const response = await Utils.apiCall(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS),
-        { method: "GET" },
-      );
-
-      this.events = Array.isArray(response) ? response : response.events || [];
-      console.log("Loaded events:", this.events.length);
     } catch (error) {
-      console.error("Error loading events:", error);
+      console.error("Failed to load data:", error);
       this.events = [];
-    }
-  },
-
-  // Load venues from API
-  loadVenues: async function () {
-    try {
-      const response = await Utils.apiCall(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES),
-        { method: "GET" },
-      );
-
-      this.venues = Array.isArray(response) ? response : response.venues || [];
-      console.log("Loaded venues:", this.venues.length);
-    } catch (error) {
-      console.error("Error loading venues:", error);
       this.venues = [];
+      Utils.showError(
+        "Could not load events and venues. Please try again later.",
+      );
     }
   },
 
-  // Load user statistics
-  loadUserStats: async function () {
+  // Initialize the map
+  initializeMap: async function () {
     try {
-      // For now, use mock data - you can implement actual stats tracking later
-      this.userStats = {
-        eventsAttended: Math.floor(Math.random() * 20),
-        eventsCreated: this.events.filter(
-          (event) => event.createdBy === this.currentUser.sub,
-        ).length,
-      };
+      const mapContainer = document.getElementById("map-container");
+      if (!mapContainer) return;
+
+      const success = await MapService.init("map-container");
+      if (success && this.events.length > 0) {
+        this.mapInitialized = true;
+        MapService.addEventMarkers(this.events, this.venues);
+      }
     } catch (error) {
-      console.error("Error loading user stats:", error);
+      console.error("Map initialization failed:", error);
     }
   },
 
-  // Display upcoming events
-  displayUpcomingEvents: function () {
-    const container = document.getElementById("upcomingEvents");
+  // Render dashboard content
+  render: function () {
+    this.renderEvents();
+    this.renderRecommendedEvents();
+    this.renderPopularVenues();
+    this.renderUserStats();
+  },
+
+  // Render upcoming events
+  renderEvents: function () {
+    const container = document.getElementById("event-list-container");
     if (!container) return;
 
-    const now = new Date();
+    if (!this.events || this.events.length === 0) {
+      container.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: #666;">
+          <p>No events found. Create your first event!</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Sort events by date (upcoming first)
     const upcomingEvents = this.events
-      .filter((event) => new Date(event.eventDate) >= now)
+      .filter((event) => new Date(event.eventDate) >= new Date())
       .sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
-      .slice(0, 3);
+      .slice(0, 3); // Show only first 3
 
     if (upcomingEvents.length === 0) {
-      container.innerHTML =
-        '<p style="text-align: center; color: #666;">No upcoming events found.</p>';
+      container.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: #666;">
+          <p>No upcoming events. Check back later!</p>
+        </div>
+      `;
       return;
     }
 
     container.innerHTML = upcomingEvents
-      .map((event) => {
-        const venue = this.venues.find((v) => v.venueID === event.venueID);
-        return `
-                <div class="event-item" onclick="window.location.href='event-details.html?id=${event.eventID}'">
-                    <h4>${Utils.sanitizeInput(event.name)}</h4>
-                    <div class="event-meta">
-                        <p><strong>Date:</strong> ${Utils.formatDate(event.eventDate)}</p>
-                        <p><strong>Time:</strong> ${Utils.formatTime(event.eventTime)}</p>
-                        <p><strong>Venue:</strong> ${venue ? Utils.sanitizeInput(venue.name) : "Unknown Venue"}</p>
-                    </div>
-                </div>
-            `;
-      })
+      .map((event) => this.createEventCard(event))
       .join("");
   },
 
-  // Display recommended events based on user preferences
-  displayRecommendedEvents: function () {
-    const container = document.getElementById("recommendedEvents");
+  // Render recommended events based on user preferences
+  renderRecommendedEvents: function () {
+    const container = document.getElementById("recommended-events");
     if (!container) return;
 
-    const userPreferences = JSON.parse(
-      localStorage.getItem(CONFIG.STORAGE_KEYS.PREFERENCES) || "{}",
-    );
-    const preferredGenre = userPreferences.genre;
-
-    // For now, show random events since we don't have genre data in events
-    // You can modify this to filter by genre when that data is available
-    const recommendedEvents = this.events
-      .filter((event) => new Date(event.eventDate) >= new Date())
+    // For now, just show random events
+    const randomEvents = [...this.events]
       .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
+      .slice(0, 2);
 
-    if (recommendedEvents.length === 0) {
-      container.innerHTML =
-        '<p style="text-align: center; color: #666;">No recommendations available.</p>';
+    if (randomEvents.length === 0) {
+      container.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: #666;">
+          <p>No recommendations available.</p>
+        </div>
+      `;
       return;
     }
 
-    container.innerHTML = recommendedEvents
-      .map((event) => {
-        const venue = this.venues.find((v) => v.venueID === event.venueID);
-        return `
-                <div class="event-item" onclick="window.location.href='event-details.html?id=${event.eventID}'">
-                    <h4>${Utils.sanitizeInput(event.name)}</h4>
-                    <div class="event-meta">
-                        <p><strong>Date:</strong> ${Utils.formatDate(event.eventDate)}</p>
-                        <p><strong>Time:</strong> ${Utils.formatTime(event.eventTime)}</p>
-                        <p><strong>Venue:</strong> ${venue ? Utils.sanitizeInput(venue.name) : "Unknown Venue"}</p>
-                    </div>
-                </div>
-            `;
-      })
+    container.innerHTML = randomEvents
+      .map((event) => this.createEventCard(event))
       .join("");
   },
 
-  // Display popular venues
-  displayPopularVenues: function () {
-    const container = document.getElementById("popularVenues");
+  // Render popular venues
+  renderPopularVenues: function () {
+    const container = document.getElementById("popular-venues");
     if (!container) return;
 
-    const popularVenues = this.venues
-      .sort((a, b) => (b.capacity || 0) - (a.capacity || 0))
-      .slice(0, 3);
-
-    if (popularVenues.length === 0) {
-      container.innerHTML =
-        '<p style="text-align: center; color: #666;">No venues available.</p>';
+    if (!this.venues || this.venues.length === 0) {
+      container.innerHTML = `
+        <div class="text-center" style="padding: 2rem; color: #666;">
+          <p>No venues found. Add your first venue!</p>
+        </div>
+      `;
       return;
     }
 
+    const popularVenues = this.venues.slice(0, 3);
     container.innerHTML = popularVenues
-      .map(
-        (venue) => `
-            <div class="venue-item" onclick="window.location.href='venue-details.html?id=${venue.venueID}'">
-                <h4>${Utils.sanitizeInput(venue.name)}</h4>
-                <div class="venue-meta">
-                    <p>${Utils.sanitizeInput(venue.address)}</p>
-                    <p><strong>Capacity:</strong> ${venue.capacity || "Not specified"}</p>
-                </div>
-            </div>
-        `,
-      )
+      .map((venue) => this.createVenueCard(venue))
       .join("");
   },
 
-  // Display user statistics
-  displayUserStats: function () {
-    const eventsAttendedElement = document.getElementById("eventsAttended");
-    const eventsCreatedElement = document.getElementById("eventsCreated");
+  // Render user statistics
+  renderUserStats: function () {
+    const eventsAttended = document.getElementById("events-attended");
+    const eventsCreated = document.getElementById("events-created");
 
-    if (eventsAttendedElement) {
-      eventsAttendedElement.textContent = this.userStats.eventsAttended;
+    if (eventsAttended) {
+      eventsAttended.textContent = "0"; // TODO: Implement actual stats
     }
-    if (eventsCreatedElement) {
-      eventsCreatedElement.textContent = this.userStats.eventsCreated;
-    }
-  },
-
-  // Initialize map with events and venues
-  initializeMap: async function () {
-    try {
-      const mapInitialized = await MapService.init("map");
-      if (mapInitialized && this.events.length > 0) {
-        MapService.addEventMarkers(this.events, this.venues);
-      }
-    } catch (error) {
-      console.error("Error initializing map:", error);
+    if (eventsCreated) {
+      eventsCreated.textContent = this.events.length.toString();
     }
   },
 
-  // Show create event modal
-  showCreateEventModal: function () {
-    this.loadVenuesForModal();
-    Utils.show("createEventModal");
+  // Create HTML for event card
+  createEventCard: function (event) {
+    const venue = this.venues.find((v) => v.venueID === event.venueID);
 
-    // Set minimum date to today
-    const eventDateInput = document.getElementById("eventDate");
-    if (eventDateInput) {
-      eventDateInput.min = Utils.formatDateTimeForInput(new Date());
-    }
+    return `
+      <div class="event-item">
+        <h4>${Utils.sanitizeInput(event.name)}</h4>
+        <div class="event-meta">
+          <span><strong>Date:</strong> ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}</span><br>
+          <span><strong>Venue:</strong> ${venue ? Utils.sanitizeInput(venue.name) : "TBA"}</span>
+        </div>
+        <p style="margin-top: 0.5rem; color: #666;">${Utils.sanitizeInput(event.description || "No description available")}</p>
+        <div style="margin-top: 1rem;">
+          <button onclick="window.location.href='event-details.html?id=${event.eventID}'" class="btn btn-secondary" style="font-size: 0.9rem;">
+            View Details
+          </button>
+        </div>
+      </div>
+    `;
   },
 
-  // Hide create event modal
-  hideCreateEventModal: function () {
-    Utils.hide("createEventModal");
-    document.getElementById("createEventForm").reset();
-    document.getElementById("eventModalMessages").innerHTML = "";
+  // Create HTML for venue card
+  createVenueCard: function (venue) {
+    return `
+      <div class="venue-item">
+        <h4>${Utils.sanitizeInput(venue.name)}</h4>
+        <div class="venue-meta">
+          <span>${Utils.sanitizeInput(venue.address)}</span><br>
+          ${venue.capacity ? `<span><strong>Capacity:</strong> ${venue.capacity}</span>` : ""}
+        </div>
+        <div style="margin-top: 1rem;">
+          <button onclick="window.location.href='venue-details.html?id=${venue.venueID}'" class="btn btn-secondary" style="font-size: 0.9rem;">
+            View Details
+          </button>
+        </div>
+      </div>
+    `;
   },
 
-  // Show add venue modal
-  showAddVenueModal: function () {
-    Utils.show("addVenueModal");
-  },
-
-  // Hide add venue modal
-  hideAddVenueModal: function () {
-    Utils.hide("addVenueModal");
-    document.getElementById("addVenueForm").reset();
-    document.getElementById("venueModalMessages").innerHTML = "";
-  },
-
-  // Load venues for event creation modal
-  loadVenuesForModal: function () {
+  // Load venues for event creation dropdown
+  loadVenuesForDropdown: function () {
     const venueSelect = document.getElementById("eventVenue");
     if (!venueSelect) return;
 
@@ -407,225 +376,172 @@ const Dashboard = {
     });
   },
 
-  // Handle create event form submission
-  handleCreateEvent: async function (event) {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-
-    const eventData = {
-      eventID: CONFIG.generateEventID(),
-      name: formData.get("name").trim(),
-      description: formData.get("description").trim(),
-      eventDate: formData.get("eventDate"),
-      eventTime: formData.get("eventTime"),
-      venueID: parseInt(formData.get("venueID")),
-    };
-
-    // Validation
-    if (
-      !eventData.name ||
-      !eventData.eventDate ||
-      !eventData.eventTime ||
-      !eventData.venueID
-    ) {
-      Utils.showError(
-        "Please fill in all required fields",
-        "eventModalMessages",
-      );
-      return;
-    }
+  // Handle event creation
+  handleCreateEvent: async function (e) {
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const messagesDiv = document.getElementById("event-modal-messages");
 
     try {
-      Utils.showLoading(submitBtn, "Creating event...");
+      Utils.showLoading(submitBtn, "Creating...");
 
-      const response = await fetch(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS),
-        {
-          method: "POST",
-          headers: CONFIG.getAuthHeaders(),
-          body: JSON.stringify(eventData),
-        },
-      );
+      const formData = new FormData(form);
+      const eventData = {
+        eventID: CONFIG.generateEventID(),
+        name: formData.get("name"),
+        description: formData.get("description") || "",
+        eventDate: formData.get("eventDate"),
+        eventTime: formData.get("eventTime"),
+        venueID: parseInt(formData.get("venueID")),
+      };
 
-      const data = await response.json();
+      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+      const response = await Utils.apiCall(url, {
+        method: "POST",
+        headers: CONFIG.getAuthHeaders(),
+        body: JSON.stringify(eventData),
+      });
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create event");
-      }
+      Utils.showSuccess("Event created successfully!", messagesDiv.id);
+      form.reset();
 
-      Utils.showSuccess("Event created successfully!", "eventModalMessages");
-
-      // Refresh events data
-      await this.loadEvents();
-      this.displayUpcomingEvents();
-      this.displayRecommendedEvents();
+      // Reload data and re-render
+      await this.loadAllData();
+      this.render();
 
       // Update map
-      if (MapService.isInitialized) {
+      if (this.mapInitialized) {
         MapService.addEventMarkers(this.events, this.venues);
       }
 
+      // Close modal after a delay
       setTimeout(() => {
-        this.hideCreateEventModal();
+        document.getElementById("create-event-modal").style.display = "none";
       }, 2000);
     } catch (error) {
-      console.error("Error creating event:", error);
+      console.error("Failed to create event:", error);
       Utils.showError(
         error.message || "Failed to create event",
-        "eventModalMessages",
+        messagesDiv.id,
       );
     } finally {
       Utils.hideLoading(submitBtn, "Create Event");
     }
   },
 
-  // Handle add venue form submission
-  handleAddVenue: async function (event) {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-
-    const venueData = {
-      venueID: CONFIG.generateVenueID(),
-      name: formData.get("name").trim(),
-      address: formData.get("address").trim(),
-      capacity: formData.get("capacity")
-        ? parseInt(formData.get("capacity"))
-        : null,
-      latitude: formData.get("latitude")
-        ? parseFloat(formData.get("latitude"))
-        : null,
-      longitude: formData.get("longitude")
-        ? parseFloat(formData.get("longitude"))
-        : null,
-    };
-
-    // Validation
-    if (!venueData.name || !venueData.address) {
-      Utils.showError(
-        "Please fill in venue name and address",
-        "venueModalMessages",
-      );
-      return;
-    }
+  // Handle venue creation
+  handleCreateVenue: async function (e) {
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const messagesDiv = document.getElementById("venue-modal-messages");
 
     try {
-      Utils.showLoading(submitBtn, "Adding venue...");
+      Utils.showLoading(submitBtn, "Creating...");
 
-      const response = await fetch(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES),
-        {
-          method: "POST",
-          headers: CONFIG.getAuthHeaders(),
-          body: JSON.stringify(venueData),
-        },
-      );
+      const formData = new FormData(form);
 
-      const data = await response.json();
+      // Geocode address if lat/lng not provided
+      let latitude = parseFloat(formData.get("latitude"));
+      let longitude = parseFloat(formData.get("longitude"));
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add venue");
+      if (!latitude || !longitude) {
+        const address = formData.get("address");
+        if (address) {
+          const geocoded = await MapService.geocodeAddress(address);
+          if (geocoded) {
+            latitude = geocoded.lat;
+            longitude = geocoded.lng;
+          }
+        }
       }
 
-      Utils.showSuccess("Venue added successfully!", "venueModalMessages");
+      const venueData = {
+        venueID: CONFIG.generateVenueID(),
+        name: formData.get("name"),
+        address: formData.get("address"),
+        capacity: formData.get("capacity")
+          ? parseInt(formData.get("capacity"))
+          : null,
+        latitude: latitude || null,
+        longitude: longitude || null,
+      };
 
-      // Refresh venues data
-      await this.loadVenues();
-      this.displayPopularVenues();
+      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+      const response = await Utils.apiCall(url, {
+        method: "POST",
+        headers: CONFIG.getAuthHeaders(),
+        body: JSON.stringify(venueData),
+      });
+
+      Utils.showSuccess("Venue created successfully!", messagesDiv.id);
+      form.reset();
+
+      // Reload data and re-render
+      await this.loadAllData();
+      this.render();
 
       // Update map
-      if (MapService.isInitialized) {
+      if (this.mapInitialized) {
         MapService.addVenueMarkers(this.venues);
       }
 
+      // Close modal after a delay
       setTimeout(() => {
-        this.hideAddVenueModal();
+        document.getElementById("add-venue-modal").style.display = "none";
       }, 2000);
     } catch (error) {
-      console.error("Error adding venue:", error);
+      console.error("Failed to create venue:", error);
       Utils.showError(
-        error.message || "Failed to add venue",
-        "venueModalMessages",
+        error.message || "Failed to create venue",
+        messagesDiv.id,
       );
     } finally {
       Utils.hideLoading(submitBtn, "Add Venue");
     }
   },
 
-  // Get current location for venue form
+  // Get current location for venue
   getCurrentLocationForVenue: async function () {
-    const getLocationBtn = document.getElementById("getLocationBtn");
-    const latitudeInput = document.getElementById("venueLatitude");
-    const longitudeInput = document.getElementById("venueLongitude");
+    const latInput = document.getElementById("venueLatitude");
+    const lngInput = document.getElementById("venueLongitude");
+    const btn = document.getElementById("get-location-btn");
 
     try {
-      Utils.showLoading(getLocationBtn, "Getting location...");
+      Utils.showLoading(btn, "Getting location...");
 
       const location = await Utils.getCurrentLocation();
 
-      latitudeInput.value = location.lat.toFixed(6);
-      longitudeInput.value = location.lng.toFixed(6);
+      if (latInput) latInput.value = location.lat.toFixed(6);
+      if (lngInput) lngInput.value = location.lng.toFixed(6);
 
-      Utils.showSuccess("Location updated!", "venueModalMessages");
+      Utils.showSuccess("Location retrieved successfully!");
     } catch (error) {
-      console.error("Error getting location:", error);
+      console.error("Failed to get location:", error);
       Utils.showError(
         "Could not get your location. Please enter coordinates manually.",
-        "venueModalMessages",
       );
     } finally {
-      Utils.hideLoading(getLocationBtn, "Get My Current Location");
+      Utils.hideLoading(btn, "Get My Current Location");
     }
   },
 
-  // Find nearby events
-  findNearbyEvents: async function () {
+  // Find events near user's location
+  findEventsNearMe: async function () {
     try {
       const location = await Utils.getCurrentLocation();
 
-      // Filter events by nearby venues (within reasonable distance)
-      const nearbyEvents = this.events.filter((event) => {
-        const venue = this.venues.find((v) => v.venueID === event.venueID);
-        if (!venue || !venue.latitude || !venue.longitude) return false;
-
-        const distance = Utils.calculateDistance(
-          location.lat,
-          location.lng,
-          parseFloat(venue.latitude),
-          parseFloat(venue.longitude),
-        );
-
-        return distance <= 20; // Within 20km
-      });
-
-      if (nearbyEvents.length === 0) {
-        Utils.showError("No events found within 20km of your location.");
-        return;
+      if (this.mapInitialized) {
+        MapService.centerOn(location.lat, location.lng, 14);
+        Utils.showSuccess("Map centered on your location!");
       }
-
-      // Update map to show only nearby events
-      if (MapService.isInitialized) {
-        MapService.addEventMarkers(nearbyEvents, this.venues);
-        MapService.centerOn(location.lat, location.lng, 12);
-      }
-
-      Utils.showSuccess(`Found ${nearbyEvents.length} events near you!`);
     } catch (error) {
-      console.error("Error finding nearby events:", error);
-      Utils.showError("Could not access your location to find nearby events.");
+      console.error("Failed to get location:", error);
+      Utils.showError("Could not get your location.");
     }
   },
 };
 
-// Initialize dashboard when DOM is loaded
-document.addEventListener("DOMContentLoaded", function () {
+// Initialize dashboard when DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
   Dashboard.init();
 });
-
-// Export for use in other modules
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = Dashboard;
-}

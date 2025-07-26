@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Events - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <header class="header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">Local Gigs</a>
+                <nav>
+                    <ul class="nav-menu">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li>
+                            <a href="events.html" class="nav-link active"
+                                >Events</a
+                            >
+                        </li>
+                        <li><a href="venues.html">Venues</a></li>
+                        <li><a href="profile.html">Profile</a></li>
+                        <li>
+                            <button class="btn logout-btn" id="logout-button">
+                                Logout
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <div class="container">
+                <div class="dashboard-header">
+                    <h1>Local Events</h1>
+                    <p>Discover and join amazing music events in your area</p>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="card">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            flex-wrap: wrap;
+                            gap: 1rem;
+                        "
+                    >
+                        <div
+                            style="
+                                display: flex;
+                                gap: 1rem;
+                                flex-wrap: wrap;
+                                align-items: center;
+                            "
+                        >
+                            <div class="form-group" style="margin: 0">
+                                <input
+                                    type="text"
+                                    id="search-input"
+                                    class="form-control"
+                                    placeholder="Search events..."
+                                    style="min-width: 200px"
+                                />
+                            </div>
+                            <div class="form-group" style="margin: 0">
+                                <select id="genre-filter" class="form-control">
+                                    <option value="">All Genres</option>
+                                    <option value="rock">Rock</option>
+                                    <option value="pop">Pop</option>
+                                    <option value="jazz">Jazz</option>
+                                    <option value="electronic">
+                                        Electronic
+                                    </option>
+                                    <option value="hiphop">Hip-Hop</option>
+                                    <option value="indie">Indie</option>
+                                    <option value="metal">Metal</option>
+                                    <option value="country">Country</option>
+                                    <option value="reggae">Reggae</option>
+                                    <option value="classical">Classical</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0">
+                                <input
+                                    type="date"
+                                    id="date-filter"
+                                    class="form-control"
+                                />
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem">
+                            <button id="create-event-btn" class="btn">
+                                Create Event
+                            </button>
+                            <button
+                                id="toggle-view-btn"
+                                class="btn btn-secondary"
+                            >
+                                Map View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Container (hidden by default) -->
+                <div
+                    id="map-container-wrapper"
+                    class="card"
+                    style="display: none"
+                >
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        "
+                    >
+                        <h2>Events Map</h2>
+                        <button id="list-view-btn" class="btn btn-secondary">
+                            List View
+                        </button>
+                    </div>
+                    <div class="map-container">
+                        <div id="events-map">
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    height: 100%;
+                                    color: #666;
+                                "
+                            >
+                                <p>Loading map...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Events List -->
+                <div id="events-list-wrapper" class="card">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        "
+                    >
+                        <h2>
+                            <span id="events-count">Loading...</span> Events
+                        </h2>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 0.5rem;
+                                align-items: center;
+                            "
+                        >
+                            <label
+                                for="sort-select"
+                                style="font-size: 0.9rem; color: #666"
+                                >Sort by:</label
+                            >
+                            <select
+                                id="sort-select"
+                                class="form-control"
+                                style="width: auto"
+                            >
+                                <option value="date-asc">
+                                    Date (Upcoming First)
+                                </option>
+                                <option value="date-desc">
+                                    Date (Latest First)
+                                </option>
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="events-grid">
+                        <div class="loading-placeholder">
+                            <p>Loading events...</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div
+                        id="pagination"
+                        style="
+                            margin-top: 2rem;
+                            text-align: center;
+                            display: none;
+                        "
+                    >
+                        <button
+                            id="prev-page"
+                            class="btn btn-secondary"
+                            disabled
+                        >
+                            Previous
+                        </button>
+                        <span id="page-info" style="margin: 0 1rem; color: #666"
+                            >Page 1 of 1</span
+                        >
+                        <button
+                            id="next-page"
+                            class="btn btn-secondary"
+                            disabled
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create Event Modal -->
+        <div id="create-event-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-event-modal">&times;</span>
+                <h2>Create New Event</h2>
+                <div id="event-modal-messages"></div>
+                <form id="create-event-form">
+                    <div class="form-group">
+                        <label for="eventName">Event Name *</label>
+                        <input
+                            type="text"
+                            id="eventName"
+                            name="name"
+                            class="form-control"
+                            required
+                            placeholder="Enter event name"
+                            maxlength="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventDescription">Description</label>
+                        <textarea
+                            id="eventDescription"
+                            name="description"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Describe your event..."
+                            maxlength="500"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventGenre">Genre</label>
+                        <select
+                            id="eventGenre"
+                            name="genre"
+                            class="form-control"
+                        >
+                            <option value="">Select genre...</option>
+                            <option value="rock">Rock</option>
+                            <option value="pop">Pop</option>
+                            <option value="jazz">Jazz</option>
+                            <option value="electronic">Electronic</option>
+                            <option value="hiphop">Hip-Hop</option>
+                            <option value="indie">Indie</option>
+                            <option value="metal">Metal</option>
+                            <option value="country">Country</option>
+                            <option value="reggae">Reggae</option>
+                            <option value="classical">Classical</option>
+                        </select>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 1rem;
+                        "
+                    >
+                        <div class="form-group">
+                            <label for="eventDate">Event Date *</label>
+                            <input
+                                type="date"
+                                id="eventDate"
+                                name="eventDate"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="eventTime">Event Time *</label>
+                            <input
+                                type="time"
+                                id="eventTime"
+                                name="eventTime"
+                                class="form-control"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventVenue">Venue *</label>
+                        <div style="display: flex; gap: 0.5rem">
+                            <select
+                                id="eventVenue"
+                                name="venueID"
+                                class="form-control"
+                                required
+                                style="flex: 1"
+                            >
+                                <option value="">Select a venue...</option>
+                            </select>
+                            <button
+                                type="button"
+                                id="create-venue-btn"
+                                class="btn btn-secondary"
+                            >
+                                Add New
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventImage">Event Image</label>
+                        <input
+                            type="file"
+                            id="eventImage"
+                            name="image"
+                            class="form-control"
+                            accept="image/*"
+                        />
+                        <div class="form-text">
+                            Optional: Upload an image for your event
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn" style="width: 100%">
+                            Create Event
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Event Details Modal -->
+        <div id="event-details-modal" class="modal">
+            <div class="modal-content" style="max-width: 600px">
+                <span class="close" id="close-details-modal">&times;</span>
+                <div id="event-details-content">
+                    <!-- Event details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/event.js"></script>
+
+        <style>
+            .events-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+
+            .event-card {
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                transition: var(--transition);
+                cursor: pointer;
+            }
+
+            .event-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+                border-color: var(--primary-color);
+            }
+
+            .event-card-image {
+                width: 100%;
+                height: 200px;
+                object-fit: cover;
+                background: var(--bg-secondary);
+            }
+
+            .event-card-content {
+                padding: 1.5rem;
+            }
+
+            .event-card-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin: 0 0 0.5rem 0;
+                color: var(--text-primary);
+            }
+
+            .event-card-meta {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+
+            .event-card-meta span {
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+            .event-card-description {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                line-height: 1.4;
+                margin-bottom: 1rem;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .event-card-actions {
+                display: flex;
+                gap: 0.5rem;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .genre-badge {
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+
+            .join-btn {
+                background: var(--accent-color);
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .join-btn:hover {
+                background: #0056b3;
+                transform: translateY(-1px);
+            }
+
+            .join-btn:disabled {
+                background: var(--text-muted);
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .loading-placeholder {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--text-muted);
+            }
+
+            .no-events {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--text-muted);
+            }
+
+            @media (max-width: 768px) {
+                .events-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .card > div:first-child {
+                    flex-direction: column;
+                    align-items: stretch !important;
+                    gap: 1rem;
+                }
+
+                .card > div:first-child > div:first-child {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .form-control {
+                    min-width: auto !important;
+                }
+            }
+        </style>
+    </body>
+</html>

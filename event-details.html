@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Event Details - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <header class="header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">Local Gigs</a>
+                <nav>
+                    <ul class="nav-menu">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="events.html">Events</a></li>
+                        <li><a href="venues.html">Venues</a></li>
+                        <li><a href="profile.html">Profile</a></li>
+                        <li>
+                            <button class="btn logout-btn" id="logout-button">
+                                Logout
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <div class="container">
+                <!-- Back Button -->
+                <div style="margin-bottom: 1rem">
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        ← Back to Events
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="card">
+                    <div class="loading-placeholder">
+                        <p>Loading event details...</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="error-state" class="card" style="display: none">
+                    <div style="text-align: center; padding: 3rem">
+                        <h2>Event Not Found</h2>
+                        <p style="color: #666; margin-bottom: 2rem">
+                            The event you're looking for doesn't exist or has
+                            been removed.
+                        </p>
+                        <button
+                            onclick="window.location.href='events.html'"
+                            class="btn"
+                        >
+                            Browse All Events
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Event Details Content -->
+                <div id="event-content" style="display: none">
+                    <!-- Event Header -->
+                    <div class="card">
+                        <div id="event-header">
+                            <!-- Content will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Event Information Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Event Details -->
+                        <div class="card">
+                            <h2>Event Details</h2>
+                            <div id="event-details">
+                                <!-- Content will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Venue Information -->
+                        <div class="card">
+                            <h2>Venue Information</h2>
+                            <div id="venue-details">
+                                <!-- Content will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Event Actions -->
+                        <div class="card">
+                            <h2>Actions</h2>
+                            <div
+                                id="event-actions"
+                                style="
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 1rem;
+                                "
+                            >
+                                <!-- Content will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Map -->
+                        <div class="card">
+                            <h2>Location</h2>
+                            <div class="map-container">
+                                <div id="event-map">
+                                    <div
+                                        style="
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            height: 100%;
+                                            color: #666;
+                                        "
+                                    >
+                                        <p>Loading map...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Similar Events -->
+                    <div class="card">
+                        <h2>Similar Events</h2>
+                        <div id="similar-events">
+                            <div class="loading-placeholder">
+                                <p>Loading similar events...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Join Event Modal -->
+        <div id="join-event-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-join-modal">&times;</span>
+                <h2>Join Event</h2>
+                <div id="join-modal-messages"></div>
+                <div id="join-event-content">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Event Modal -->
+        <div id="share-event-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-share-modal">&times;</span>
+                <h2>Share Event</h2>
+                <div style="text-align: center; padding: 1rem 0">
+                    <div style="margin-bottom: 1rem">
+                        <label
+                            style="
+                                display: block;
+                                margin-bottom: 0.5rem;
+                                font-weight: 600;
+                            "
+                            >Event Link:</label
+                        >
+                        <div style="display: flex; gap: 0.5rem">
+                            <input
+                                type="text"
+                                id="event-share-url"
+                                class="form-control"
+                                readonly
+                                style="flex: 1"
+                            />
+                            <button
+                                id="copy-link-btn"
+                                class="btn btn-secondary"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div
+                        style="
+                            display: flex;
+                            gap: 1rem;
+                            justify-content: center;
+                            flex-wrap: wrap;
+                        "
+                    >
+                        <button
+                            id="share-facebook-btn"
+                            class="btn btn-secondary"
+                        >
+                            Facebook
+                        </button>
+                        <button
+                            id="share-twitter-btn"
+                            class="btn btn-secondary"
+                        >
+                            Twitter
+                        </button>
+                        <button
+                            id="share-whatsapp-btn"
+                            class="btn btn-secondary"
+                        >
+                            WhatsApp
+                        </button>
+                        <button id="share-email-btn" class="btn btn-secondary">
+                            Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/event-details.js"></script>
+
+        <style>
+            .event-header-image {
+                width: 100%;
+                height: 300px;
+                object-fit: cover;
+                border-radius: var(--radius-md);
+                margin-bottom: 1.5rem;
+            }
+
+            .event-title {
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin: 0 0 1rem 0;
+                color: var(--text-primary);
+            }
+
+            .event-subtitle {
+                font-size: 1.2rem;
+                color: var(--text-secondary);
+                margin-bottom: 1.5rem;
+            }
+
+            .event-status {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+
+            .event-status.upcoming {
+                background: #d1ecf1;
+                color: #0c5460;
+            }
+
+            .event-status.today {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .event-status.passed {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+            .detail-item {
+                display: flex;
+                align-items: flex-start;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                background: var(--bg-secondary);
+                border-radius: var(--radius-sm);
+            }
+
+            .detail-icon {
+                font-size: 1.5rem;
+                margin-right: 1rem;
+                min-width: 2rem;
+            }
+
+            .detail-content {
+                flex: 1;
+            }
+
+            .detail-label {
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 0.25rem;
+            }
+
+            .detail-value {
+                color: var(--text-secondary);
+            }
+
+            .genre-badge {
+                background: var(--accent-color);
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                margin-right: 0.5rem;
+            }
+
+            .action-btn {
+                padding: 1rem;
+                border: none;
+                border-radius: var(--radius-md);
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                text-align: center;
+            }
+
+            .action-btn.primary {
+                background: var(--accent-color);
+                color: white;
+            }
+
+            .action-btn.primary:hover {
+                background: #0056b3;
+                transform: translateY(-1px);
+            }
+
+            .action-btn.secondary {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+            }
+
+            .action-btn.secondary:hover {
+                background: var(--primary-color);
+                color: white;
+            }
+
+            .action-btn:disabled {
+                background: var(--text-muted);
+                color: white;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .similar-events-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1rem;
+                margin-top: 1rem;
+            }
+
+            .similar-event-card {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-light);
+                border-radius: var(--radius-md);
+                padding: 1rem;
+                transition: var(--transition);
+                cursor: pointer;
+            }
+
+            .similar-event-card:hover {
+                border-color: var(--primary-color);
+                transform: translateY(-2px);
+            }
+
+            .similar-event-title {
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+                color: var(--text-primary);
+            }
+
+            .similar-event-meta {
+                font-size: 0.9rem;
+                color: var(--text-secondary);
+            }
+
+            @media (max-width: 768px) {
+                .event-title {
+                    font-size: 2rem;
+                }
+
+                .event-header-image {
+                    height: 200px;
+                }
+
+                .dashboard-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .detail-item {
+                    flex-direction: column;
+                    text-align: center;
+                }
+
+                .detail-icon {
+                    margin-right: 0;
+                    margin-bottom: 0.5rem;
+                }
+
+                .similar-events-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </body>
+</html>

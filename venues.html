@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Venues - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <header class="header">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">Local Gigs</a>
+                <nav>
+                    <ul class="nav-menu">
+                        <li><a href="dashboard.html">Dashboard</a></li>
+                        <li><a href="events.html">Events</a></li>
+                        <li>
+                            <a href="venues.html" class="nav-link active"
+                                >Venues</a
+                            >
+                        </li>
+                        <li><a href="profile.html">Profile</a></li>
+                        <li>
+                            <button class="btn logout-btn" id="logout-button">
+                                Logout
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <div class="container">
+                <div class="dashboard-header">
+                    <h1>Music Venues</h1>
+                    <p>
+                        Discover and manage venues for your local music events
+                    </p>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="card">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            flex-wrap: wrap;
+                            gap: 1rem;
+                        "
+                    >
+                        <div
+                            style="
+                                display: flex;
+                                gap: 1rem;
+                                flex-wrap: wrap;
+                                align-items: center;
+                            "
+                        >
+                            <div class="form-group" style="margin: 0">
+                                <input
+                                    type="text"
+                                    id="search-input"
+                                    class="form-control"
+                                    placeholder="Search venues..."
+                                    style="min-width: 200px"
+                                />
+                            </div>
+                            <div class="form-group" style="margin: 0">
+                                <select
+                                    id="capacity-filter"
+                                    class="form-control"
+                                >
+                                    <option value="">All Capacities</option>
+                                    <option value="small">Small (1-500)</option>
+                                    <option value="medium">
+                                        Medium (501-2000)
+                                    </option>
+                                    <option value="large">Large (2001+)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0">
+                                <input
+                                    type="text"
+                                    id="location-filter"
+                                    class="form-control"
+                                    placeholder="Filter by location..."
+                                />
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem">
+                            <button id="create-venue-btn" class="btn">
+                                Add Venue
+                            </button>
+                            <button
+                                id="toggle-view-btn"
+                                class="btn btn-secondary"
+                            >
+                                Map View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Container (hidden by default) -->
+                <div
+                    id="map-container-wrapper"
+                    class="card"
+                    style="display: none"
+                >
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        "
+                    >
+                        <h2>Venues Map</h2>
+                        <button id="list-view-btn" class="btn btn-secondary">
+                            List View
+                        </button>
+                    </div>
+                    <div class="map-container">
+                        <div id="venues-map">
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    height: 100%;
+                                    color: #666;
+                                "
+                            >
+                                <p>Loading map...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Venues List -->
+                <div id="venues-list-wrapper" class="card">
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        "
+                    >
+                        <h2>
+                            <span id="venues-count">Loading...</span> Venues
+                        </h2>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 0.5rem;
+                                align-items: center;
+                            "
+                        >
+                            <label
+                                for="sort-select"
+                                style="font-size: 0.9rem; color: #666"
+                                >Sort by:</label
+                            >
+                            <select
+                                id="sort-select"
+                                class="form-control"
+                                style="width: auto"
+                            >
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="capacity-asc">
+                                    Capacity (Low to High)
+                                </option>
+                                <option value="capacity-desc">
+                                    Capacity (High to Low)
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="venues-grid">
+                        <div class="loading-placeholder">
+                            <p>Loading venues...</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div
+                        id="pagination"
+                        style="
+                            margin-top: 2rem;
+                            text-align: center;
+                            display: none;
+                        "
+                    >
+                        <button
+                            id="prev-page"
+                            class="btn btn-secondary"
+                            disabled
+                        >
+                            Previous
+                        </button>
+                        <span id="page-info" style="margin: 0 1rem; color: #666"
+                            >Page 1 of 1</span
+                        >
+                        <button
+                            id="next-page"
+                            class="btn btn-secondary"
+                            disabled
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create/Edit Venue Modal -->
+        <div id="venue-modal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="close-venue-modal">&times;</span>
+                <h2 id="venue-modal-title">Add New Venue</h2>
+                <div id="venue-modal-messages"></div>
+                <form id="venue-form">
+                    <input type="hidden" id="venueID" name="venueID" />
+
+                    <div class="form-group">
+                        <label for="venueName">Venue Name *</label>
+                        <input
+                            type="text"
+                            id="venueName"
+                            name="name"
+                            class="form-control"
+                            required
+                            placeholder="Enter venue name"
+                            maxlength="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venueAddress">Address *</label>
+                        <input
+                            type="text"
+                            id="venueAddress"
+                            name="address"
+                            class="form-control"
+                            required
+                            placeholder="Enter venue address"
+                            maxlength="200"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venueDescription">Description</label>
+                        <textarea
+                            id="venueDescription"
+                            name="description"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Describe the venue..."
+                            maxlength="500"
+                        ></textarea>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 1rem;
+                        "
+                    >
+                        <div class="form-group">
+                            <label for="venueCapacity">Capacity</label>
+                            <input
+                                type="number"
+                                id="venueCapacity"
+                                name="capacity"
+                                class="form-control"
+                                min="1"
+                                max="100000"
+                                placeholder="Maximum capacity"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="venueType">Venue Type</label>
+                            <select
+                                id="venueType"
+                                name="type"
+                                class="form-control"
+                            >
+                                <option value="">Select type...</option>
+                                <option value="concert-hall">
+                                    Concert Hall
+                                </option>
+                                <option value="club">Club</option>
+                                <option value="bar">Bar</option>
+                                <option value="outdoor">Outdoor</option>
+                                <option value="theater">Theater</option>
+                                <option value="stadium">Stadium</option>
+                                <option value="arena">Arena</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 1rem;
+                        "
+                    >
+                        <div class="form-group">
+                            <label for="venueLatitude">Latitude</label>
+                            <input
+                                type="number"
+                                id="venueLatitude"
+                                name="latitude"
+                                class="form-control"
+                                step="0.000001"
+                                placeholder="1.3521"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="venueLongitude">Longitude</label>
+                            <input
+                                type="number"
+                                id="venueLongitude"
+                                name="longitude"
+                                class="form-control"
+                                step="0.000001"
+                                placeholder="103.8198"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button
+                            type="button"
+                            id="get-location-btn"
+                            class="btn btn-secondary"
+                            style="width: 100%; margin-bottom: 1rem"
+                        >
+                            Get My Current Location
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <button
+                            type="button"
+                            id="geocode-btn"
+                            class="btn btn-secondary"
+                            style="width: 100%; margin-bottom: 1rem"
+                        >
+                            Get Coordinates from Address
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venueImage">Venue Image</label>
+                        <input
+                            type="file"
+                            id="venueImage"
+                            name="image"
+                            class="form-control"
+                            accept="image/*"
+                        />
+                        <div class="form-text">
+                            Optional: Upload an image of the venue
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button
+                            type="submit"
+                            class="btn"
+                            style="width: 100%"
+                            id="venue-submit-btn"
+                        >
+                            Add Venue
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Venue Details Modal -->
+        <div id="venue-details-modal" class="modal">
+            <div class="modal-content" style="max-width: 600px">
+                <span class="close" id="close-details-modal">&times;</span>
+                <div id="venue-details-content">
+                    <!-- Venue details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/venue.js"></script>
+
+        <style>
+            .venues-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+
+            .venue-card {
+                background: white;
+                border: 1px solid #dee2e6;
+                border-radius: var(--radius-md);
+                overflow: hidden;
+                transition: var(--transition);
+                cursor: pointer;
+            }
+
+            .venue-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+                border-color: var(--primary-color);
+            }
+
+            .venue-card-image {
+                width: 100%;
+                height: 180px;
+                object-fit: cover;
+                background: var(--bg-secondary);
+            }
+
+            .venue-card-content {
+                padding: 1.5rem;
+            }
+
+            .venue-card-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin: 0 0 0.5rem 0;
+                color: var(--text-primary);
+            }
+
+            .venue-card-meta {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                margin-bottom: 1rem;
+            }
+
+            .venue-card-meta span {
+                display: block;
+                margin-bottom: 0.25rem;
+            }
+
+            .venue-card-description {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+                line-height: 1.4;
+                margin-bottom: 1rem;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .venue-card-actions {
+                display: flex;
+                gap: 0.5rem;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .capacity-badge {
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+
+            .capacity-badge.small {
+                background: #e7f3ff;
+                color: #0066cc;
+            }
+
+            .capacity-badge.medium {
+                background: #fff3cd;
+                color: #856404;
+            }
+
+            .capacity-badge.large {
+                background: #d1ecf1;
+                color: #0c5460;
+            }
+
+            .type-badge {
+                background: var(--accent-color);
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 15px;
+                font-size: 0.8rem;
+                font-weight: 500;
+            }
+
+            .edit-btn {
+                background: var(--secondary-color);
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .edit-btn:hover {
+                background: #555555;
+                transform: translateY(-1px);
+            }
+
+            .delete-btn {
+                background: #dc3545;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .delete-btn:hover {
+                background: #c82333;
+                transform: translateY(-1px);
+            }
+
+            .loading-placeholder {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--text-muted);
+            }
+
+            .no-venues {
+                text-align: center;
+                padding: 4rem 2rem;
+                color: var(--text-muted);
+            }
+
+            @media (max-width: 768px) {
+                .venues-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .card > div:first-child {
+                    flex-direction: column;
+                    align-items: stretch !important;
+                    gap: 1rem;
+                }
+
+                .card > div:first-child > div:first-child {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .form-control {
+                    min-width: auto !important;
+                }
+
+                .venue-card-actions {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 0.5rem;
+                }
+
+                .venue-card-actions > div {
+                    display: flex;
+                    gap: 0.5rem;
+                    justify-content: center;
+                }
+            }
+        </style>
+    </body>
+</html>

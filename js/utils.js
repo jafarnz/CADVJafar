@@ -195,6 +195,14 @@ const Utils = {
     }
   },
 
+  // Check authentication and return user data
+  checkAuth: async function () {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+    return this.getUserFromToken();
+  },
+
   // Get user data from token
   getUserFromToken: function () {
     const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
@@ -220,6 +228,7 @@ const Utils = {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
     localStorage.removeItem(CONFIG.STORAGE_KEYS.PREFERENCES);
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.SIGNUP_USERNAME);
     window.location.href = "index.html";
   },
 
@@ -272,10 +281,27 @@ const Utils = {
       };
 
       const response = await fetch(url, mergedOptions);
-      const data = await response.json();
+
+      // Handle non-JSON responses
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { message: text };
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+        // Handle specific error cases
+        if (response.status === 404) {
+          throw new Error("User not found");
+        }
+        throw new Error(
+          data.error ||
+            data.message ||
+            `HTTP error! status: ${response.status}`,
+        );
       }
 
       return data;
@@ -356,6 +382,46 @@ const Utils = {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  },
+
+  // Convert image file to base64
+  fileToBase64: function (file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  },
+
+  // Capitalize first letter
+  capitalize: function (str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  },
+
+  // Upload image to S3 via backend
+  uploadImage: async function (file, folder = "events") {
+    try {
+      const base64 = await this.fileToBase64(file);
+      const base64Data = base64.split(",")[1]; // Remove data:image/jpeg;base64, prefix
+
+      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.UPLOAD);
+      const response = await this.apiCall(url, {
+        method: "POST",
+        headers: CONFIG.getAuthHeaders(),
+        body: JSON.stringify({
+          image: base64Data,
+          folder: folder,
+          filename: file.name,
+        }),
+      });
+
+      return response.imageUrl;
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      throw error;
+    }
   },
 };
 

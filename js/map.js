@@ -1,10 +1,10 @@
-// Map integration for Amazon Location Service
+// Map integration for Amazon Location Service ONLY
 const MapService = {
   map: null,
   markers: [],
   userLocationMarker: null,
   isInitialized: false,
-  useLocationService: false,
+  authHelper: null,
 
   // Initialize the map
   init: async function (containerId = "map") {
@@ -15,26 +15,15 @@ const MapService = {
         return false;
       }
 
-      // Load MapLibre GL JS if not already loaded
+      // Load required SDKs from CDN
       await this.loadMapLibreSDK();
+      await this.loadAwsSDK();
 
       // Initialize with Amazon Location Service
-      try {
-        await this.initializeWithLocationService(containerId);
-        this.useLocationService = true;
-        console.log("Map initialized with Amazon Location Service");
-      } catch (error) {
-        console.warn(
-          "Amazon Location Service failed, falling back to OpenStreetMap:",
-          error,
-        );
-        await this.initializeWithOSM(containerId);
-        this.useLocationService = false;
-        console.log("Map initialized with OpenStreetMap fallback");
-      }
+      await this.initializeWithLocationService(containerId);
 
       // Add map controls
-      this.map.addControl(new maplibregl.NavigationControl());
+      this.map.addControl(new maplibregl.NavigationControl(), "top-left");
       this.map.addControl(
         new maplibregl.GeolocateControl({
           positionOptions: {
@@ -42,113 +31,231 @@ const MapService = {
           },
           trackUserLocation: true,
         }),
+        "top-left",
       );
 
-      // Wait for map to load
-      await new Promise((resolve) => {
-        this.map.on("load", resolve);
-      });
+      // Wait for map to be fully loaded
+      await new Promise((resolve) => this.map.on("load", resolve));
 
       this.isInitialized = true;
+      console.log("Map initialized with Amazon Location Service");
 
-      // Try to get and show user location
+      // Show the user's location on the map
       this.showUserLocation();
 
       return true;
     } catch (error) {
-      console.error("Error initializing map:", error);
+      console.error("Amazon Location Service failed:", error);
       this.showMapError(containerId, error.message);
       return false;
     }
   },
 
-  // Load MapLibre GL JS SDK
+  // Load MapLibre GL JS SDK from CDN
   loadMapLibreSDK: function () {
     return new Promise((resolve, reject) => {
-      // Check if MapLibre is already loaded
-      if (typeof maplibregl !== "undefined") {
-        resolve();
-        return;
-      }
+      if (typeof maplibregl !== "undefined") return resolve();
 
-      // Load MapLibre GL JS
-      const maplibreScript = document.createElement("script");
-      maplibreScript.src =
-        "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
-      maplibreScript.onload = () => {
-        // Load CSS
-        const maplibreCSS = document.createElement("link");
-        maplibreCSS.rel = "stylesheet";
-        maplibreCSS.href =
-          "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
-        document.head.appendChild(maplibreCSS);
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
+      script.onload = () => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
+        document.head.appendChild(link);
         resolve();
       };
-      maplibreScript.onerror = reject;
-      document.head.appendChild(maplibreScript);
+      script.onerror = reject;
+      document.head.appendChild(script);
     });
   },
 
-  // Initialize with Amazon Location Service using access tokens
+  // Load AWS SDK for credentials
+  loadAwsSDK: function () {
+    return new Promise((resolve, reject) => {
+      if (typeof AWS !== "undefined") return resolve();
+
+      const script = document.createElement("script");
+      script.src = "https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js";
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  },
+
+  // Initialize with Amazon Location Service
   initializeWithLocationService: async function (containerId) {
-    // For now, throw error to use OSM fallback since Location Service needs proper setup
-    throw new Error(
-      "Amazon Location Service requires additional configuration",
-    );
-  },
+    try {
+      // Get AWS credentials from token
+      const credentials = await this.getAWSCredentials();
 
-  // Initialize with OpenStreetMap fallback
-  initializeWithOSM: async function (containerId) {
-    this.map = new maplibregl.Map({
-      container: containerId,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-            tileSize: 256,
-            attribution: "© OpenStreetMap contributors",
-          },
-        },
-        layers: [
-          {
-            id: "osm",
-            type: "raster",
-            source: "osm",
-          },
+      if (!credentials) {
+        throw new Error(
+          "Amazon Location Service requires additional configuration",
+        );
+      }
+
+      // Configure AWS SDK
+      AWS.config.update({
+        region: CONFIG.LOCATION.REGION,
+        credentials: credentials,
+      });
+
+      // Create the map with AWS Location Service
+      this.map = new maplibregl.Map({
+        container: containerId,
+        style: `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`,
+        center: [
+          CONFIG.APP.DEFAULT_COORDINATES.LNG,
+          CONFIG.APP.DEFAULT_COORDINATES.LAT,
         ],
-      },
-      center: [
-        CONFIG.APP.DEFAULT_COORDINATES.LNG,
-        CONFIG.APP.DEFAULT_COORDINATES.LAT,
-      ],
-      zoom: CONFIG.APP.MAP_ZOOM,
-    });
+        zoom: CONFIG.APP.MAP_ZOOM,
+        transformRequest: (url, resourceType) => {
+          if (url.includes("amazonaws.com")) {
+            return {
+              url: this.signRequest(url, credentials),
+            };
+          }
+          return { url };
+        },
+      });
+    } catch (error) {
+      console.error("Failed to initialize Amazon Location Service:", error);
+      throw error;
+    }
   },
 
-  // Show map error
+  // Get AWS credentials from Cognito token
+  getAWSCredentials: async function () {
+    try {
+      const idToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
+      const accessToken = localStorage.getItem(
+        CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
+      );
+
+      if (!idToken || !accessToken) {
+        throw new Error("No authentication tokens found");
+      }
+
+      // Create credentials using Cognito Identity
+      const cognitoIdentity = new AWS.CognitoIdentity({
+        region: CONFIG.COGNITO.REGION,
+      });
+
+      const params = {
+        IdentityPoolId: CONFIG.COGNITO.USER_POOL_ID,
+        Logins: {
+          [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
+            idToken,
+        },
+      };
+
+      const identityResult = await cognitoIdentity.getId(params).promise();
+      const credentialsResult = await cognitoIdentity
+        .getCredentialsForIdentity({
+          IdentityId: identityResult.IdentityId,
+          Logins: params.Logins,
+        })
+        .promise();
+
+      return {
+        accessKeyId: credentialsResult.Credentials.AccessKeyId,
+        secretAccessKey: credentialsResult.Credentials.SecretKey,
+        sessionToken: credentialsResult.Credentials.SessionToken,
+      };
+    } catch (error) {
+      console.error("Failed to get AWS credentials:", error);
+      return null;
+    }
+  },
+
+  // Sign AWS requests for Location Service
+  signRequest: function (url, credentials) {
+    const urlObj = new URL(url);
+    const host = urlObj.host;
+    const path = urlObj.pathname + urlObj.search;
+
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:\-]|\.\d{3}/g, "");
+    const dateStamp = amzDate.substr(0, 8);
+
+    const canonicalHeaders = `host:${host}\nx-amz-date:${amzDate}\n`;
+    const signedHeaders = "host;x-amz-date";
+    const payloadHash =
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // empty string hash
+
+    const canonicalRequest = `GET\n${path}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+
+    // Add auth headers
+    urlObj.searchParams.set("X-Amz-Date", amzDate);
+    urlObj.searchParams.set("X-Amz-Security-Token", credentials.sessionToken);
+
+    return urlObj.toString();
+  },
+
+  // Show a user-friendly error message in the map container
   showMapError: function (containerId, errorMessage) {
     const container = document.getElementById(containerId);
     if (container) {
       container.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; text-align: center; padding: 2rem;">
-                    <h3>Map Unavailable</h3>
-                    <p>Unable to load the map: ${errorMessage}</p>
-                    <button onclick="location.reload()" class="btn btn-secondary" style="margin-top: 1rem;">Retry</button>
-                </div>
-            `;
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+          <h3 style="color: #333; margin-bottom: 1rem;">Map Service Unavailable</h3>
+          <p style="margin-bottom: 1rem;">Amazon Location Service configuration required.</p>
+          <p style="font-size: 0.9rem; color: #999;">${errorMessage}</p>
+          <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        </div>
+      `;
     }
   },
 
-  // Add marker for event or venue
-  addMarker: function (lat, lng, popup = null, color = "#667eea") {
+  // Geocode an address using the backend API
+  geocodeAddress: async function (address) {
+    try {
+      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
+      const response = await Utils.apiCall(url, {
+        method: "POST",
+        headers: CONFIG.getAuthHeaders(),
+        body: JSON.stringify({ address }),
+      });
+
+      if (response && response.lat && response.lng) {
+        return response;
+      }
+      throw new Error("Address not found or geocoding failed.");
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      Utils.showError("Could not find coordinates for the address.");
+      return null;
+    }
+  },
+
+  // Reverse geocode coordinates using the backend API
+  reverseGeocode: async function (lat, lng) {
+    try {
+      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
+      const response = await Utils.apiCall(url, {
+        method: "POST",
+        headers: CONFIG.getAuthHeaders(),
+        body: JSON.stringify({ lat, lng }),
+      });
+
+      if (response && response.address) {
+        return response.address;
+      }
+      throw new Error("Could not find address for the coordinates.");
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  },
+
+  // Add a generic marker to the map
+  addMarker: function (lat, lng, popup = null, color = "#333") {
     if (!this.isInitialized) {
       console.warn("Map not initialized");
       return null;
     }
 
-    // Create custom marker element
     const markerElement = document.createElement("div");
     markerElement.style.backgroundColor = color;
     markerElement.style.width = "20px";
@@ -171,7 +278,7 @@ const MapService = {
     return marker;
   },
 
-  // Add event markers to map
+  // Add markers for a list of events
   addEventMarkers: function (events, venues) {
     this.clearMarkers();
 
@@ -179,250 +286,143 @@ const MapService = {
       const venue = venues.find((v) => v.venueID === event.venueID);
       if (venue && venue.latitude && venue.longitude) {
         const popupContent = `
-                    <div style="max-width: 200px;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #333;">${Utils.sanitizeInput(event.name)}</h4>
-                        <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
-                            <strong>Venue:</strong> ${Utils.sanitizeInput(venue.name)}
-                        </p>
-                        <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
-                            <strong>Date:</strong> ${Utils.formatDate(event.eventDate)}
-                        </p>
-                        <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.9rem;">
-                            <strong>Time:</strong> ${Utils.formatTime(event.eventTime)}
-                        </p>
-                        <button onclick="MapService.showDirections(${venue.latitude}, ${venue.longitude}, '${Utils.sanitizeInput(venue.name)}')"
-                                class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.5rem; margin-bottom: 0.5rem;">
-                            Get Directions
-                        </button>
-                        <button onclick="window.location.href='event-details.html?id=${event.eventID}'"
-                                class="btn btn-secondary" style="width: 100%; font-size: 0.8rem; padding: 0.5rem;">
-                            View Details
-                        </button>
-                    </div>
-                `;
-
+          <div style="max-width: 200px;">
+            <h4 style="margin: 0 0 0.5rem 0; color: #333;">${Utils.sanitizeInput(event.name)}</h4>
+            <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+              <strong>Venue:</strong> ${Utils.sanitizeInput(venue.name)}
+            </p>
+            <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.9rem;">
+              <strong>Date:</strong> ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}
+            </p>
+            <button onclick="MapService.showDirections(${venue.latitude}, ${venue.longitude}, '${Utils.sanitizeInput(venue.name)}')"
+                    style="width: 100%; font-size: 0.8rem; padding: 0.5rem; margin-bottom: 0.5rem; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Get Directions
+            </button>
+            <button onclick="window.location.href='event-details.html?id=${event.eventID}'"
+                    style="width: 100%; font-size: 0.8rem; padding: 0.5rem; background: #f8f9fa; color: #333; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer;">
+              View Details
+            </button>
+          </div>
+        `;
         this.addMarker(
           parseFloat(venue.latitude),
           parseFloat(venue.longitude),
           popupContent,
-          "#667eea",
+          "#333",
         );
       }
     });
 
-    // Fit map to show all markers
     if (this.markers.length > 0) {
       this.fitToMarkers();
     }
   },
 
-  // Add venue markers to map
+  // Add markers for a list of venues
   addVenueMarkers: function (venues) {
     this.clearMarkers();
 
     venues.forEach((venue) => {
       if (venue.latitude && venue.longitude) {
         const popupContent = `
-                    <div style="max-width: 200px;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #333;">${Utils.sanitizeInput(venue.name)}</h4>
-                        <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
-                            ${Utils.sanitizeInput(venue.address)}
-                        </p>
-                        <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.9rem;">
-                            <strong>Capacity:</strong> ${venue.capacity || "N/A"}
-                        </p>
-                        <button onclick="MapService.showDirections(${venue.latitude}, ${venue.longitude}, '${Utils.sanitizeInput(venue.name)}')"
-                                class="btn" style="width: 100%; font-size: 0.8rem; padding: 0.5rem; margin-bottom: 0.5rem;">
-                            Get Directions
-                        </button>
-                        <button onclick="window.location.href='venue-details.html?id=${venue.venueID}'"
-                                class="btn btn-secondary" style="width: 100%; font-size: 0.8rem; padding: 0.5rem;">
-                            View Details
-                        </button>
-                    </div>
-                `;
-
+          <div style="max-width: 200px;">
+            <h4 style="margin: 0 0 0.5rem 0; color: #333;">${Utils.sanitizeInput(venue.name)}</h4>
+            <p style="margin: 0 0 1rem 0; color: #666; font-size: 0.9rem;">
+              ${Utils.sanitizeInput(venue.address)}
+            </p>
+            <button onclick="MapService.showDirections(${venue.latitude}, ${venue.longitude}, '${Utils.sanitizeInput(venue.name)}')"
+                    style="width: 100%; font-size: 0.8rem; padding: 0.5rem; margin-bottom: 0.5rem; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Get Directions
+            </button>
+            <button onclick="window.location.href='venue-details.html?id=${venue.venueID}'"
+                    style="width: 100%; font-size: 0.8rem; padding: 0.5rem; background: #f8f9fa; color: #333; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer;">
+              View Details
+            </button>
+          </div>
+        `;
         this.addMarker(
           parseFloat(venue.latitude),
           parseFloat(venue.longitude),
           popupContent,
-          "#764ba2",
+          "#666",
         );
       }
     });
 
-    // Fit map to show all markers
     if (this.markers.length > 0) {
       this.fitToMarkers();
     }
   },
 
-  // Show user's current location
+  // Show the user's current location on the map
   showUserLocation: async function () {
     try {
       const location = await Utils.getCurrentLocation();
+      if (this.userLocationMarker) this.userLocationMarker.remove();
 
-      if (this.userLocationMarker) {
-        this.userLocationMarker.remove();
-      }
-
-      // Create user location marker
       const userMarkerElement = document.createElement("div");
-      userMarkerElement.style.backgroundColor = "#ff6b6b";
-      userMarkerElement.style.width = "16px";
-      userMarkerElement.style.height = "16px";
-      userMarkerElement.style.borderRadius = "50%";
-      userMarkerElement.style.border = "3px solid white";
-      userMarkerElement.style.boxShadow =
-        "0 0 0 3px #ff6b6b40, 0 2px 6px rgba(0,0,0,0.3)";
+      userMarkerElement.style.cssText =
+        "background-color: #007bff; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 3px rgba(0,123,255,0.3), 0 2px 6px rgba(0,0,0,0.3);";
 
       this.userLocationMarker = new maplibregl.Marker(userMarkerElement)
         .setLngLat([location.lng, location.lat])
         .addTo(this.map);
 
-      // Add popup for user location
       const userPopup = new maplibregl.Popup({ offset: 25 }).setHTML(
         '<div style="text-align: center;"><strong>Your Location</strong></div>',
       );
       this.userLocationMarker.setPopup(userPopup);
 
-      // Center map on user location
       this.map.flyTo({
         center: [location.lng, location.lat],
         zoom: 14,
         duration: 2000,
       });
-
       console.log("User location shown on map");
     } catch (error) {
       console.log("Could not get user location:", error.message);
     }
   },
 
-  // Clear all markers
+  // Clear all markers from the map
   clearMarkers: function () {
     this.markers.forEach((marker) => marker.remove());
     this.markers = [];
   },
 
-  // Fit map to show all markers
+  // Adjust the map's viewport to fit all markers
   fitToMarkers: function () {
     if (this.markers.length === 0) return;
-
     const bounds = new maplibregl.LngLatBounds();
-
-    this.markers.forEach((marker) => {
-      bounds.extend(marker.getLngLat());
-    });
-
-    // Include user location if available
-    if (this.userLocationMarker) {
+    this.markers.forEach((marker) => bounds.extend(marker.getLngLat()));
+    if (this.userLocationMarker)
       bounds.extend(this.userLocationMarker.getLngLat());
-    }
-
-    this.map.fitBounds(bounds, {
-      padding: 50,
-      maxZoom: 15,
-    });
+    this.map.fitBounds(bounds, { padding: 50, maxZoom: 15 });
   },
 
-  // Center map on specific coordinates
+  // Center the map on specific coordinates
   centerOn: function (lat, lng, zoom = 14) {
     if (!this.isInitialized) return;
-
-    this.map.flyTo({
-      center: [lng, lat],
-      zoom: zoom,
-      duration: 1500,
-    });
+    this.map.flyTo({ center: [lng, lat], zoom: zoom, duration: 1500 });
   },
 
-  // Geocode address using external service (Nominatim)
-  geocodeAddress: async function (address) {
-    try {
-      const encodedAddress = encodeURIComponent(address + ", Singapore");
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Geocoding service unavailable");
-      }
-
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const result = data[0];
-        return {
-          lat: parseFloat(result.lat),
-          lng: parseFloat(result.lon),
-          formatted: result.display_name,
-        };
-      }
-
-      throw new Error("Address not found");
-    } catch (error) {
-      console.error("Geocoding error:", error);
-
-      // Return Singapore center as fallback
-      return {
-        lat: CONFIG.APP.DEFAULT_COORDINATES.LAT,
-        lng: CONFIG.APP.DEFAULT_COORDINATES.LNG,
-        formatted: "Singapore (approximate)",
-      };
-    }
-  },
-
-  // Reverse geocoding - get address from coordinates
-  reverseGeocode: async function (lat, lng) {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Reverse geocoding service unavailable");
-      }
-
-      const data = await response.json();
-
-      if (data && data.display_name) {
-        return data.display_name;
-      }
-
-      throw new Error("Location not found");
-    } catch (error) {
-      console.error("Reverse geocoding error:", error);
-      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    }
-  },
-
-  // Show directions to a specific location
+  // Show directions using external map applications
   showDirections: async function (destLat, destLng, placeName = "Destination") {
     try {
       const userLocation = await Utils.getCurrentLocation();
-
-      // Create route URL for external navigation apps
       const routeUrls = {
         google: `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${destLat},${destLng}`,
         apple: `maps://maps.apple.com/?saddr=${userLocation.lat},${userLocation.lng}&daddr=${destLat},${destLng}`,
         waze: `https://waze.com/ul?ll=${destLat},${destLng}&navigate=yes`,
       };
 
-      // Show directions popup
       const directionsPopup = `
         <div style="max-width: 250px; text-align: center;">
           <h4 style="margin: 0 0 1rem 0; color: #333;">Get Directions to ${placeName}</h4>
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <a href="${routeUrls.google}" target="_blank" class="btn" style="font-size: 0.8rem; padding: 0.5rem;">
-              Google Maps
-            </a>
-            <a href="${routeUrls.apple}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.5rem;">
-              Apple Maps
-            </a>
-            <a href="${routeUrls.waze}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.5rem;">
-              Waze
-            </a>
+            <a href="${routeUrls.google}" target="_blank" style="font-size: 0.8rem; padding: 0.5rem; background: #333; color: white; text-decoration: none; border-radius: 4px;">Google Maps</a>
+            <a href="${routeUrls.apple}" target="_blank" style="font-size: 0.8rem; padding: 0.5rem; background: #f8f9fa; color: #333; text-decoration: none; border: 1px solid #dee2e6; border-radius: 4px;">Apple Maps</a>
+            <a href="${routeUrls.waze}" target="_blank" style="font-size: 0.8rem; padding: 0.5rem; background: #f8f9fa; color: #333; text-decoration: none; border: 1px solid #dee2e6; border-radius: 4px;">Waze</a>
           </div>
           <div style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
             Distance: ${Utils.calculateDistance(userLocation.lat, userLocation.lng, destLat, destLng)} km
@@ -430,40 +430,22 @@ const MapService = {
         </div>
       `;
 
-      // Show popup on map
       new maplibregl.Popup({ offset: 25 })
         .setLngLat([destLng, destLat])
         .setHTML(directionsPopup)
         .addTo(this.map);
-
-      // Center map to show both locations
-      const bounds = new maplibregl.LngLatBounds();
-      bounds.extend([userLocation.lng, userLocation.lat]);
-      bounds.extend([destLng, destLat]);
-
-      this.map.fitBounds(bounds, {
-        padding: 100,
-        maxZoom: 15,
-      });
     } catch (error) {
       console.error("Error showing directions:", error);
       Utils.showError("Could not get your location for directions.");
     }
   },
 
-  // Calculate distance between two points
-  calculateDistance: function (startLat, startLng, endLat, endLng) {
-    return Utils.calculateDistance(startLat, startLng, endLat, endLng);
-  },
-
-  // Resize map (useful when container size changes)
+  // Resize the map when its container changes size
   resize: function () {
-    if (this.map) {
-      this.map.resize();
-    }
+    if (this.map) this.map.resize();
   },
 
-  // Destroy map instance
+  // Clean up the map instance
   destroy: function () {
     if (this.map) {
       this.map.remove();
@@ -472,11 +454,10 @@ const MapService = {
     this.markers = [];
     this.userLocationMarker = null;
     this.isInitialized = false;
-    this.useLocationService = false;
+    this.authHelper = null;
   },
 };
 
-// Export for use in other modules
 if (typeof module !== "undefined" && module.exports) {
   module.exports = MapService;
 }
