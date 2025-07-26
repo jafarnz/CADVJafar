@@ -240,6 +240,16 @@ const ProfilePage = {
                 headers: CONFIG.getAuthHeaders(),
             });
 
+            // Handle wrapped response (if backend returns {message: "JSON_STRING"})
+            if (this.userProfile && this.userProfile.message && typeof this.userProfile.message === 'string') {
+                try {
+                    console.log("🔧 Unwrapping message response...");
+                    this.userProfile = JSON.parse(this.userProfile.message);
+                } catch (parseError) {
+                    console.error("❌ Failed to parse wrapped message:", parseError);
+                }
+            }
+
             console.log("✅ User profile loaded successfully from backend:", this.userProfile);
         } catch (error) {
             console.log("⚠️ User profile not found in backend, using token data");
@@ -266,7 +276,7 @@ const ProfilePage = {
             console.log("⚠️ Profile missing userID, adding it");
             this.userProfile.userID = this.currentUser.sub;
         }
-    },    // Load activity data
+    }, // Load activity data
     loadActivityData: async function() {
         // For now, we'll use mock data since we don't have activity tracking in the backend
         // In a real app, this would load from various endpoints
@@ -494,12 +504,18 @@ const ProfilePage = {
             }
 
             const formData = new FormData(form);
+
+            // Create clean profile data, not spreading the wrapped message
             const profileData = {
-                ...this.userProfile,
-                name: formData.get("name"),
-                bio: formData.get("bio") || null,
-                location: formData.get("location") || null,
-                website: formData.get("website") || null,
+                userID: this.userProfile.userID,
+                name: formData.get("name") || this.userProfile.name,
+                email: this.userProfile.email,
+                bio: formData.get("bio") || this.userProfile.bio || null,
+                location: formData.get("location") || this.userProfile.location || null,
+                website: formData.get("website") || this.userProfile.website || null,
+                preferences: this.userProfile.preferences || {},
+                profilePictureUrl: this.userProfile.profilePictureUrl || null,
+                createdAt: this.userProfile.createdAt || new Date().toISOString(),
             };
 
             const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, this.userProfile.userID);
@@ -620,13 +636,20 @@ const ProfilePage = {
                 .map(checkbox => checkbox.value);
 
             const preferencesData = {
-                ...this.userProfile,
+                userID: this.userProfile.userID,
+                name: this.userProfile.name,
+                email: this.userProfile.email,
+                bio: this.userProfile.bio || null,
+                location: this.userProfile.location || null,
+                website: this.userProfile.website || null,
+                profilePictureUrl: this.userProfile.profilePictureUrl || null,
                 preferences: {
                     genres: selectedGenres,
                     emailNotifications: formData.get("emailNotifications") === "on",
                     eventReminders: formData.get("eventReminders") === "on",
                     locationSuggestions: formData.get("locationSuggestions") === "on",
                 },
+                createdAt: this.userProfile.createdAt || new Date().toISOString(),
             };
 
             // Ensure we have a user profile with userID
@@ -822,8 +845,15 @@ const ProfilePage = {
             });
 
             const profileData = {
-                ...this.userProfile,
+                userID: this.userProfile.userID,
+                name: this.userProfile.name,
+                email: this.userProfile.email,
+                bio: this.userProfile.bio || null,
+                location: this.userProfile.location || null,
+                website: this.userProfile.website || null,
+                preferences: this.userProfile.preferences || {},
                 profilePictureUrl: imageUrl,
+                createdAt: this.userProfile.createdAt || new Date().toISOString(),
             };
 
             console.log("🔄 Updating user profile with new image URL:", {

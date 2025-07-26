@@ -327,7 +327,7 @@
                     addResult(`<pre>${JSON.stringify(existingProfile, null, 2)}</pre>`, 'info');
                 } catch (error) {
                     addResult(`⚠️ User profile not found: ${error.message}`, 'error');
-                    
+
                     // Test 2: Try to CREATE user profile
                     addResult('📡 Testing POST create user profile...', 'info');
                     const createUserUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
