@@ -491,30 +491,6 @@ const Utils = {
     document.body.removeChild(textArea);
   },
 
-  // Upload image to S3 via backend
-  uploadImage: async function (file, folder = "events") {
-    try {
-      const base64 = await this.fileToBase64(file);
-      const base64Data = base64.split(",")[1]; // Remove data:image/jpeg;base64, prefix
-
-      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.UPLOAD);
-      const response = await this.apiCall(url, {
-        method: "POST",
-        headers: CONFIG.getAuthHeaders(),
-        body: JSON.stringify({
-          image: base64Data,
-          folder: folder,
-          filename: file.name,
-        }),
-      });
-
-      return response.imageUrl;
-    } catch (error) {
-      console.error("Image upload failed:", error);
-      throw error;
-    }
-  },
-
   // Simple navigation helper (disabled URL rewriting)
   initializeNavigation: function () {
     console.log("Navigation helper initialized (URL rewriting disabled)");
@@ -877,10 +853,11 @@ const Utils = {
 
       // Prepare upload data matching Lambda function expectations
       const uploadData = {
-        fileData: base64Data,
-        fileName: fileName,
+        bucket: "local-gigs-static",
         folder: folder,
+        fileName: fileName,
         fileType: file.type,
+        fileData: base64Data,
         fileSize: file.size,
       };
 

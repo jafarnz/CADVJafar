@@ -518,7 +518,59 @@ a:hover {
     transform: scale(1.02);
 }
 
+/* Image containers */
+.event-image-container,
+.venue-image-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
 /* Image placeholder for cards without images */
+.event-image-placeholder,
+.venue-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, #f1f3f4 100%);
+    border: 2px dashed var(--border-gray);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: var(--transition-fast);
+}
+
+.event-image-placeholder:hover,
+.venue-image-placeholder:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: var(--primary);
+}
+
+.placeholder-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+.placeholder-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+}
+
+/* Placeholder image styling */
+.placeholder-image {
+    opacity: 0.7;
+    filter: grayscale(0.3);
+}
+
 .no-image-placeholder {
     width: 100%;
     height: 200px;

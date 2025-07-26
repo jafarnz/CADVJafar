@@ -48,17 +48,26 @@ const MapService = {
       link.rel = "stylesheet";
       document.head.appendChild(link);
 
-      // Load JS
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
-      script.onload = () => {
-        console.log("✅ MapLibre GL loaded");
-        resolve();
+      // Load AWS SDK first
+      const awsScript = document.createElement("script");
+      awsScript.src = "https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js";
+      awsScript.onload = () => {
+        // Then load MapLibre GL
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
+        script.onload = () => {
+          console.log("✅ MapLibre GL and AWS SDK loaded");
+          resolve();
+        };
+        script.onerror = () => {
+          reject(new Error("Failed to load MapLibre GL"));
+        };
+        document.head.appendChild(script);
       };
-      script.onerror = () => {
-        reject(new Error("Failed to load MapLibre GL"));
+      awsScript.onerror = () => {
+        reject(new Error("Failed to load AWS SDK"));
       };
-      document.head.appendChild(script);
+      document.head.appendChild(awsScript);
     });
   },
 
@@ -71,17 +80,45 @@ const MapService = {
         return;
       }
 
-      const script = document.createElement("script");
-      script.src =
-        "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.x/dist/amazonLocationAuthHelper.js";
-      script.onload = () => {
-        console.log("✅ Amazon Location Auth Helper loaded");
-        resolve();
+      // Try multiple versions for compatibility
+      const versions = [
+        "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.0.12/dist/amazonLocationAuthHelper.js",
+        "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.0.5/dist/amazonLocationAuthHelper.js",
+        "https://unpkg.com/@aws/amazon-location-utilities-auth-helper@1.x/dist/amazonLocationAuthHelper.js",
+      ];
+
+      let versionIndex = 0;
+
+      const tryLoadVersion = () => {
+        if (versionIndex >= versions.length) {
+          reject(
+            new Error(
+              "Failed to load Amazon Location Auth Helper from all sources",
+            ),
+          );
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = versions[versionIndex];
+        script.onload = () => {
+          console.log(
+            "✅ Amazon Location Auth Helper loaded from:",
+            versions[versionIndex],
+          );
+          resolve();
+        };
+        script.onerror = () => {
+          console.warn(
+            `Failed to load from ${versions[versionIndex]}, trying next...`,
+          );
+          versionIndex++;
+          tryLoadVersion();
+        };
+        document.head.appendChild(script);
       };
-      script.onerror = () => {
-        reject(new Error("Failed to load Amazon Location Auth Helper"));
-      };
-      document.head.appendChild(script);
+
+      tryLoadVersion();
     });
   },
 
@@ -98,20 +135,45 @@ const MapService = {
 
       console.log("🔑 Using Cognito credential provider for authentication...");
 
-      // Create auth helper with Cognito credential provider
-      this.authHelper =
-        await amazonLocationAuthHelper.withCognitoCredentialProvider({
-          identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
-          region: CONFIG.COGNITO.REGION,
-          logins: {
-            [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
-              idToken,
-          },
-        });
+      // Create auth helper - try different methods for compatibility
+      try {
+        // Try newer method first
+        if (window.amazonLocationAuthHelper.withCognitoCredentialProvider) {
+          this.authHelper =
+            await window.amazonLocationAuthHelper.withCognitoCredentialProvider(
+              {
+                identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
+                region: CONFIG.COGNITO.REGION,
+                logins: {
+                  [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
+                    idToken,
+                },
+              },
+            );
+        } else if (window.amazonLocationAuthHelper.withCredentials) {
+          // Fallback to older method
+          this.authHelper =
+            await window.amazonLocationAuthHelper.withCredentials({
+              region: CONFIG.COGNITO.REGION,
+              credentials: {
+                identityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID,
+                logins: {
+                  [`cognito-idp.${CONFIG.COGNITO.REGION}.amazonaws.com/${CONFIG.COGNITO.USER_POOL_ID}`]:
+                    idToken,
+                },
+              },
+            });
+        } else {
+          throw new Error("No compatible authentication method found");
+        }
+      } catch (authError) {
+        console.error("Auth helper creation failed:", authError);
+        throw new Error(`Authentication setup failed: ${authError.message}`);
+      }
 
       console.log("🗺️ Creating map with Amazon Location Service...");
 
-      // Create the map
+      // Create the map with transformRequest for authentication
       this.map = new maplibregl.Map({
         container: containerId,
         center: [
@@ -120,7 +182,9 @@ const MapService = {
         ],
         zoom: CONFIG.APP.MAP_ZOOM,
         style: `https://maps.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/maps/v0/maps/${CONFIG.LOCATION.MAP_NAME}/style-descriptor`,
-        ...this.authHelper.getMapAuthenticationOptions(),
+        transformRequest:
+          this.authHelper.transformRequest ||
+          this.authHelper.getMapAuthenticationOptions?.()?.transformRequest,
       });
 
       // Add map controls
@@ -312,8 +376,23 @@ const MapService = {
 
       console.log("🔍 Searching for places:", query);
 
-      // Get the location client from auth helper
-      const client = this.authHelper.getLocationClient();
+      // Create AWS Location client with credentials
+      const AWS = window.AWS;
+
+      // Get credentials from auth helper
+      let credentials;
+      if (this.authHelper.getCredentials) {
+        credentials = await this.authHelper.getCredentials();
+      } else if (this.authHelper.credentials) {
+        credentials = this.authHelper.credentials;
+      } else {
+        throw new Error("Unable to get credentials from auth helper");
+      }
+
+      const locationClient = new AWS.Location({
+        region: CONFIG.LOCATION.REGION,
+        credentials: credentials,
+      });
 
       const searchParams = {
         IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
@@ -326,7 +405,7 @@ const MapService = {
         searchParams.BiasPosition = [biasPosition.lng, biasPosition.lat];
       }
 
-      const result = await client
+      const result = await locationClient
         .searchPlaceIndexForText(searchParams)
         .promise();
 
@@ -347,9 +426,25 @@ const MapService = {
 
       console.log("🔄 Reverse geocoding:", { lng, lat });
 
-      const client = this.authHelper.getLocationClient();
+      // Create AWS Location client with credentials
+      const AWS = window.AWS;
 
-      const result = await client
+      // Get credentials from auth helper
+      let credentials;
+      if (this.authHelper.getCredentials) {
+        credentials = await this.authHelper.getCredentials();
+      } else if (this.authHelper.credentials) {
+        credentials = this.authHelper.credentials;
+      } else {
+        throw new Error("Unable to get credentials from auth helper");
+      }
+
+      const locationClient = new AWS.Location({
+        region: CONFIG.LOCATION.REGION,
+        credentials: credentials,
+      });
+
+      const result = await locationClient
         .searchPlaceIndexForPosition({
           IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
           Position: [lng, lat],

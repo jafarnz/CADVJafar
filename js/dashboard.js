@@ -531,7 +531,17 @@ const Dashboard = {
       const fullImageUrl = event.imageUrl.startsWith("http")
         ? event.imageUrl
         : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${event.imageUrl}`;
-      imageHtml = `<img src="${fullImageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image" onerror="this.style.display='none'">`;
+      imageHtml = `<div class="event-image-container">
+        <img src="${fullImageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-image"
+             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDM1MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzNTAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjhmOWZhIi8+CjxwYXRoIGQ9Ik0xNzUgMTAwQzE4My4yODQgMTAwIDE5MCA5My4yODQzIDE5MCA4NUMxOTAgNzYuNzE1NyAxODMuMjg0IDcwIDE3NSA3MEMxNjYuNzE2IDcwIDE2MCA3Ni43MTU3IDE2MCA4NUMxNjAgOTMuMjg0MyAxNjYuNzE2IDEwMCAxNzUgMTAwWiIgZmlsbD0iIzY2Nzg4YSIvPgo8cGF0aCBkPSJNMTM1IDEyMEwxNjAgOTVMMTkwIDEyNUwyMjUgOTBMMjU1IDEyMFYxNTBIMTM1VjEyMFoiIGZpbGw9IiM2Njc4OGEiLz4KPC9zdmc+'; this.classList.add('placeholder-image');">
+      </div>`;
+    } else {
+      imageHtml = `<div class="event-image-container">
+        <div class="event-image-placeholder">
+          <div class="placeholder-icon">🎵</div>
+          <div class="placeholder-text">No Image</div>
+        </div>
+      </div>`;
     }
 
     return `
@@ -563,7 +573,17 @@ const Dashboard = {
       const fullImageUrl = venue.imageUrl.startsWith("http")
         ? venue.imageUrl
         : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
-      imageHtml = `<img src="${fullImageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-image" onerror="this.style.display='none'">`;
+      imageHtml = `<div class="venue-image-container">
+        <img src="${fullImageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-image"
+             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDM1MCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzNTAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjhmOWZhIi8+CjxwYXRoIGQ9Ik0xNzUgMTAwQzE4My4yODQgMTAwIDE5MCA5My4yODQzIDE5MCA4NUMxOTAgNzYuNzE1NyAxODMuMjg0IDcwIDE3NSA3MEMxNjYuNzE2IDcwIDE2MCA3Ni43MTU3IDE2MCA4NUMxNjAgOTMuMjg0MyAxNjYuNzE2IDEwMCAxNzUgMTAwWiIgZmlsbD0iIzY2Nzg4YSIvPgo8cGF0aCBkPSJNMTM1IDEyMEwxNjAgOTVMMTkwIDEyNUwyMjUgOTBMMjU1IDEyMFYxNTBIMTM1VjEyMFoiIGZpbGw9IiM2Njc4OGEiLz4KPC9zdmc+'; this.classList.add('placeholder-image');">
+      </div>`;
+    } else {
+      imageHtml = `<div class="venue-image-container">
+        <div class="venue-image-placeholder">
+          <div class="placeholder-icon">🏢</div>
+          <div class="placeholder-text">No Image</div>
+        </div>
+      </div>`;
     }
 
     return `
@@ -617,13 +637,11 @@ const Dashboard = {
       let imageUrl = null;
 
       // Upload event image if selected
-      if (window.selectedEventImage) {
+      const imageFile = formData.get("eventImage");
+      if (imageFile && imageFile.size > 0) {
         try {
           Utils.showLoading(submitBtn, "Uploading image...");
-          imageUrl = await Utils.s3.uploadEventImage(
-            window.selectedEventImage,
-            eventID,
-          );
+          imageUrl = await Utils.uploadImage(imageFile, "events");
           console.log("Event image uploaded:", imageUrl);
         } catch (uploadError) {
           console.error("Event image upload failed:", uploadError);
@@ -661,8 +679,8 @@ const Dashboard = {
       Utils.showSuccess("Event created successfully!", messagesDiv.id);
       form.reset();
 
-      // Reset image selection
-      window.selectedEventImage = null;
+      // Reset form and image selection
+      form.reset();
       if (typeof removeEventPhoto === "function") {
         removeEventPhoto();
       }
@@ -706,13 +724,11 @@ const Dashboard = {
       let imageUrl = null;
 
       // Upload venue image if selected
-      if (window.selectedVenueImage) {
+      const imageFile = formData.get("venueImage");
+      if (imageFile && imageFile.size > 0) {
         try {
           Utils.showLoading(submitBtn, "Uploading image...");
-          imageUrl = await Utils.s3.uploadVenueImage(
-            window.selectedVenueImage,
-            venueID,
-          );
+          imageUrl = await Utils.uploadImage(imageFile, "venues");
           console.log("Venue image uploaded:", imageUrl);
         } catch (uploadError) {
           console.error("Venue image upload failed:", uploadError);
@@ -768,8 +784,8 @@ const Dashboard = {
       Utils.showSuccess("Venue created successfully!", messagesDiv.id);
       form.reset();
 
-      // Reset image selection
-      window.selectedVenueImage = null;
+      // Reset form and image selection
+      form.reset();
       if (typeof removeVenuePhoto === "function") {
         removeVenuePhoto();
       }

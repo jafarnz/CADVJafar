@@ -1,0 +1,84 @@
+# Apache .htaccess file for Local Gigs App URL Rewriting
+# This file handles routing issues when pages are accessed without .html extension
+
+RewriteEngine On
+
+# Redirect trailing slashes for directories to .html files
+RewriteRule ^profile/$ profile.html [R=301,L]
+RewriteRule ^events/$ events.html [R=301,L]
+RewriteRule ^venues/$ venues.html [R=301,L]
+RewriteRule ^dashboard/$ dashboard.html [R=301,L]
+RewriteRule ^login/$ login.html [R=301,L]
+RewriteRule ^signup/$ signup.html [R=301,L]
+RewriteRule ^confirm/$ confirm.html [R=301,L]
+RewriteRule ^profile-setup/$ profile-setup.html [R=301,L]
+RewriteRule ^event-details/$ event-details.html [R=301,L]
+
+# Redirect pages without extension to .html files
+RewriteRule ^profile$ profile.html [R=301,L]
+RewriteRule ^events$ events.html [R=301,L]
+RewriteRule ^venues$ venues.html [R=301,L]
+RewriteRule ^dashboard$ dashboard.html [R=301,L]
+RewriteRule ^login$ login.html [R=301,L]
+RewriteRule ^signup$ signup.html [R=301,L]
+RewriteRule ^confirm$ confirm.html [R=301,L]
+RewriteRule ^profile-setup$ profile-setup.html [R=301,L]
+RewriteRule ^event-details$ event-details.html [R=301,L]
+
+# Handle query parameters for event-details and other pages that need them
+RewriteCond %{QUERY_STRING} ^(.*)$
+RewriteRule ^event-details$ event-details.html?%1 [R=301,L]
+
+# Security: Prevent access to sensitive files
+<Files ~ "^\.">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Block access to config files and sensitive directories
+<Files "config.js">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files "*.md">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Enable GZIP compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# Set cache headers for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+# Handle CORS for API calls if needed
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+</IfModule>
+
+# Error pages
+ErrorDocument 404 /index.html
+ErrorDocument 403 /index.html
+ErrorDocument 500 /index.html
