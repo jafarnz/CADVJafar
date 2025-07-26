@@ -324,26 +324,81 @@ const ProfilePage = {
         console.log("🎨 Starting profile render...");
         console.log("📊 Profile data to render:", this.userProfile);
 
-        // Update profile display
+        // Update main profile card display
         const displayName = document.getElementById("display-name");
         const displayEmail = document.getElementById("display-email");
         const displayBio = document.getElementById("display-bio");
         const displayMemberSince = document.getElementById("display-member-since");
         const profilePicture = document.getElementById("profile-picture");
 
+        // Update profile header elements
+        const profileDisplayName = document.getElementById("profileDisplayName");
+        const profileEmail = document.getElementById("profileEmail");
+        const currentProfilePicture = document.getElementById("currentProfilePicture");
+        const profilePicturePlaceholder = document.getElementById("profilePicturePlaceholder");
+        const profileInitials = document.getElementById("profileInitials");
+
         console.log("🔍 DOM elements found:", {
             displayName: !!displayName,
             displayEmail: !!displayEmail,
             displayBio: !!displayBio,
             displayMemberSince: !!displayMemberSince,
-            profilePicture: !!profilePicture
+            profilePicture: !!profilePicture,
+            profileDisplayName: !!profileDisplayName,
+            profileEmail: !!profileEmail,
+            currentProfilePicture: !!currentProfilePicture,
+            profilePicturePlaceholder: !!profilePicturePlaceholder
         });
 
+        // Update header display name
+        if (profileDisplayName) {
+            profileDisplayName.textContent = this.userProfile.name || "User";
+            console.log("✅ Header display name updated:", profileDisplayName.textContent);
+        }
+
+        // Update header email
+        if (profileEmail) {
+            profileEmail.textContent = this.userProfile.email || "";
+            console.log("✅ Header email updated:", profileEmail.textContent);
+        }
+
+        // Update header profile picture
+        if (this.userProfile.profilePictureUrl) {
+            if (currentProfilePicture) {
+                currentProfilePicture.src = this.userProfile.profilePictureUrl;
+                currentProfilePicture.style.display = "block";
+                console.log("✅ Header profile picture updated:", this.userProfile.profilePictureUrl);
+            }
+            if (profilePicturePlaceholder) {
+                profilePicturePlaceholder.style.display = "none";
+            }
+        } else {
+            // Show placeholder with initials
+            if (currentProfilePicture) {
+                currentProfilePicture.style.display = "none";
+            }
+            if (profilePicturePlaceholder) {
+                profilePicturePlaceholder.style.display = "flex";
+            }
+            if (profileInitials && this.userProfile.name) {
+                const initials = this.userProfile.name
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                profileInitials.textContent = initials;
+                console.log("✅ Header initials updated:", initials);
+            }
+        }
+
+        // Update main card display name
         if (displayName) {
             displayName.textContent = this.userProfile.name || "No name set";
             console.log("✅ Display name updated:", displayName.textContent);
         }
 
+        // Update main card email
         if (displayEmail) {
             displayEmail.textContent = this.userProfile.email;
             console.log("✅ Display email updated:", displayEmail.textContent);
@@ -893,10 +948,22 @@ const ProfilePage = {
             // Store updated profile
             localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(this.userProfile));
 
-            // Update profile picture display
+            // Update profile picture display in both locations
             const profilePicture = document.getElementById("profile-picture");
+            const currentProfilePicture = document.getElementById("currentProfilePicture");
+            const profilePicturePlaceholder = document.getElementById("profilePicturePlaceholder");
+            
             if (profilePicture) {
                 profilePicture.src = imageUrl;
+            }
+            
+            // Update header profile picture
+            if (currentProfilePicture) {
+                currentProfilePicture.src = imageUrl;
+                currentProfilePicture.style.display = "block";
+            }
+            if (profilePicturePlaceholder) {
+                profilePicturePlaceholder.style.display = "none";
             }
 
             Utils.showSuccess("Profile picture updated successfully!", messagesDiv.id);
