@@ -115,6 +115,10 @@
             <button class="btn-test" onclick="testVenuesAPI()">Test Venues API</button>
             <button class="btn-test" onclick="testUploadAPI()">Test Upload API</button>
             <button class="btn-test" onclick="testSignupAPI()">Test Signup API</button>
+            <button class="btn-test" onclick="testListUsers()">List All Users</button>
+            <button class="btn-test" onclick="testUserLookupByEmail()">Test User Lookup by Email</button>
+            <button class="btn-test" onclick="testUserUpdate()">Test User Update</button>
+            <button class="btn-test" onclick="testUserUpdateDetailed()">Test User Update (Detailed)</button>
         </div>
 
         <div class="debug-section">
@@ -374,6 +378,138 @@
             }
         }
 
+        async function testListUsers() {
+            try {
+                addResult('api-status', 'Testing list all users...', 'info');
+
+                const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                addResult('api-status', `Testing: ${url}`, 'info');
+
+                const response = await Utils.apiCall(url, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', '✅ List users API working', 'success');
+                addResult('api-status', `Users found: ${JSON.stringify(response, null, 2)}`, 'info');
+
+            } catch (error) {
+                addResult('api-status', `❌ List users API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserLookupByEmail() {
+            try {
+                addResult('api-status', 'Testing user lookup by email...', 'info');
+
+                const currentUser = Utils.getCurrentUser();
+                if (!currentUser) {
+                    addResult('api-status', '❌ No current user found', 'error');
+                    return;
+                }
+
+                addResult('api-status', `Current user email: ${currentUser.email}`, 'info');
+                addResult('api-status', `Current user sub: ${currentUser.sub}`, 'info');
+
+                // Try to find user by email in the users list
+                const usersUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                const usersResponse = await Utils.apiCall(usersUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', `All users response: ${JSON.stringify(usersResponse, null, 2)}`, 'info');
+
+                // Check if we can find current user by email
+                let users = [];
+                if (Array.isArray(usersResponse)) {
+                    users = usersResponse;
+                } else if (usersResponse.Items) {
+                    users = usersResponse.Items;
+                } else if (usersResponse.message) {
+                    try {
+                        users = JSON.parse(usersResponse.message);
+                    } catch (e) {
+                        addResult('api-status', '❌ Could not parse users response', 'error');
+                        return;
+                    }
+                }
+
+                const matchingUser = users.find(user => user.email === currentUser.email);
+                if (matchingUser) {
+                    addResult('api-status', `✅ Found matching user: ${JSON.stringify(matchingUser, null, 2)}`, 'success');
+                } else {
+                    addResult('api-status', `❌ No user found with email: ${currentUser.email}`, 'error');
+                }
+
+            } catch (error) {
+                addResult('api-status', `❌ User lookup by email failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testListUsers() {
+            try {
+                addResult('api-status', 'Testing list all users...', 'info');
+
+                const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                addResult('api-status', `Testing: ${url}`, 'info');
+
+                const response = await Utils.apiCall(url, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', '✅ List users API working', 'success');
+                addResult('api-status', `Users found: ${JSON.stringify(response, null, 2)}`, 'info');
+
+            } catch (error) {
+                addResult('api-status', `❌ List users API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserLookupByEmail() {
+            try {
+                addResult('api-status', 'Testing user lookup by email...', 'info');
+
+                const currentUser = Utils.getCurrentUser();
+                if (!currentUser) {
+                    addResult('api-status', '❌ No current user found', 'error');
+                    return;
+                }
+
+                addResult('api-status', `Current user email: ${currentUser.email}`, 'info');
+                addResult('api-status', `Current user sub: ${currentUser.sub}`, 'info');
+
+                // Try to lookup user by their email instead of sub
+                const emailUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, currentUser.email);
+                addResult('api-status', `Testing lookup by email: ${emailUrl}`, 'info');
+
+                const emailResponse = await Utils.apiCall(emailUrl, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', '✅ User lookup by email working', 'success');
+                addResult('api-status', `User found: ${JSON.stringify(emailResponse, null, 2)}`, 'info');
+
+            } catch (error) {
+                addResult('api-status', `❌ User lookup by email failed: ${error.message}`, 'error');
+
+                // Also try listing all users to see what's available
+                try {
+                    addResult('api-status', 'Trying to list all users for comparison...', 'info');
+                    const usersUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                    const usersResponse = await Utils.apiCall(usersUrl, {
+                        method: "GET",
+                        headers: CONFIG.getAuthHeaders(),
+                    });
+                    addResult('api-status', `All users: ${JSON.stringify(usersResponse, null, 2)}`, 'info');
+                } catch (listError) {
+                    addResult('api-status', `Could not list users: ${listError.message}`, 'error');
+                }
+            }
+        }
+
         async function testLocationService() {
             clearContainer('location-status');
 
@@ -450,6 +586,243 @@
 
             } catch (error) {
                 addResult('config-status', `❌ Config check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testListUsers() {
+            try {
+                addResult('api-status', 'Testing List All Users...', 'info');
+
+                const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                addResult('api-status', `Testing: ${url}`, 'info');
+
+                const response = await Utils.apiCall(url, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', '✅ List Users API working', 'success');
+
+                if (Array.isArray(response)) {
+                    addResult('api-status', `Found ${response.length} users in DynamoDB`, 'success');
+                    response.forEach((user, index) => {
+                        addResult('api-status', `User ${index + 1}: ${user.userID} (${user.email})`, 'info');
+                    });
+                } else {
+                    addResult('api-status', `Response: ${JSON.stringify(response, null, 2)}`, 'info');
+                }
+
+            } catch (error) {
+                addResult('api-status', `❌ List Users API failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserLookupByEmail() {
+            try {
+                const currentUser = Utils.getCurrentUser();
+                if (!currentUser || !currentUser.email) {
+                    addResult('api-status', '❌ No current user email found for lookup test', 'error');
+                    return;
+                }
+
+                addResult('api-status', `Testing User Lookup by Email: ${currentUser.email}`, 'info');
+
+                const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, currentUser.email);
+                addResult('api-status', `Testing: ${url}`, 'info');
+
+                const response = await Utils.apiCall(url, {
+                    method: "GET",
+                    headers: CONFIG.getAuthHeaders(),
+                });
+
+                addResult('api-status', '✅ User lookup by email working', 'success');
+                addResult('api-status', `Found user: ${JSON.stringify(response, null, 2)}`, 'info');
+
+            } catch (error) {
+                addResult('api-status', `❌ User lookup by email failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserUpdate() {
+            try {
+                const currentUser = Utils.getCurrentUser();
+                if (!currentUser) {
+                    addResult('api-status', '❌ No current user found for update test', 'error');
+                    return;
+                }
+
+                addResult('api-status', 'Testing User Update...', 'info');
+
+                const testUpdateData = {
+                    userID: currentUser.sub,
+                    name: 'Test User Updated',
+                    email: currentUser.email,
+                    preferences: {
+                        genres: ['rock', 'jazz'],
+                        emailNotifications: true,
+                        eventReminders: true,
+                        locationSuggestions: false
+                    }
+                };
+
+                // Test PUT with userID in path (preferred method)
+                try {
+                    const urlWithPath = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, currentUser.sub);
+                    addResult('api-status', `Testing PUT with path: ${urlWithPath}`, 'info');
+
+                    const response1 = await Utils.apiCall(urlWithPath, {
+                        method: "PUT",
+                        headers: CONFIG.getAuthHeaders(),
+                        body: JSON.stringify(testUpdateData),
+                    });
+
+                    addResult('api-status', '✅ User update with path parameter working', 'success');
+                    addResult('api-status', `Response: ${JSON.stringify(response1, null, 2)}`, 'info');
+                    return;
+
+                } catch (pathError) {
+                    addResult('api-status', `⚠️ PUT with path failed: ${pathError.message}`, 'error');
+
+                    // Try PUT without path parameter
+                    try {
+                        const urlWithoutPath = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                        addResult('api-status', `Testing PUT without path: ${urlWithoutPath}`, 'info');
+
+                        const response2 = await Utils.apiCall(urlWithoutPath, {
+                            method: "PUT",
+                            headers: CONFIG.getAuthHeaders(),
+                            body: JSON.stringify(testUpdateData),
+                        });
+
+                        addResult('api-status', '✅ User update without path parameter working', 'success');
+                        addResult('api-status', `Response: ${JSON.stringify(response2, null, 2)}`, 'info');
+
+                    } catch (noPathError) {
+                        addResult('api-status', `❌ Both PUT methods failed`, 'error');
+                        addResult('api-status', `Path error: ${pathError.message}`, 'error');
+                        addResult('api-status', `No-path error: ${noPathError.message}`, 'error');
+                    }
+                }
+
+            } catch (error) {
+                addResult('api-status', `❌ User update test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserUpdateDetailed() {
+            try {
+                const currentUser = Utils.getCurrentUser();
+                if (!currentUser) {
+                    addResult('api-status', '❌ No current user found for detailed update test', 'error');
+                    return;
+                }
+
+                addResult('api-status', '🔍 Starting detailed User Update test...', 'info');
+                addResult('api-status', `Current user: ${JSON.stringify(currentUser, null, 2)}`, 'info');
+
+                const testUpdateData = {
+                    userID: currentUser.sub,
+                    name: 'Test User Updated Detailed',
+                    email: currentUser.email,
+                    preferences: {
+                        genres: ['rock', 'jazz'],
+                        emailNotifications: true,
+                        eventReminders: true,
+                        locationSuggestions: false
+                    }
+                };
+
+                // Test 1: OPTIONS preflight for PUT /users/{userID}
+                const urlWithPath = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS, currentUser.sub);
+                addResult('api-status', `🔍 Testing OPTIONS preflight for: ${urlWithPath}`, 'info');
+
+                try {
+                    const optionsResponse = await fetch(urlWithPath, {
+                        method: 'OPTIONS',
+                        headers: {
+                            'Access-Control-Request-Method': 'PUT',
+                            'Access-Control-Request-Headers': 'Content-Type,Authorization'
+                        }
+                    });
+                    addResult('api-status', `✅ OPTIONS preflight status: ${optionsResponse.status}`, 'success');
+                } catch (optionsError) {
+                    addResult('api-status', `❌ OPTIONS preflight failed: ${optionsError.message}`, 'error');
+                }
+
+                // Test 2: PUT with userID in path
+                addResult('api-status', `🔍 Testing PUT with userID in path: ${urlWithPath}`, 'info');
+                addResult('api-status', `Request body: ${JSON.stringify(testUpdateData, null, 2)}`, 'info');
+
+                try {
+                    const response1 = await Utils.apiCall(urlWithPath, {
+                        method: "PUT",
+                        headers: CONFIG.getAuthHeaders(),
+                        body: JSON.stringify(testUpdateData),
+                    });
+
+                    addResult('api-status', '✅ PUT with userID in path SUCCESSFUL', 'success');
+                    addResult('api-status', `Response: ${JSON.stringify(response1, null, 2)}`, 'info');
+
+                } catch (pathError) {
+                    addResult('api-status', `❌ PUT with userID in path failed: ${pathError.message}`, 'error');
+
+                    // Test 3: OPTIONS preflight for PUT /users (without userID)
+                    const urlWithoutPath = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+                    addResult('api-status', `🔍 Testing OPTIONS preflight for: ${urlWithoutPath}`, 'info');
+
+                    try {
+                        const optionsResponse2 = await fetch(urlWithoutPath, {
+                            method: 'OPTIONS',
+                            headers: {
+                                'Access-Control-Request-Method': 'PUT',
+                                'Access-Control-Request-Headers': 'Content-Type,Authorization'
+                            }
+                        });
+                        addResult('api-status', `✅ OPTIONS preflight (no path) status: ${optionsResponse2.status}`, 'success');
+                    } catch (optionsError2) {
+                        addResult('api-status', `❌ OPTIONS preflight (no path) failed: ${optionsError2.message}`, 'error');
+                    }
+
+                    // Test 4: PUT without userID in path (userID in body)
+                    addResult('api-status', `🔍 Testing PUT without userID in path: ${urlWithoutPath}`, 'info');
+
+                    try {
+                        const response2 = await Utils.apiCall(urlWithoutPath, {
+                            method: "PUT",
+                            headers: CONFIG.getAuthHeaders(),
+                            body: JSON.stringify(testUpdateData),
+                        });
+
+                        addResult('api-status', '✅ PUT without userID in path SUCCESSFUL', 'success');
+                        addResult('api-status', `Response: ${JSON.stringify(response2, null, 2)}`, 'info');
+
+                    } catch (noPathError) {
+                        addResult('api-status', `❌ PUT without userID in path failed: ${noPathError.message}`, 'error');
+
+                        // Test 5: Direct fetch to diagnose
+                        addResult('api-status', '🔍 Testing direct fetch to diagnose...', 'info');
+                        try {
+                            const directResponse = await fetch(urlWithPath, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)}`
+                                },
+                                body: JSON.stringify(testUpdateData)
+                            });
+
+                            addResult('api-status', `Direct fetch status: ${directResponse.status}`, 'info');
+                            const responseText = await directResponse.text();
+                            addResult('api-status', `Direct fetch response: ${responseText}`, 'info');
+
+                        } catch (directError) {
+                            addResult('api-status', `❌ Direct fetch failed: ${directError.message}`, 'error');
+                        }
+                    }
+                }
+
+            } catch (error) {
+                addResult('api-status', `❌ Detailed user update test failed: ${error.message}`, 'error');
             }
         }
 

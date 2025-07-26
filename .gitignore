@@ -2,3 +2,5 @@
 .gemini
 .CadvAWS
 *.md
+FIXED_USER_LAMBDA.js
+FIXED_UPLOAD_LAMBDA.js

@@ -866,6 +866,10 @@ const Utils = {
             const fileExtension = file.name.split(".").pop();
             const fileName = folder + "_" + timestamp + "." + fileExtension;
 
+            // Get current user ID for upload tracking
+            const currentUser = Utils.getCurrentUser();
+            const userID = currentUser ? currentUser.sub : null;
+
             // Prepare upload data matching Lambda function expectations
             const uploadData = {
                 bucket: "local-gigs-static",
@@ -874,6 +878,7 @@ const Utils = {
                 fileType: file.type,
                 fileData: base64Data,
                 fileSize: file.size,
+                userID: userID, // Include user ID for tracking
             };
 
             console.log("🔄 Uploading image:", {
