@@ -92,11 +92,11 @@ const Auth = {
                 return;
             }
 
-            const userEmail = user.email;
-            console.log("🔍 Checking profile for user email:", userEmail);
+            const userID = user.sub;
+            console.log("🔍 Checking profile for user ID:", userID);
 
-            // Check if user profile exists in backend
-            const userApiUrl = CONFIG.buildApiUrl(`${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userEmail)}`);
+            // Check if user profile exists in backend using userID instead of email
+            const userApiUrl = CONFIG.buildApiUrl(`${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userID)}`);
             console.log("📡 Making API call to:", userApiUrl);
 
             const response = await Utils.apiCall(userApiUrl, {
@@ -106,14 +106,29 @@ const Auth = {
 
             console.log("📡 Profile check response:", response);
 
-            if (response && response.email && response.profileComplete) {
-                // Profile exists and setup is complete, redirect to dashboard
+            // Parse the response - your API returns data wrapped in a message field
+            let userData = null;
+            if (response && response.message) {
+                try {
+                    userData = JSON.parse(response.message);
+                    console.log("📊 Parsed user data:", userData);
+                } catch (parseError) {
+                    console.error("❌ Failed to parse user data:", parseError);
+                    userData = response; // Fallback to direct response
+                }
+            } else {
+                userData = response;
+            }
+
+            // Check if profile exists and has required data
+            if (userData && userData.email && userData.name && userData.preferences) {
+                // Profile exists with complete data, redirect to dashboard
                 console.log("✅ Profile setup complete, redirecting to dashboard");
                 
                 // Store user data locally for quick access
-                localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(response));
-                if (response.preferences) {
-                    localStorage.setItem(CONFIG.STORAGE_KEYS.PREFERENCES, JSON.stringify(response.preferences));
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+                if (userData.preferences) {
+                    localStorage.setItem(CONFIG.STORAGE_KEYS.PREFERENCES, JSON.stringify(userData.preferences));
                 }
                 
                 console.log("🚀 Redirecting to dashboard.html...");
@@ -121,6 +136,12 @@ const Auth = {
             } else {
                 // Profile doesn't exist or setup not complete, redirect to profile setup
                 console.log("📝 Profile setup incomplete, redirecting to profile setup");
+                console.log("🔍 Missing fields:", {
+                    hasEmail: !!(userData && userData.email),
+                    hasName: !!(userData && userData.name),
+                    hasPreferences: !!(userData && userData.preferences),
+                    userData: userData
+                });
                 console.log("🚀 Redirecting to profile-setup.html...");
                 window.location.href = "profile-setup.html";
             }
