@@ -788,19 +788,35 @@ const MapService = {
 
             console.log("📍 Lambda geocoding result:", response);
             
-            // Transform response to expected format (Lambda returns different structure)
-            if (response.latitude && response.longitude) {
-                return {
-                    Place: {
-                        Label: response.formatted || response.address || address + ", Singapore",
-                        Geometry: {
-                            Point: [response.longitude, response.latitude]
-                        },
-                        Country: response.country || "Singapore",
-                        Region: response.region || "Singapore",
-                        Municipality: response.municipality || "Singapore"
+            // Handle wrapped JSON response format
+            let coordinates = null;
+            
+            if (response.message) {
+                try {
+                    // Parse the wrapped JSON message
+                    const parsed = JSON.parse(response.message);
+                    if (parsed.latitude && parsed.longitude) {
+                        coordinates = {
+                            lat: parsed.latitude,
+                            lng: parsed.longitude,
+                            formatted: parsed.formatted || address + ", Singapore"
+                        };
                     }
+                } catch (parseError) {
+                    console.error("Failed to parse wrapped JSON response:", parseError);
+                }
+            } else if (response.latitude && response.longitude) {
+                // Direct response format
+                coordinates = {
+                    lat: response.latitude,
+                    lng: response.longitude,
+                    formatted: response.formatted || response.address || address + ", Singapore"
                 };
+            }
+            
+            if (coordinates) {
+                console.log("📍 Parsed coordinates:", coordinates);
+                return coordinates;
             }
             
             // If no results, fall back to default coordinates
@@ -816,15 +832,9 @@ const MapService = {
             console.log("📍 Geocoding result (fallback):", { lat, lng, address });
             
             return {
-                Place: {
-                    Label: address + ", Singapore",
-                    Geometry: {
-                        Point: [lng, lat]
-                    },
-                    Country: "Singapore",
-                    Region: "Singapore",
-                    Municipality: "Singapore"
-                }
+                lat: lat,
+                lng: lng,
+                formatted: address + ", Singapore"
             };
         }
     },

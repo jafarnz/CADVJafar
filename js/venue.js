@@ -978,6 +978,12 @@ const VenuesPage = {
       if (result && result.lat && result.lng) {
         if (latInput) latInput.value = result.lat;
         if (lngInput) lngInput.value = result.lng;
+        
+        // Update address field with formatted address if available
+        if (result.formatted && addressInput) {
+          addressInput.value = result.formatted;
+        }
+        
         Utils.showSuccess("Coordinates found successfully!");
       } else {
         Utils.showError("Could not find coordinates for this address.");
