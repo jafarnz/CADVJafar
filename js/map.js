@@ -18,6 +18,9 @@ const MapService = {
 
             console.log("🗺️ Starting map initialization with AWS standard styles...");
 
+            // Initialize AWS SDK
+            CONFIG.initializeAWS();
+
             // Check API key configuration
             if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
                 throw new Error("API Key not configured. Please set CONFIG.LOCATION.API_KEY");
@@ -240,47 +243,53 @@ const MapService = {
         }
     },
 
-    // Location search with autocomplete using Lambda geocoding service
+    // Location search using AWS Location Service directly (like venue creation)
     searchLocation: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching location via Lambda:", query);
+            console.log("🔍 Searching location via AWS Location Service:", query);
 
             if (!query || query.trim().length < 3) {
                 return [];
             }
 
-            // Use Lambda geocoding service endpoint
-            const searchUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
-            const params = new URLSearchParams({
-                text: query.trim(),
-                maxResults: '10'
-            });
-
-            if (biasPosition) {
-                params.append('biasPosition', `${biasPosition.lng},${biasPosition.lat}`);
+            // Load AWS SDK if not already loaded
+            if (!window.AWS) {
+                console.error("AWS SDK not loaded");
+                return [];
             }
 
-            const response = await fetch(`${searchUrl}?${params.toString()}`, {
-                method: 'GET',
-                headers: CONFIG.getAuthHeaders()
+            // Configure AWS Location Service
+            const location = new window.AWS.Location({
+                region: CONFIG.LOCATION.REGION,
+                credentials: new window.AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID
+                })
             });
 
-            if (!response.ok) {
-                throw new Error(`Location search failed: ${response.status}`);
-            }
+            const params = {
+                IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME || "LocalGigsPlaces",
+                Text: query.trim() + ", Singapore",
+                MaxResults: 10,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521] // Singapore center
+            };
 
-            const result = await response.json();
-            console.log("🎯 Location search results from Lambda:", result);
+            console.log("🔍 AWS Location search params:", params);
+
+            const result = await location.searchPlaceIndexForText(params).promise();
+            console.log("🎯 AWS Location search results:", result);
             
-            return (result.results || []).map(place => ({
-                label: place.label,
-                coordinates: [place.longitude, place.latitude],
-                country: place.country,
-                region: place.region,
-                address: place.label
+            return (result.Results || []).map(place => ({
+                label: place.Place.Label,
+                coordinates: place.Place.Geometry.Point,
+                country: place.Place.Country,
+                region: place.Place.Region,
+                address: place.Place.Label
             }));
         } catch (error) {
             console.error("❌ Location search failed:", error);
+            
+            // Fallback: If AWS search fails, return empty array
+            console.warn("🔄 Location search not available, using fallback");
             return [];
         }
     },
@@ -616,46 +625,46 @@ const MapService = {
         }
     },
 
-    // Search for places using Lambda geocoding service
+    // Search for places using AWS Location Service directly
     searchPlaces: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching for places via Lambda:", query);
+            console.log("🔍 Searching for places via AWS Location Service:", query);
 
-            // Use Lambda geocoding service endpoint
-            const searchUrl = CONFIG.buildApiUrl('/places/search');
-            const params = new URLSearchParams({
-                text: query,
-                maxResults: '10'
-            });
-
-            if (biasPosition) {
-                params.append('biasPosition', `${biasPosition.lng},${biasPosition.lat}`);
+            // Load AWS SDK if not already loaded
+            if (!window.AWS) {
+                throw new Error("AWS SDK not loaded");
             }
 
-            const response = await fetch(`${searchUrl}?${params.toString()}`, {
-                method: 'GET',
-                headers: CONFIG.getAuthHeaders()
+            // Configure AWS Location Service
+            const location = new window.AWS.Location({
+                region: CONFIG.LOCATION.REGION,
+                credentials: new window.AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID
+                })
             });
 
-            if (!response.ok) {
-                throw new Error(`Search failed: ${response.status}`);
-            }
+            const params = {
+                IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME || "LocalGigsPlaces",
+                Text: query + ", Singapore",
+                MaxResults: 10,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+            };
 
-            const result = await response.json();
-            console.log("🎯 Places search results from Lambda:", result);
+            const result = await location.searchPlaceIndexForText(params).promise();
+            console.log("🎯 Places search results from AWS Location Service:", result);
             
-            // Transform Lambda response to match expected format
-            return (result.results || []).map(place => ({
+            // Transform AWS response to match expected format
+            return (result.Results || []).map(place => ({
                 Place: {
-                    Label: place.label,
+                    Label: place.Place.Label,
                     Geometry: {
-                        Point: [place.longitude, place.latitude]
+                        Point: place.Place.Geometry.Point
                     },
-                    Country: place.country,
-                    Region: place.region,
-                    Municipality: place.municipality
+                    Country: place.Place.Country,
+                    Region: place.Place.Region,
+                    Municipality: place.Place.Municipality
                 },
-                Relevance: place.confidence
+                Relevance: place.Relevance
             }));
         } catch (error) {
             console.error("❌ Places search failed:", error);
@@ -663,84 +672,115 @@ const MapService = {
         }
     },
 
-    // Reverse geocoding using Lambda geocoding service
+    // Reverse geocoding using AWS Location Service directly
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding via Lambda:", { lng, lat });
+            console.log("🔄 Reverse geocoding via AWS Location Service:", { lng, lat });
 
-            const reverseGeocodeUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
+            // Load AWS SDK if not already loaded
+            if (!window.AWS) {
+                throw new Error("AWS SDK not loaded");
+            }
 
-            const response = await fetch(reverseGeocodeUrl, {
-                method: 'POST',
-                headers: CONFIG.getAuthHeaders(),
-                body: JSON.stringify({
-                    latitude: lat,
-                    longitude: lng,
-                    maxResults: 1
+            // Configure AWS Location Service
+            const location = new window.AWS.Location({
+                region: CONFIG.LOCATION.REGION,
+                credentials: new window.AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`Reverse geocoding failed: ${response.status}`);
+            const params = {
+                IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME || "LocalGigsPlaces",
+                Position: [lng, lat],
+                MaxResults: 1
+            };
+
+            const result = await location.searchPlaceIndexForPosition(params).promise();
+            console.log("📍 Reverse geocoding result from AWS Location Service:", result);
+            
+            if (!result.Results || result.Results.length === 0) {
+                return {
+                    Place: {
+                        Label: "Unknown location",
+                        Country: null,
+                        Region: null,
+                        Municipality: null,
+                        PostalCode: null
+                    }
+                };
             }
 
-            const result = await response.json();
-            console.log("📍 Reverse geocoding result from Lambda:", result);
+            const place = result.Results[0].Place;
             
-            // Transform Lambda response to match expected format
+            // Transform AWS response to match expected format
             return {
                 Place: {
-                    Label: result.address,
-                    Country: result.country,
-                    Region: result.region,
-                    Municipality: result.municipality,
-                    PostalCode: result.postalCode
+                    Label: place.Label,
+                    Country: place.Country,
+                    Region: place.Region,
+                    Municipality: place.Municipality,
+                    PostalCode: place.PostalCode
                 }
             };
         } catch (error) {
             console.error("❌ Reverse geocoding failed:", error);
-            throw error;
+            return {
+                Place: {
+                    Label: "Unknown location",
+                    Country: null,
+                    Region: null,
+                    Municipality: null,
+                    PostalCode: null
+                }
+            };
         }
     },
 
-    // Geocode address using Lambda geocoding service
+    // Geocode address using AWS Location Service directly
     geocodeAddress: async function(address, biasPosition = null) {
         try {
-            console.log("🏠 Geocoding address via Lambda:", address);
+            console.log("🏠 Geocoding address via AWS Location Service:", address);
 
-            const geocodeUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
-            const requestBody = {
-                address: address,
-                maxResults: 1
-            };
-
-            if (biasPosition) {
-                requestBody.biasPosition = [biasPosition.lng, biasPosition.lat];
+            // Load AWS SDK if not already loaded
+            if (!window.AWS) {
+                throw new Error("AWS SDK not loaded");
             }
 
-            const response = await fetch(geocodeUrl, {
-                method: 'POST',
-                headers: CONFIG.getAuthHeaders(),
-                body: JSON.stringify(requestBody)
+            // Configure AWS Location Service
+            const location = new window.AWS.Location({
+                region: CONFIG.LOCATION.REGION,
+                credentials: new window.AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: CONFIG.COGNITO.IDENTITY_POOL_ID
+                })
             });
 
-            if (!response.ok) {
-                throw new Error(`Geocoding failed: ${response.status}`);
+            const params = {
+                IndexName: CONFIG.LOCATION.PLACE_INDEX_NAME || "LocalGigsPlaces",
+                Text: address + ", Singapore",
+                MaxResults: 1,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+            };
+
+            const result = await location.searchPlaceIndexForText(params).promise();
+            console.log("📍 Geocoding result from AWS Location Service:", result);
+            
+            if (!result.Results || result.Results.length === 0) {
+                throw new Error("No geocoding results found");
             }
 
-            const result = await response.json();
-            console.log("📍 Geocoding result from Lambda:", result);
+            const place = result.Results[0].Place;
             
-            // Transform Lambda response to match expected format
+            // Transform AWS response to match expected format
             return {
                 Place: {
-                    Label: result.formatted || result.address,
+                    Label: place.Label,
                     Geometry: {
-                        Point: [result.longitude, result.latitude]
+                        Point: place.Geometry.Point
                     },
-                    Country: result.country,
-                    Region: result.region,
-                    Municipality: result.municipality
+                    Country: place.Country,
+                    Region: place.Region,
+                    Municipality: place.Municipality
                 }
             };
         } catch (error) {

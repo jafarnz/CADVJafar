@@ -167,6 +167,25 @@ const CONFIG = {
     };
   },
 
+  // Initialize AWS SDK for Location Service
+  initializeAWS: function() {
+    if (typeof window !== 'undefined' && window.AWS) {
+      // Configure AWS SDK
+      window.AWS.config.update({
+        region: this.LOCATION.REGION,
+        credentials: new window.AWS.CognitoIdentityCredentials({
+          IdentityPoolId: this.COGNITO.IDENTITY_POOL_ID
+        })
+      });
+      
+      console.log("✅ AWS SDK configured for Location Service");
+      return true;
+    } else {
+      console.warn("⚠️ AWS SDK not available");
+      return false;
+    }
+  },
+
   // Validation rules
   VALIDATION: {
     PASSWORD_MIN_LENGTH: 8,
