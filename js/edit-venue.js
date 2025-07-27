@@ -438,23 +438,16 @@ const EditVenue = {
 
             console.log('Sending venue update:', payload);
 
-            const response = await fetch(`${CONFIG.API_BASE_URL}/venues/${this.currentVenueId}`, {
+            const url = CONFIG.buildApiUrl(`venues/${this.currentVenueId}`);
+            console.log('Update URL:', url);
+            
+            const response = await Utils.apiCall(url, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': CONFIG.API_KEY,
-                    'x-user-id': userData.user_id
-                },
+                headers: CONFIG.getAuthHeaders(),
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Update failed: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Venue updated successfully:', result);
+            console.log('Venue updated successfully:', response);
 
             Utils.showMessage('Venue updated successfully!', 'success');
             
