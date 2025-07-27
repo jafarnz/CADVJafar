@@ -426,11 +426,10 @@ const EditVenue = {
 
             let imageUrl = this.originalVenueData?.imageUrl || this.originalVenueData?.image_url;
 
-            // Handle image upload if new image selected
-            if (window.selectedVenueImage) {
-                console.log('Uploading new venue image...');
-                imageUrl = await Utils.uploadImage(window.selectedVenueImage, 'venues');
-                console.log('Image uploaded successfully:', imageUrl);
+            // Use uploaded image URL if available (immediate upload)
+            if (window.uploadedVenueImageUrl) {
+                console.log('Using previously uploaded image URL:', window.uploadedVenueImageUrl);
+                imageUrl = window.uploadedVenueImageUrl;
             }
 
             // Prepare API payload using imageUrl (not image_url)

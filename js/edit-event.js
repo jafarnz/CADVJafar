@@ -285,12 +285,11 @@ const EditEvent = {
             // Collect form data
             const formData = this.collectFormData();
 
-            // Upload new image if selected
+            // Use uploaded image URL if available, otherwise keep original
             let imageUrl = this.originalEventData.imageUrl;
-            if (selectedEventImage) {
-                console.log("📸 Uploading new event image...");
-                imageUrl = await this.uploadEventImage(formData.eventID);
-                console.log("✅ New image uploaded:", imageUrl);
+            if (window.uploadedEventImageUrl) {
+                imageUrl = window.uploadedEventImageUrl;
+                console.log("✅ Using uploaded image URL:", imageUrl);
             }
 
             // Add image URL to form data

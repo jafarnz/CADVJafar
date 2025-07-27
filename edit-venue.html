@@ -492,7 +492,7 @@
             const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
 
             if (venueImageInput) {
-                venueImageInput.addEventListener('change', function(e) {
+                venueImageInput.addEventListener('change', async function(e) {
                     const file = e.target.files[0];
                     if (!file) return;
 
@@ -507,19 +507,34 @@
                             throw new Error("Invalid file type. Please select a JPEG, PNG, or GIF image.");
                         }
 
-                        selectedVenueImage = file;
-
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            venueImagePreview.src = e.target.result;
-                            venueImagePreview.style.display = 'block';
-                            venuePlaceholder.style.display = 'none';
-                            removeVenueBtn.style.display = 'inline-block';
-                        };
-                        reader.readAsDataURL(file);
+                        // Show loading state
+                        venuePlaceholder.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto;"></div><p>Uploading image...</p></div>';
+                        
+                        // Immediately upload to S3
+                        console.log('📤 Uploading venue image to S3...');
+                        const uploadedImageUrl = await Utils.uploadImage(file, 'venues');
+                        console.log('✅ Image uploaded successfully:', uploadedImageUrl);
+                        
+                        // Store the uploaded URL for later use
+                        selectedVenueImage = null; // Clear file reference
+                        window.uploadedVenueImageUrl = uploadedImageUrl; // Store S3 URL
+                        
+                        // Show preview with uploaded image
+                        venueImagePreview.src = uploadedImageUrl;
+                        venueImagePreview.style.display = 'block';
+                        venuePlaceholder.style.display = 'none';
+                        removeVenueBtn.style.display = 'inline-block';
+                        
+                        Utils.showMessage('Image uploaded successfully!', 'success');
+                        
                     } catch (error) {
-                        alert(error.message);
+                        console.error('Image upload failed:', error);
+                        Utils.showMessage('Image upload failed: ' + error.message, 'error');
                         venueImageInput.value = '';
+                        
+                        // Reset placeholder
+                        venuePlaceholder.innerHTML = '<div class="upload-icon">🖼️</div><div class="upload-text">Click to upload venue image</div><div class="upload-hint">JPG, PNG or GIF (max 5MB)</div>';
+                        venuePlaceholder.style.display = 'flex';
                     }
                 });
             }
@@ -533,6 +548,7 @@
             const venueImageInput = document.getElementById('venueImageInput');
 
             selectedVenueImage = null;
+            window.uploadedVenueImageUrl = null; // Clear uploaded URL
             venueImageInput.value = '';
             venueImagePreview.style.display = 'none';
             venuePlaceholder.style.display = 'block';

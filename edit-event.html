@@ -507,7 +507,7 @@
             const removeEventBtn = document.getElementById('removeEventPhotoBtn');
 
             if (eventImageInput) {
-                eventImageInput.addEventListener('change', function(e) {
+                eventImageInput.addEventListener('change', async function(e) {
                     const file = e.target.files[0];
                     if (!file) return;
 
@@ -522,19 +522,36 @@
                             throw new Error("Invalid file type. Please select a JPEG, PNG, or GIF image.");
                         }
 
-                        selectedEventImage = file;
+                        // Show loading state
+                        eventPlaceholder.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i><br>Uploading image...</div>';
+                        eventPlaceholder.style.display = 'block';
+                        eventImagePreview.style.display = 'none';
+                        removeEventBtn.style.display = 'none';
 
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            eventImagePreview.src = e.target.result;
-                            eventImagePreview.style.display = 'block';
-                            eventPlaceholder.style.display = 'none';
-                            removeEventBtn.style.display = 'inline-block';
-                        };
-                        reader.readAsDataURL(file);
+                        // Upload immediately to S3
+                        const imageUrl = await Utils.uploadImage(file, 'events', 'temp-' + Date.now());
+                        
+                        // Store the uploaded URL globally
+                        window.uploadedEventImageUrl = imageUrl;
+                        
+                        // Show success and preview
+                        eventImagePreview.src = imageUrl;
+                        eventImagePreview.style.display = 'block';
+                        eventPlaceholder.style.display = 'none';
+                        removeEventBtn.style.display = 'inline-block';
+                        
+                        Utils.showMessage('Image uploaded successfully!', 'success');
+
                     } catch (error) {
-                        alert(error.message);
+                        // Reset on error
+                        eventPlaceholder.innerHTML = '<i class="fas fa-upload"></i><br>Click to upload event image';
+                        eventPlaceholder.style.display = 'block';
+                        eventImagePreview.style.display = 'none';
+                        removeEventBtn.style.display = 'none';
                         eventImageInput.value = '';
+                        window.uploadedEventImageUrl = null;
+                        
+                        Utils.showMessage(error.message, 'error');
                     }
                 });
             }
@@ -555,8 +572,10 @@
             const eventImageInput = document.getElementById('eventImageInput');
 
             selectedEventImage = null;
+            window.uploadedEventImageUrl = null;
             eventImageInput.value = '';
             eventImagePreview.style.display = 'none';
+            eventPlaceholder.innerHTML = '<i class="fas fa-upload"></i><br>Click to upload event image';
             eventPlaceholder.style.display = 'block';
             removeEventBtn.style.display = 'none';
         }
