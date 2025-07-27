@@ -240,34 +240,29 @@ const MapService = {
         }
     },
 
-    // Location search with autocomplete for venue creation
+    // Location search with autocomplete using Lambda geocoding service
     searchLocation: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching location:", query);
+            console.log("🔍 Searching location via Lambda:", query);
 
             if (!query || query.trim().length < 3) {
                 return [];
             }
 
-            const searchData = {
+            // Use Lambda geocoding service endpoint
+            const searchUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
+            const params = new URLSearchParams({
                 text: query.trim(),
-                maxResults: 10,
-                key: CONFIG.LOCATION.API_KEY
-            };
+                maxResults: '10'
+            });
 
             if (biasPosition) {
-                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
+                params.append('biasPosition', `${biasPosition.lng},${biasPosition.lat}`);
             }
 
-            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
-            const urlParams = new URLSearchParams(searchData);
-            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
-
-            const response = await fetch(searchUrl, {
+            const response = await fetch(`${searchUrl}?${params.toString()}`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: CONFIG.getAuthHeaders()
             });
 
             if (!response.ok) {
@@ -275,14 +270,14 @@ const MapService = {
             }
 
             const result = await response.json();
-            console.log("🎯 Location search results:", result);
+            console.log("🎯 Location search results from Lambda:", result);
             
-            return (result.Results || []).map(place => ({
-                label: place.Place.Label,
-                coordinates: place.Place.Geometry.Point,
-                country: place.Place.Country,
-                region: place.Place.Region,
-                address: place.Place.Label
+            return (result.results || []).map(place => ({
+                label: place.label,
+                coordinates: [place.longitude, place.latitude],
+                country: place.country,
+                region: place.region,
+                address: place.label
             }));
         } catch (error) {
             console.error("❌ Location search failed:", error);
@@ -621,113 +616,133 @@ const MapService = {
         }
     },
 
-    // Search for places using API key
+    // Search for places using Lambda geocoding service
     searchPlaces: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching for places:", query);
+            console.log("🔍 Searching for places via Lambda:", query);
 
-            const searchData = {
+            // Use Lambda geocoding service endpoint
+            const searchUrl = CONFIG.buildApiUrl('/places/search');
+            const params = new URLSearchParams({
                 text: query,
-                maxResults: 10,
-                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
-                key: CONFIG.LOCATION.API_KEY
-            };
+                maxResults: '10'
+            });
 
             if (biasPosition) {
-                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
+                params.append('biasPosition', `${biasPosition.lng},${biasPosition.lat}`);
             }
 
-            // Build URL with query parameters
-            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
-            const urlParams = new URLSearchParams(searchData);
-            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
-
-            const response = await fetch(searchUrl, {
+            const response = await fetch(`${searchUrl}?${params.toString()}`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: CONFIG.getAuthHeaders()
             });
 
             if (!response.ok) {
-                throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Search failed: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("🎯 Places search results:", result);
-            return result.Results || [];
+            console.log("🎯 Places search results from Lambda:", result);
+            
+            // Transform Lambda response to match expected format
+            return (result.results || []).map(place => ({
+                Place: {
+                    Label: place.label,
+                    Geometry: {
+                        Point: [place.longitude, place.latitude]
+                    },
+                    Country: place.country,
+                    Region: place.region,
+                    Municipality: place.municipality
+                },
+                Relevance: place.confidence
+            }));
         } catch (error) {
             console.error("❌ Places search failed:", error);
             throw error;
         }
     },
 
-    // Reverse geocoding using API key
+    // Reverse geocoding using Lambda geocoding service
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding:", { lng, lat });
+            console.log("🔄 Reverse geocoding via Lambda:", { lng, lat });
 
-            const url = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/position?key=${CONFIG.LOCATION.API_KEY}`;
+            const reverseGeocodeUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
 
-            const response = await fetch(url, {
+            const response = await fetch(reverseGeocodeUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: CONFIG.getAuthHeaders(),
                 body: JSON.stringify({
-                    Position: [lng, lat],
-                    MaxResults: 1
+                    latitude: lat,
+                    longitude: lng,
+                    maxResults: 1
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`Reverse geocoding failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Reverse geocoding failed: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("📍 Reverse geocoding result:", result);
-            return result.Results && result.Results[0] || null;
+            console.log("📍 Reverse geocoding result from Lambda:", result);
+            
+            // Transform Lambda response to match expected format
+            return {
+                Place: {
+                    Label: result.address,
+                    Country: result.country,
+                    Region: result.region,
+                    Municipality: result.municipality,
+                    PostalCode: result.postalCode
+                }
+            };
         } catch (error) {
             console.error("❌ Reverse geocoding failed:", error);
             throw error;
         }
     },
 
-    // Geocode address using API key
+    // Geocode address using Lambda geocoding service
     geocodeAddress: async function(address, biasPosition = null) {
         try {
-            console.log("🏠 Geocoding address:", address);
+            console.log("🏠 Geocoding address via Lambda:", address);
 
-            const searchData = {
-                text: address,
-                maxResults: 1,
-                indexName: CONFIG.LOCATION.PLACE_INDEX_NAME,
-                key: CONFIG.LOCATION.API_KEY
+            const geocodeUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
+            const requestBody = {
+                address: address,
+                maxResults: 1
             };
 
             if (biasPosition) {
-                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
+                requestBody.biasPosition = [biasPosition.lng, biasPosition.lat];
             }
 
-            // Build URL with query parameters
-            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
-            const urlParams = new URLSearchParams(searchData);
-            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
-
-            const response = await fetch(searchUrl, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+            const response = await fetch(geocodeUrl, {
+                method: 'POST',
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
-                throw new Error(`Geocoding failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Geocoding failed: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log("📍 Geocoding result:", result);
-            return result.Results && result.Results[0] || null;
+            console.log("📍 Geocoding result from Lambda:", result);
+            
+            // Transform Lambda response to match expected format
+            return {
+                Place: {
+                    Label: result.formatted || result.address,
+                    Geometry: {
+                        Point: [result.longitude, result.latitude]
+                    },
+                    Country: result.country,
+                    Region: result.region,
+                    Municipality: result.municipality
+                }
+            };
         } catch (error) {
             console.error("❌ Geocoding failed:", error);
             throw error;
@@ -904,6 +919,67 @@ const MapService = {
     clearVenueMarkers: function() {
         this.venueMarkers.forEach(marker => marker.remove());
         this.venueMarkers = [];
+    },
+
+    // Event Pins Functionality
+    // Add event pins to map showing events at their venue locations
+    addEventPins: async function() {
+        if (!this.map) {
+            console.warn("Map not initialized for event pins");
+            return 0;
+        }
+
+        try {
+            console.log("🎯 Adding event pins to map...");
+            
+            // Load event pins using the EventPinsService
+            if (typeof EventPinsService !== 'undefined') {
+                const pinsCount = await EventPinsService.initEventPins(this.map);
+                console.log(`✅ Added ${pinsCount} event pins to map`);
+                return pinsCount;
+            } else {
+                console.warn("EventPinsService not available - make sure event-pins.js is loaded");
+                return 0;
+            }
+        } catch (error) {
+            console.error("❌ Failed to add event pins:", error);
+            return 0;
+        }
+    },
+
+    // Clear event pins from map
+    clearEventPins: function() {
+        if (typeof EventPinsService !== 'undefined') {
+            EventPinsService.clearEventMarkers();
+            console.log("🧹 Cleared event pins from map");
+        }
+    },
+
+    // Update event pins (refresh data)
+    updateEventPins: async function() {
+        console.log("🔄 Updating event pins...");
+        this.clearEventPins();
+        return await this.addEventPins();
+    },
+
+    // Show both venue markers and event pins
+    showVenuesAndEvents: async function() {
+        try {
+            console.log("🗺️ Loading venues and event pins...");
+            
+            // Load venues first
+            await this.loadVenues();
+            this.addVenueMarkers();
+            
+            // Then add event pins
+            const pinsCount = await this.addEventPins();
+            
+            console.log(`✅ Map loaded with ${this.venueMarkers.length} venues and ${pinsCount} event pins`);
+            return { venues: this.venueMarkers.length, events: pinsCount };
+        } catch (error) {
+            console.error("❌ Failed to load venues and events:", error);
+            return { venues: 0, events: 0 };
+        }
     },
 
     // Display map error message

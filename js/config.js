@@ -13,6 +13,7 @@ const CONFIG = {
       // Geocoding endpoints
       GEOCODE: "/geocode",
       REVERSE_GEOCODE: "/reverse-geocode",
+      PLACES_SEARCH: "/places/search",
 
       // Location services endpoints
       LOCATION: "/location",

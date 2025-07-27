@@ -372,9 +372,21 @@ const EventsPage = {
                 }
             }
 
-            // Add event markers to map
-            if (this.mapInitialized && this.filteredEvents.length > 0) {
-                MapService.addEventMarkers(this.filteredEvents, this.venues);
+            // Show both venues and event pins on the map
+            if (this.mapInitialized) {
+                try {
+                    const mapData = await MapService.showVenuesAndEvents();
+                    console.log(`✅ Events map loaded with ${mapData.venues} venues and ${mapData.events} event pins`);
+                    
+                    // Update map info display if it exists
+                    const mapInfo = document.getElementById("events-map-info");
+                    if (mapInfo) {
+                        mapInfo.textContent = `Showing ${mapData.events} events and ${mapData.venues} venues`;
+                    }
+                } catch (error) {
+                    console.error("❌ Failed to load map data:", error);
+                    Utils.showError("Failed to load events on map. Please try refreshing.");
+                }
             }
         },
 
