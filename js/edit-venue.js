@@ -115,14 +115,17 @@ const EditVenue = {
                 this.updateLocationDisplay();
             }
 
-            // Image handling
-            if (venueData.image_url) {
+            // Image handling - check both imageUrl and image_url fields
+            const imageUrl = venueData.imageUrl || venueData.image_url;
+            if (imageUrl) {
                 const venueImagePreview = document.getElementById('venueImagePreview');
                 const venuePlaceholder = document.getElementById('venueUploadPlaceholder');
                 const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
 
                 if (venueImagePreview && venuePlaceholder) {
-                    venueImagePreview.src = venueData.image_url;
+                    // Resolve the full image URL
+                    const fullImageUrl = Utils.resolveImageUrl(imageUrl, 'venues', venueData.venueID);
+                    venueImagePreview.src = fullImageUrl;
                     venueImagePreview.style.display = 'block';
                     venuePlaceholder.style.display = 'none';
                     if (removeVenueBtn) {
@@ -421,7 +424,7 @@ const EditVenue = {
                 throw new Error('User not authenticated');
             }
 
-            let imageUrl = this.originalVenueData?.image_url;
+            let imageUrl = this.originalVenueData?.imageUrl || this.originalVenueData?.image_url;
 
             // Handle image upload if new image selected
             if (window.selectedVenueImage) {
@@ -430,10 +433,10 @@ const EditVenue = {
                 console.log('Image uploaded successfully:', imageUrl);
             }
 
-            // Prepare API payload
+            // Prepare API payload using imageUrl (not image_url)
             const payload = {
                 ...venueData,
-                image_url: imageUrl
+                imageUrl: imageUrl
             };
 
             console.log('Sending venue update:', payload);
