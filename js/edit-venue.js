@@ -98,6 +98,9 @@ const EditVenue = {
 
     populateForm(venueData) {
         try {
+            // Clear any previously uploaded image URL when loading existing data
+            window.uploadedVenueImageUrl = null;
+            
             // Basic venue info
             document.getElementById('venueName').value = venueData.name || '';
             document.getElementById('venueType').value = venueData.type || '';
@@ -430,6 +433,16 @@ const EditVenue = {
             if (window.uploadedVenueImageUrl) {
                 console.log('Using previously uploaded image URL:', window.uploadedVenueImageUrl);
                 imageUrl = window.uploadedVenueImageUrl;
+            }
+            // Check if image was removed (preview is hidden and no uploaded URL)
+            else {
+                const venueImagePreview = document.getElementById('venueImagePreview');
+                const isImageDisplayed = venueImagePreview && venueImagePreview.style.display !== 'none';
+                
+                if (!isImageDisplayed && !window.uploadedVenueImageUrl) {
+                    console.log('Image was removed, setting imageUrl to null');
+                    imageUrl = null;
+                }
             }
 
             // Prepare API payload using imageUrl (not image_url)

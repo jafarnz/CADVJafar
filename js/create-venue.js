@@ -56,8 +56,8 @@ const CreateVenuePage = {
         // Image file input change
         const imageInput = document.getElementById('venueImage');
         if (imageInput) {
-            imageInput.addEventListener('change', (e) => {
-                this.handleImageSelection(e);
+            imageInput.addEventListener('change', async (e) => {
+                await this.handleImageSelection(e);
             });
         }
 
@@ -554,20 +554,13 @@ const CreateVenuePage = {
             // Generate venue ID
             const venueID = CONFIG.generateVenueID();
 
-            // Handle image upload first if file is selected
-            let imageUrl = null;
-            const imageFile = document.getElementById('venueImage')?.files[0];
+            // Use uploaded image URL if available
+            let imageUrl = window.uploadedVenueImageUrl || null;
             
-            if (imageFile) {
-                try {
-                    console.log("📸 Uploading venue image...");
-                    // Upload with venue ID correlation like the old form
-                    imageUrl = await Utils.uploadImageWithId(imageFile, "venues", venueID);
-                    console.log("✅ Image uploaded successfully:", imageUrl);
-                } catch (error) {
-                    console.error("❌ Image upload failed:", error);
-                    Utils.showError("Image upload failed, but venue will be saved without image.");
-                }
+            if (imageUrl) {
+                console.log("✅ Using uploaded image URL:", imageUrl);
+            } else {
+                console.log("ℹ️ No image uploaded, creating venue without image");
             }
 
             // Gather form data with uploaded image URL
@@ -693,7 +686,7 @@ const CreateVenuePage = {
     },
 
     // Handle image selection and preview
-    handleImageSelection: function(event) {
+    handleImageSelection: async function(event) {
         const file = event.target.files[0];
         if (!file) {
             this.hideImagePreview();
@@ -715,12 +708,31 @@ const CreateVenuePage = {
             return;
         }
 
-        // Show preview
-        this.showImagePreview(file);
+        try {
+            // Show loading state in preview
+            this.showLoadingPreview(file);
+
+            // Upload immediately to S3
+            const imageUrl = await Utils.uploadImage(file, 'venues', 'temp-' + Date.now());
+            
+            // Store the uploaded URL globally
+            window.uploadedVenueImageUrl = imageUrl;
+            
+            // Show success preview with uploaded image
+            this.showImagePreview(file, imageUrl);
+            
+            Utils.showMessage('Image uploaded successfully!', 'success');
+
+        } catch (error) {
+            console.error('❌ Image upload failed:', error);
+            this.removeImagePreview();
+            window.uploadedVenueImageUrl = null;
+            Utils.showMessage(error.message || 'Image upload failed. Please try again.', 'error');
+        }
     },
 
     // Show image preview
-    showImagePreview: function(file) {
+    showImagePreview: function(file, uploadedUrl = null) {
         const previewContainer = document.getElementById('imagePreview');
         const previewImg = document.getElementById('previewImg');
         const fileName = document.getElementById('fileName');
@@ -728,12 +740,17 @@ const CreateVenuePage = {
 
         if (!previewContainer || !previewImg) return;
 
-        // Create FileReader to read the file
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            previewImg.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        // Use uploaded URL if available, otherwise use FileReader for local preview
+        if (uploadedUrl) {
+            previewImg.src = uploadedUrl;
+        } else {
+            // Create FileReader to read the file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
         // Update file info
         if (fileName) {
@@ -750,7 +767,8 @@ const CreateVenuePage = {
         console.log("✅ Image preview displayed:", {
             name: file.name,
             size: file.size,
-            type: file.type
+            type: file.type,
+            uploadedUrl: uploadedUrl
         });
     },
 
@@ -765,6 +783,9 @@ const CreateVenuePage = {
             imageInput.value = '';
         }
 
+        // Clear uploaded URL
+        window.uploadedVenueImageUrl = null;
+
         // Clear preview image
         if (previewImg) {
             previewImg.src = '';
@@ -775,7 +796,34 @@ const CreateVenuePage = {
             previewContainer.style.display = 'none';
         }
 
-        console.log("🗑️ Image preview removed");
+        console.log("🗑️ Image preview removed and uploaded URL cleared");
+    },
+
+    // Show loading preview during upload
+    showLoadingPreview: function(file) {
+        const previewContainer = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        if (!previewContainer || !previewImg) return;
+
+        // Show loading placeholder
+        previewImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPgogIDx0ZXh0IHg9IjE1MCIgeT0iOTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzY2NyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VXBsb2FkaW5nLi4uPC90ZXh0PgogIDxjaXJjbGUgY3g9IjE1MCIgY3k9IjEyMCIgcj0iMTAiIGZpbGw9IiMwMDdiZmYiPgogICAgPGFuaW1hdGVUcmFuc2Zvcm0gYXR0cmlidXRlTmFtZT0idHJhbnNmb3JtIiBhdHRyaWJ1dGVUeXBlPSJYTUwiIHR5cGU9InJvdGF0ZSIgZnJvbT0iMCAxNTAgMTIwIiB0bz0iMzYwIDE1MCAxMjAiIGR1cj0iMXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+CiAgPC9jaXJjbGU+Cjwvc3ZnPgo=';
+
+        // Update file info
+        if (fileName) {
+            fileName.textContent = `📁 ${file.name}`;
+        }
+        if (fileSize) {
+            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileSize.textContent = `📏 ${sizeInMB} MB - Uploading...`;
+        }
+
+        // Show preview container
+        previewContainer.style.display = 'block';
+
+        console.log("⏳ Showing loading preview for image upload");
     },
 
     // Hide image preview (without clearing input)

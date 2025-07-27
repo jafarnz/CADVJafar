@@ -135,6 +135,9 @@ const EditEvent = {
 
     populateForm(eventData) {
         try {
+            // Clear any previously uploaded image URL when loading existing data
+            window.uploadedEventImageUrl = null;
+            
             // Basic event info
             document.getElementById('eventName').value = eventData.name || '';
             document.getElementById('eventDescription').value = eventData.description || '';
@@ -290,6 +293,16 @@ const EditEvent = {
             if (window.uploadedEventImageUrl) {
                 imageUrl = window.uploadedEventImageUrl;
                 console.log("✅ Using uploaded image URL:", imageUrl);
+            }
+            // Check if image was removed (preview is hidden and no uploaded URL)
+            else {
+                const eventImagePreview = document.getElementById('eventImagePreview');
+                const isImageDisplayed = eventImagePreview && eventImagePreview.style.display !== 'none';
+                
+                if (!isImageDisplayed && !window.uploadedEventImageUrl) {
+                    console.log('Image was removed, setting imageUrl to null');
+                    imageUrl = null;
+                }
             }
 
             // Add image URL to form data
