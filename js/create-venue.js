@@ -535,8 +535,29 @@ const CreateVenuePage = {
             // Show loading
             this.showLoadingOverlay();
 
-            // Gather form data
+            // Generate venue ID
+            const venueID = CONFIG.generateVenueID();
+
+            // Handle image upload first if file is selected
+            let imageUrl = null;
+            const imageFile = document.getElementById('venueImage')?.files[0];
+            
+            if (imageFile) {
+                try {
+                    console.log("📸 Uploading venue image...");
+                    // Upload with venue ID correlation like the old form
+                    imageUrl = await Utils.uploadImageWithId(imageFile, "venues", venueID);
+                    console.log("✅ Image uploaded successfully:", imageUrl);
+                } catch (error) {
+                    console.error("❌ Image upload failed:", error);
+                    Utils.showError("Image upload failed, but venue will be saved without image.");
+                }
+            }
+
+            // Gather form data with uploaded image URL
             const formData = this.gatherFormData();
+            formData.venueID = venueID; // Add generated venue ID
+            formData.imageUrl = imageUrl; // Add uploaded image URL
 
             console.log("📤 Submitting venue data:", formData);
 
@@ -612,9 +633,9 @@ const CreateVenuePage = {
             description: document.getElementById('venueDescription').value.trim(),
             address: document.getElementById('venueAddress').value.trim(),
             capacity: document.getElementById('venueCapacity').value ? parseInt(document.getElementById('venueCapacity').value) : null,
-            imageUrl: document.getElementById('venueImageUrl').value.trim(),
             latitude: parseFloat(document.getElementById('venueLatitude').value),
             longitude: parseFloat(document.getElementById('venueLongitude').value)
+            // Note: imageUrl and venueID will be added in handleFormSubmission after image upload
         };
 
         // Remove empty fields except for required ones

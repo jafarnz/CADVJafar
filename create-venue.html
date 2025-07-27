@@ -112,6 +112,26 @@
             cursor: pointer;
         }
 
+        .form-input[type="file"] {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 2px dashed #28a745;
+            cursor: pointer;
+        }
+
+        .form-input[type="file"]:hover {
+            background: #e9ecef;
+            border-color: #20c997;
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
         .coordinates-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -364,9 +384,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="venueImageUrl">Image URL</label>
-                        <input type="url" id="venueImageUrl" name="imageUrl" class="form-input" 
-                               placeholder="https://example.com/venue-image.jpg">
+                        <label class="form-label" for="venueImage">Venue Image</label>
+                        <input type="file" id="venueImage" name="image" class="form-input" 
+                               accept="image/*" placeholder="Choose an image file">
+                        <small class="form-help">Upload an image of your venue (JPG, PNG, etc.)</small>
                     </div>
 
                     <!-- Capacity -->
