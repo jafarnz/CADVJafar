@@ -145,6 +145,19 @@ const EditVenue = {
         try {
             console.log('Initializing edit venue map');
             
+            // Use the same AWS map implementation as create venue
+            this.initializeAWSMap();
+            
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            Utils.showMessage('Map initialization failed', 'error');
+        }
+    },
+
+    async initializeAWSMap() {
+        try {
+            console.log('🗺️ Initializing AWS map for venue editing');
+            
             // Default center - Singapore
             let center = [103.8198, 1.3521];
             let zoom = 11;
@@ -155,48 +168,45 @@ const EditVenue = {
                 zoom = 15;
             }
 
-            this.map = new maplibregl.Map({
-                container: 'venue-map',
-                style: 'https://api.maptiler.com/maps/streets/style.json?key=YOUR_MAPTILER_KEY',
+            // Initialize AWS venue map using MapService
+            this.map = await MapService.initializeVenueMap('venue-map', {
                 center: center,
                 zoom: zoom
             });
 
-            this.map.on('load', () => {
-                console.log('Edit venue map loaded');
-                
-                // Add existing marker if we have location
-                if (this.selectedLocation) {
-                    this.addMarker(this.selectedLocation.lng, this.selectedLocation.lat);
-                }
-                
-                // Enable location selection
-                this.enableLocationSelection();
-            });
+            if (!this.map) {
+                throw new Error('Failed to initialize AWS map');
+            }
 
-            this.map.on('error', (e) => {
-                console.warn('Map error (using fallback):', e);
-                // Fallback to basic OpenStreetMap
-                this.map.setStyle({
-                    'version': 8,
-                    'sources': {
-                        'osm': {
-                            'type': 'raster',
-                            'tiles': ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                            'tileSize': 256
-                        }
-                    },
-                    'layers': [{
-                        'id': 'osm',
-                        'type': 'raster',
-                        'source': 'osm'
-                    }]
-                });
-            });
+            // Add existing marker if we have location
+            if (this.selectedLocation) {
+                this.addMarker(this.selectedLocation.lng, this.selectedLocation.lat);
+            }
+            
+            // Enable location selection
+            this.enableLocationSelection();
 
+            console.log('✅ AWS venue map initialized successfully');
+            
         } catch (error) {
-            console.error('Error initializing map:', error);
-            Utils.showMessage('Map initialization failed', 'error');
+            console.error('❌ Failed to initialize AWS map:', error);
+            this.showMapError(error.message);
+        }
+    },
+
+    showMapError(message) {
+        const mapContainer = document.getElementById('venue-map');
+        if (mapContainer) {
+            mapContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; color: #6c757d; text-align: center; padding: 2rem; border-radius: 8px;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️</div>
+                    <h3 style="margin: 0 0 1rem 0; color: #495057;">Map Unavailable</h3>
+                    <p style="margin: 0; line-height: 1.5;">${message}</p>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Retry
+                    </button>
+                </div>
+            `;
         }
     },
 
@@ -270,20 +280,20 @@ const EditVenue = {
 
     async reverseGeocode(lat, lng) {
         try {
-            const response = await fetch(
-                `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=YOUR_MAPTILER_KEY`
-            );
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.features && data.features.length > 0) {
-                    return data.features[0].place_name;
+            // Use MapService for reverse geocoding like other parts of the app
+            if (window.MapService && window.MapService.reverseGeocode) {
+                const locationInfo = await window.MapService.reverseGeocode(lng, lat);
+                if (locationInfo && locationInfo.Place && locationInfo.Place.Label) {
+                    return locationInfo.Place.Label;
+                } else if (locationInfo && locationInfo.address) {
+                    return locationInfo.address;
                 }
             }
         } catch (error) {
-            console.warn('Reverse geocoding failed:', error);
+            console.warn('AWS reverse geocoding failed:', error);
         }
         
+        // Fallback to coordinate display
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     },
 
