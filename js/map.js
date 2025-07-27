@@ -43,27 +43,50 @@ const MapService = {
         return new Promise((resolve, reject) => {
             // Check if already loaded
             if (window.maplibregl) {
+                console.log("✅ MapLibre GL already loaded");
                 resolve();
                 return;
             }
 
-            // Load CSS
-            const link = document.createElement("link");
-            link.href = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css";
-            link.rel = "stylesheet";
-            document.head.appendChild(link);
+            // If not loaded via CDN, try to load it dynamically
+            console.log("🔄 Loading MapLibre GL library...");
+            
+            // Load CSS first
+            if (!document.querySelector('link[href*="maplibre-gl"]')) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css';
+                document.head.appendChild(link);
+            }
 
-            // Load MapLibre GL
-            const script = document.createElement("script");
-            script.src = "https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js";
-            script.onload = () => {
-                console.log("✅ MapLibre GL loaded");
-                resolve();
-            };
-            script.onerror = () => {
-                reject(new Error("Failed to load MapLibre GL"));
-            };
-            document.head.appendChild(script);
+            // Load JS
+            if (!document.querySelector('script[src*="maplibre-gl"]')) {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
+                script.onload = () => {
+                    console.log("✅ MapLibre GL loaded successfully");
+                    resolve();
+                };
+                script.onerror = () => {
+                    reject(new Error("Failed to load MapLibre GL library"));
+                };
+                document.head.appendChild(script);
+            } else {
+                // Script tag exists, wait a bit for it to load
+                let attempts = 0;
+                const checkLoad = () => {
+                    if (window.maplibregl) {
+                        console.log("✅ MapLibre GL loaded successfully");
+                        resolve();
+                    } else if (attempts < 50) { // 5 seconds max
+                        attempts++;
+                        setTimeout(checkLoad, 100);
+                    } else {
+                        reject(new Error("MapLibre GL failed to load after 5 seconds"));
+                    }
+                };
+                checkLoad();
+            }
         });
     },
 
@@ -132,6 +155,268 @@ const MapService = {
             console.error("❌ Failed to initialize map with AWS styles:", error);
             throw error;
         }
+    },
+
+    // AWS-only map initialization for venue creation
+    initializeVenueMap: async function(containerId, options = {}) {
+        try {
+            console.log(`🗺️ Initializing AWS venue map for container: ${containerId}`);
+
+            // Check if MapLibre GL is available
+            if (!window.maplibregl) {
+                await this.loadMapLibreGL();
+            }
+
+            const container = document.getElementById(containerId);
+            if (!container) {
+                throw new Error(`Map container '${containerId}' not found`);
+            }
+
+            // Validate AWS configuration
+            if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
+                throw new Error("AWS Location Service API Key not configured");
+            }
+
+            // Default options
+            const defaultOptions = {
+                center: [103.8198, 1.3521], // Singapore default
+                zoom: 11
+            };
+
+            // Merge options
+            const mapOptions = { ...defaultOptions, ...options };
+
+            // AWS Location Service style ONLY
+            const apiKey = CONFIG.LOCATION.API_KEY;
+            const region = CONFIG.LOCATION.REGION;
+            const mapStyle = `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${apiKey}&color-scheme=Light`;
+            
+            console.log("🔐 Using AWS Location Service style ONLY");
+
+            // Create the map
+            const map = new window.maplibregl.Map({
+                container: containerId,
+                style: mapStyle,
+                center: mapOptions.center,
+                zoom: mapOptions.zoom
+            });
+
+            // Add navigation controls
+            map.addControl(new window.maplibregl.NavigationControl(), 'top-left');
+            
+            // Add search control for location finding
+            map.addControl(new window.maplibregl.GeolocateControl({
+                positionOptions: {
+                    enableHighAccuracy: true
+                },
+                trackUserLocation: true
+            }), 'top-left');
+
+            // Wait for map to load
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error("AWS Map load timeout after 15 seconds"));
+                }, 15000);
+
+                map.on('load', () => {
+                    clearTimeout(timeout);
+                    console.log("✅ AWS Map loaded successfully");
+                    resolve();
+                });
+
+                map.on('error', (error) => {
+                    clearTimeout(timeout);
+                    console.error("❌ AWS Map error:", error);
+                    reject(error);
+                });
+            });
+
+            return map;
+
+        } catch (error) {
+            console.error("❌ Failed to initialize AWS venue map:", error);
+            this.showMapError(containerId, `AWS Location Service Error: ${error.message}`);
+            throw error;
+        }
+    },
+
+    // Location search with autocomplete for venue creation
+    searchLocation: async function(query, biasPosition = null) {
+        try {
+            console.log("🔍 Searching location:", query);
+
+            if (!query || query.trim().length < 3) {
+                return [];
+            }
+
+            const searchData = {
+                text: query.trim(),
+                maxResults: 10,
+                key: CONFIG.LOCATION.API_KEY
+            };
+
+            if (biasPosition) {
+                searchData.biasPosition = [biasPosition.lng, biasPosition.lat];
+            }
+
+            const baseUrl = `https://places.geo.${CONFIG.LOCATION.REGION}.amazonaws.com/places/v0/indexes/${CONFIG.LOCATION.PLACE_INDEX_NAME}/search/text`;
+            const urlParams = new URLSearchParams(searchData);
+            const searchUrl = `${baseUrl}?${urlParams.toString()}`;
+
+            const response = await fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Location search failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log("🎯 Location search results:", result);
+            
+            return (result.Results || []).map(place => ({
+                label: place.Place.Label,
+                coordinates: place.Place.Geometry.Point,
+                country: place.Place.Country,
+                region: place.Place.Region,
+                address: place.Place.Label
+            }));
+        } catch (error) {
+            console.error("❌ Location search failed:", error);
+            return [];
+        }
+    },
+
+    // Enable location picker for venue creation
+    enableVenueLocationPicker: function(map, callback) {
+        console.log("📍 Enabling venue location picker");
+        
+        // Change cursor to crosshair
+        map.getCanvas().style.cursor = 'crosshair';
+
+        // Add click handler for location picking
+        const pickLocationHandler = async (e) => {
+            const { lng, lat } = e.lngLat;
+            console.log("📍 Venue location picked:", { lng, lat });
+
+            try {
+                // Reverse geocode to get address
+                const locationInfo = await this.reverseGeocode(lng, lat);
+                
+                const result = {
+                    coordinates: [lng, lat],
+                    lat: lat,
+                    lng: lng,
+                    address: locationInfo ? (locationInfo.Place?.Label || 'Unknown location') : 'Unknown location',
+                    country: locationInfo ? locationInfo.Place?.Country : null,
+                    region: locationInfo ? locationInfo.Place?.Region : null
+                };
+
+                // Add venue marker
+                const marker = new window.maplibregl.Marker({ 
+                    color: '#ff6b6b',
+                    scale: 1.2
+                })
+                .setLngLat([lng, lat])
+                .addTo(map);
+
+                // Remove click handler
+                map.off('click', pickLocationHandler);
+                map.getCanvas().style.cursor = '';
+
+                console.log("✅ Venue location selected:", result);
+                callback(result, marker);
+
+            } catch (error) {
+                console.error("❌ Failed to get venue location info:", error);
+                callback({
+                    coordinates: [lng, lat],
+                    lat: lat,
+                    lng: lng,
+                    address: 'Unknown location',
+                    country: null,
+                    region: null
+                }, null);
+            }
+        };
+
+        // Add the click handler
+        map.on('click', pickLocationHandler);
+
+        console.log("✅ Venue location picker enabled - click on map to select location");
+    },
+
+    // Add marker to map with modern styling
+    addMarker: function(map, options) {
+        if (!map || !window.maplibregl) return null;
+
+        try {
+            const marker = new window.maplibregl.Marker()
+                .setLngLat([options.lng, options.lat]);
+
+            if (options.popup) {
+                const popup = new window.maplibregl.Popup({ 
+                    offset: 25,
+                    className: 'modern-popup'
+                }).setHTML(options.popup);
+                marker.setPopup(popup);
+            }
+
+            marker.addTo(map);
+            return marker;
+        } catch (error) {
+            console.error("❌ Failed to add marker:", error);
+            return null;
+        }
+    },
+
+    // Show modern error message in map container
+    showMapError: function(containerId, message) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                border: 2px solid #fecaca;
+                border-radius: 16px;
+                padding: 32px;
+                text-align: center;
+                color: #991b1b;
+                min-height: 300px;
+            ">
+                <div style="font-size: 4rem; margin-bottom: 16px; opacity: 0.8;">🗺️</div>
+                <h3 style="margin: 0 0 8px 0; font-weight: 600; font-size: 1.2rem;">Map Unavailable</h3>
+                <p style="margin: 0 0 24px 0; color: #7f1d1d; max-width: 400px; line-height: 1.5;">
+                    ${message}
+                </p>
+                <button 
+                    onclick="location.reload()" 
+                    style="
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    "
+                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(220,38,38,0.4)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                >
+                    🔄 Retry
+                </button>
+            </div>
+        `;
     },
 
     // Wait for map to fully load

@@ -854,55 +854,256 @@ const VenuesPage = {
   venueLocationMap: null,
   selectedLocationMarker: null,
 
-  // Initialize the venue location selection map
+  // Initialize the venue creation map with search functionality
   initializeVenueLocationMap: async function() {
     try {
-      console.log("🗺️ Initializing venue location map...");
+      console.log("🗺️ Initializing venue creation map...");
       
-      // Enhanced availability check with retry logic
-      let retryCount = 0;
-      const maxRetries = 15;
-      const retryInterval = 300;
-
-      const checkMapServiceAvailability = () => {
-        return new Promise((resolve, reject) => {
-          const attemptCheck = () => {
-            if (window.MapService && typeof maplibregl !== 'undefined') {
-              console.log("✅ MapService and MapLibre GL available");
-              resolve();
-            } else if (retryCount < maxRetries) {
-              retryCount++;
-              console.log(`🔄 MapService check attempt ${retryCount}/${maxRetries}...`);
-              setTimeout(attemptCheck, retryInterval);
-            } else {
-              reject(new Error("MapService or MapLibre GL not available after multiple attempts"));
-            }
-          };
-          attemptCheck();
-        });
-      };
-
-      // Wait for MapService availability
-      await checkMapServiceAvailability();
+      // Initialize AWS venue map
+      this.venueLocationMap = await MapService.initializeVenueMap("venue-location-map");
       
-      // Initialize MapService if not already done
-      if (!window.MapService || !window.MapService.isInitialized) {
-        console.log("🔄 MapService not initialized, initializing now...");
-        if (window.MapService) {
-          await window.MapService.init("venue-location-map");
-          this.venueLocationMap = window.MapService.map;
-        } else {
-          throw new Error("MapService not available");
-        }
-      } else {
-        // Create a new map instance for the modal
-        await this.createVenueLocationMap();
-      }
+      // Set up location search functionality
+      this.setupLocationSearch();
+      
+      // Enable location picker
+      MapService.enableVenueLocationPicker(this.venueLocationMap, (locationResult, marker) => {
+        this.handleLocationSelected(locationResult, marker);
+      });
 
-      console.log("✅ Venue location map initialized successfully");
+      console.log("✅ Venue creation map initialized successfully");
     } catch (error) {
-      console.error("❌ Failed to initialize venue location map:", error);
-      this.showMapError("Failed to load map. Please try again.");
+      console.error("❌ Failed to initialize venue creation map:", error);
+      this.showMapError(`AWS Map Error: ${error.message}`);
+    }
+  },
+
+  // Setup location search with autocomplete
+  setupLocationSearch: function() {
+    const searchInput = document.getElementById('location-search');
+    const searchResults = document.getElementById('search-results');
+    
+    if (!searchInput || !searchResults) return;
+
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      
+      // Clear previous timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      
+      // Hide results if query too short
+      if (query.length < 3) {
+        searchResults.style.display = 'none';
+        return;
+      }
+      
+      // Debounce search
+      searchTimeout = setTimeout(async () => {
+        try {
+          const results = await MapService.searchLocation(query);
+          this.displaySearchResults(results);
+        } catch (error) {
+          console.error("❌ Search failed:", error);
+        }
+      }, 300);
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+      }
+    });
+  },
+
+  // Display search results with modern styling
+  displaySearchResults: function(results) {
+    const searchResults = document.getElementById('search-results');
+    if (!searchResults) return;
+
+    if (results.length === 0) {
+      searchResults.style.display = 'none';
+      return;
+    }
+
+    searchResults.innerHTML = results.map(result => `
+      <div class="search-result-item" onclick="VenuesPage.selectSearchResult('${JSON.stringify(result).replace(/'/g, "&#39;")}')">
+        <div class="result-label">${result.label}</div>
+        <div class="result-country">${result.country || ''} ${result.region || ''}</div>
+      </div>
+    `).join('');
+
+    searchResults.style.display = 'block';
+  },
+
+  // Handle search result selection
+  selectSearchResult: function(resultJson) {
+    try {
+      const result = JSON.parse(resultJson.replace(/&#39;/g, "'"));
+      
+      // Update search input
+      const searchInput = document.getElementById('location-search');
+      if (searchInput) {
+        searchInput.value = result.label;
+      }
+      
+      // Hide search results
+      const searchResults = document.getElementById('search-results');
+      if (searchResults) {
+        searchResults.style.display = 'none';
+      }
+      
+      // Fly to location on map
+      if (this.venueLocationMap && result.coordinates) {
+        this.venueLocationMap.flyTo({
+          center: result.coordinates,
+          zoom: 15
+        });
+        
+        // Add marker
+        this.handleLocationSelected({
+          coordinates: result.coordinates,
+          lat: result.coordinates[1],
+          lng: result.coordinates[0],
+          address: result.label,
+          country: result.country,
+          region: result.region
+        });
+      }
+      
+    } catch (error) {
+      console.error("❌ Failed to select search result:", error);
+    }
+  },
+
+  // Handle location selection from map or search
+  handleLocationSelected: function(locationResult, marker = null) {
+    console.log("📍 Location selected for venue:", locationResult);
+    
+    // Remove previous marker
+    if (this.selectedLocationMarker) {
+      this.selectedLocationMarker.remove();
+    }
+    
+    // Add new marker if not provided
+    if (!marker && this.venueLocationMap) {
+      marker = new window.maplibregl.Marker({ 
+        color: '#ff6b6b',
+        scale: 1.2
+      })
+      .setLngLat(locationResult.coordinates)
+      .addTo(this.venueLocationMap);
+    }
+    
+    this.selectedLocationMarker = marker;
+    
+    // Update form fields
+    document.getElementById('venue-latitude').value = locationResult.lat;
+    document.getElementById('venue-longitude').value = locationResult.lng;
+    document.getElementById('venue-address').value = locationResult.address;
+    
+    // Update search input if it exists
+    const searchInput = document.getElementById('location-search');
+    if (searchInput && !searchInput.value) {
+      searchInput.value = locationResult.address;
+    }
+    
+    // Show confirmation
+    this.showLocationConfirmation(locationResult);
+  },
+
+  // Show location confirmation
+  showLocationConfirmation: function(locationResult) {
+    const confirmationDiv = document.getElementById('location-confirmation');
+    if (confirmationDiv) {
+      confirmationDiv.innerHTML = `
+        <div style="
+          background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+          border: 2px solid #86efac;
+          border-radius: 12px;
+          padding: 16px;
+          margin-top: 12px;
+          color: #166534;
+        ">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-size: 1.5rem;">📍</div>
+            <div>
+              <div style="font-weight: 600; margin-bottom: 4px;">Location Selected</div>
+              <div style="font-size: 0.9rem; opacity: 0.8;">${locationResult.address}</div>
+              <div style="font-size: 0.8rem; opacity: 0.6;">
+                ${locationResult.lat.toFixed(6)}, ${locationResult.lng.toFixed(6)}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      confirmationDiv.style.display = 'block';
+    }
+  },
+
+  // Enable location picker manually
+  enableLocationPicker: function() {
+    if (this.venueLocationMap) {
+      console.log("🖱️ Enabling manual location picker");
+      MapService.enableVenueLocationPicker(this.venueLocationMap, (locationResult, marker) => {
+        this.handleLocationSelected(locationResult, marker);
+      });
+    } else {
+      console.error("❌ Map not initialized");
+    }
+  },
+
+  // Get current location
+  getCurrentLocation: async function() {
+    try {
+      console.log("📱 Getting current location...");
+      
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Geolocation is not supported by this browser"));
+          return;
+        }
+        
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        });
+      });
+      
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      
+      console.log("📍 Current location:", { lat, lng });
+      
+      // Reverse geocode to get address
+      const locationInfo = await MapService.reverseGeocode(lng, lat);
+      
+      const locationResult = {
+        coordinates: [lng, lat],
+        lat: lat,
+        lng: lng,
+        address: locationInfo ? (locationInfo.Place?.Label || 'Current location') : 'Current location',
+        country: locationInfo ? locationInfo.Place?.Country : null,
+        region: locationInfo ? locationInfo.Place?.Region : null
+      };
+      
+      // Fly to location and add marker
+      if (this.venueLocationMap) {
+        this.venueLocationMap.flyTo({
+          center: [lng, lat],
+          zoom: 15
+        });
+        
+        this.handleLocationSelected(locationResult);
+      }
+      
+    } catch (error) {
+      console.error("❌ Failed to get current location:", error);
+      alert("Unable to get your current location. Please try searching for your location or clicking on the map.");
     }
   },
 

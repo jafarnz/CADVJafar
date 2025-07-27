@@ -442,14 +442,14 @@ const EventsPage = {
     });
   },
 
-  // Show event details in modal
+  // Show event details with venue map
   showEventDetails: function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
     );
     if (!event) return;
 
-    const venue = this.venues.find((v) => v.venueID === event.venueID);
+    const venue = this.venues.find((v) => v.venueID === event.venueID || v.venueId === event.venueID);
     const modal = document.getElementById("event-details-modal");
     const content = document.getElementById("event-details-content");
 
@@ -481,6 +481,29 @@ const EventsPage = {
         </div>
       </div>
 
+      ${venue ? `
+        <!-- Venue Map -->
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
+            🗺️ Venue Location
+          </h4>
+          <div id="event-venue-map" style="
+            height: 300px; 
+            width: 100%; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px; 
+            background: #f8fafc;
+          ">
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #64748b;">
+              <div style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🗺️</div>
+                <p style="margin: 0; font-weight: 600;">Loading venue map...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
       ${
         event.description
           ? `
@@ -501,25 +524,93 @@ const EventsPage = {
           </button>
         `
             : `
-          <button class="btn btn-secondary" disabled>Event Has Passed</button>
-        `
-        }
-        ${
-          venue && venue.latitude && venue.longitude
-            ? `
-          <button onclick="MapService.showDirections(${venue.latitude}, ${venue.longitude}, '${Utils.sanitizeInput(venue.name).replace(/'/g, "\\'")}')" class="btn btn-secondary">
-            Get Directions
+          <button class="btn btn-secondary" disabled style="padding: 0.75rem 2rem;">
+            Event Ended
           </button>
         `
-            : ""
         }
-        <button onclick="Utils.copyToClipboard(window.location.href + '?event=${event.eventID}')" class="btn btn-secondary">
-          Share Event
+        <button onclick="document.getElementById('event-details-modal').style.display='none'" class="btn btn-secondary" style="padding: 0.75rem 2rem;">
+          Close
         </button>
       </div>
     `;
 
     modal.style.display = "block";
+
+    // Initialize venue map if venue has coordinates
+    if (venue && (venue.coordinates || (venue.latitude && venue.longitude))) {
+      setTimeout(async () => {
+        try {
+          await this.initializeEventVenueMap(venue);
+        } catch (error) {
+          console.error("❌ Failed to initialize venue map:", error);
+        }
+      }, 100);
+    }
+  },
+  
+  // Initialize map for event venue
+  initializeEventVenueMap: async function(venue) {
+    try {
+      console.log("🗺️ Initializing event venue map for:", venue.name);
+      
+      // Get coordinates
+      let coordinates;
+      if (venue.coordinates && Array.isArray(venue.coordinates)) {
+        coordinates = venue.coordinates; // [lng, lat]
+      } else if (venue.latitude && venue.longitude) {
+        coordinates = [parseFloat(venue.longitude), parseFloat(venue.latitude)];
+      } else {
+        throw new Error("No valid coordinates found for venue");
+      }
+      
+      // Initialize map
+      const map = await MapService.initializeVenueMap('event-venue-map', {
+        center: coordinates,
+        zoom: 15
+      });
+      
+      // Add venue marker with popup
+      const popupContent = `
+        <div style="text-align: center; padding: 8px;">
+          <h4 style="margin: 0 0 8px 0; color: #1e293b;">${venue.name}</h4>
+          ${venue.address ? `<p style="margin: 0; color: #64748b; font-size: 0.9rem;">${venue.address}</p>` : ''}
+        </div>
+      `;
+      
+      MapService.addMarker(map, {
+        lng: coordinates[0],
+        lat: coordinates[1],
+        popup: popupContent
+      });
+      
+      console.log("✅ Event venue map initialized successfully");
+      
+    } catch (error) {
+      console.error("❌ Failed to initialize event venue map:", error);
+      
+      // Show error in map container
+      const mapContainer = document.getElementById('event-venue-map');
+      if (mapContainer) {
+        mapContainer.innerHTML = `
+          <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-radius: 10px;
+            color: #991b1b;
+          ">
+            <div style="text-align: center;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
+              <p style="margin: 0; font-weight: 600;">Map Unavailable</p>
+              <p style="margin: 0; font-size: 0.8rem; opacity: 0.8;">Venue location could not be displayed</p>
+            </div>
+          </div>
+        `;
+      }
+    }
   },
 
   // Join an event
