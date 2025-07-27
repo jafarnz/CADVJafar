@@ -480,6 +480,10 @@ const EventsPage = {
                                         style="background: #3b82f6; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-top: 0.5rem;">
                                     View Details
                                 </button>
+                                <button onclick="EventsPage.openEventInGoogleMaps('${event.eventID}')" 
+                                        style="background: #4285f4; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-top: 0.5rem; margin-left: 0.5rem;">
+                                    📍 Maps
+                                </button>
                             </div>
                         `))
                         .addTo(MapService.map);
@@ -824,6 +828,39 @@ const EventsPage = {
 
     const venueSelectField = form.querySelector("#venue-select");
     if (venueSelectField) venueSelectField.value = event.venueID || '';
+  },
+
+  // Open event location in Google Maps
+  openEventInGoogleMaps: function(eventId) {
+    const event = this.events.find(e => e.eventID.toString() === eventId.toString());
+    if (!event) {
+      alert('Event not found');
+      return;
+    }
+    
+    const venue = this.venues.find(v => v.venueID === event.venueID);
+    if (!venue) {
+      alert('Venue information not available for this event');
+      return;
+    }
+    
+    const lat = venue.latitude;
+    const lng = venue.longitude;
+    const eventName = event.name || 'Event';
+    const venueName = venue.name || 'Venue';
+    const address = venue.address || '';
+    
+    if (lat && lng) {
+      // Use coordinates for precise location
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(eventName + ' at ' + venueName)}`;
+      window.open(googleMapsUrl, '_blank');
+    } else if (address) {
+      // Fallback to address search
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', Singapore')}`;
+      window.open(googleMapsUrl, '_blank');
+    } else {
+      alert('Location information not available for this event');
+    }
   },
 
   // Toggle to map view

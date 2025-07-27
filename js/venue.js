@@ -460,6 +460,10 @@ const VenuesPage = {
                                             style="background: #3b82f6; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
                                         View Details
                                     </button>
+                                    <button onclick="VenuesPage.openVenueInGoogleMaps('${venue.venueID || venue.venueId}')" 
+                                            style="background: #4285f4; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                        📍 Maps
+                                    </button>
                                     <button onclick="VenuesPage.createEventAtVenue('${venue.venueID || venue.venueId}')" 
                                             style="background: #10b981; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
                                         Create Event
@@ -506,6 +510,32 @@ const VenuesPage = {
             }
         },
 
+        // Open venue in Google Maps
+        openVenueInGoogleMaps: function(venueId) {
+            const venue = this.venues.find(v => (v.venueID || v.venueId) === venueId);
+            if (!venue) {
+                alert('Venue not found');
+                return;
+            }
+            
+            const lat = venue.latitude;
+            const lng = venue.longitude;
+            const name = venue.name || 'Venue';
+            const address = venue.address || '';
+            
+            if (lat && lng) {
+                // Use coordinates for precise location
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(name)}`;
+                window.open(googleMapsUrl, '_blank');
+            } else if (address) {
+                // Fallback to address search
+                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', Singapore')}`;
+                window.open(googleMapsUrl, '_blank');
+            } else {
+                alert('Location information not available for this venue');
+            }
+        },
+
         // Create HTML for venue card
         createVenueCard: function(venue) {
                 const capacity = venue.capacity || 0;
@@ -536,11 +566,13 @@ const VenuesPage = {
               <button class="btn btn-secondary view-details-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation(); VenuesPage.goToVenueDetails('${venue.venueID}')">
                 View Details
               </button>
-              <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();">
-                Edit
+              <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();" 
+                      style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                ✏️ Edit
               </button>
-              <button class="delete-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();">
-                Delete
+              <button class="delete-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();" 
+                      style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                🗑️ Delete
               </button>
             </div>
           </div>
@@ -637,15 +669,24 @@ const VenuesPage = {
     if (title) title.textContent = "Edit Venue";
     if (submitBtn) submitBtn.textContent = "Update Venue";
 
-    // Populate form with venue data
-    document.getElementById("venueID").value = venue.venueID;
-    document.getElementById("venueName").value = venue.name;
-    document.getElementById("venueAddress").value = venue.address;
-    document.getElementById("venueDescription").value = venue.description || "";
-    document.getElementById("venueCapacity").value = venue.capacity || "";
-    document.getElementById("venueType").value = venue.type || "";
-    document.getElementById("venueLatitude").value = venue.latitude || "";
-    document.getElementById("venueLongitude").value = venue.longitude || "";
+    // Populate form with venue data - using correct field IDs
+    const venueIdField = document.getElementById("venueID");
+    const venueNameField = document.getElementById("venueName");
+    const venueAddressField = document.getElementById("venue-address");
+    const venueDescriptionField = document.getElementById("venueDescription");
+    const venueCapacityField = document.getElementById("venueCapacity");
+    const venueTypeField = document.getElementById("venueType");
+    const venueLatitudeField = document.getElementById("venue-latitude");
+    const venueLongitudeField = document.getElementById("venue-longitude");
+
+    if (venueIdField) venueIdField.value = venue.venueID;
+    if (venueNameField) venueNameField.value = venue.name || "";
+    if (venueAddressField) venueAddressField.value = venue.address || "";
+    if (venueDescriptionField) venueDescriptionField.value = venue.description || "";
+    if (venueCapacityField) venueCapacityField.value = venue.capacity || "";
+    if (venueTypeField) venueTypeField.value = venue.type || "";
+    if (venueLatitudeField) venueLatitudeField.value = venue.latitude || "";
+    if (venueLongitudeField) venueLongitudeField.value = venue.longitude || "";
 
     modal.style.display = "block";
   },
@@ -1197,14 +1238,23 @@ const VenuesPage = {
       this.addLocationPulseEffect(locationResult.lng, locationResult.lat);
     }, 1000);
     
-    // Update form fields
-    const latInput = document.getElementById('venueLatitude') || document.getElementById('latitude');
-    const lngInput = document.getElementById('venueLongitude') || document.getElementById('longitude'); 
-    const addressInput = document.getElementById('venueAddress') || document.getElementById('address');
+    // Update form fields with all possible field IDs
+    const latInput = document.getElementById('venue-latitude') || document.getElementById('venueLatitude') || document.getElementById('latitude');
+    const lngInput = document.getElementById('venue-longitude') || document.getElementById('venueLongitude') || document.getElementById('longitude'); 
+    const addressInput = document.getElementById('venue-address') || document.getElementById('venueAddress') || document.getElementById('address');
     
-    if (latInput) latInput.value = locationResult.lat;
-    if (lngInput) lngInput.value = locationResult.lng;
-    if (addressInput) addressInput.value = locationResult.address;
+    if (latInput) {
+      latInput.value = locationResult.lat || locationResult.coordinates[1];
+      console.log('✅ Latitude updated:', latInput.value);
+    }
+    if (lngInput) {
+      lngInput.value = locationResult.lng || locationResult.coordinates[0];
+      console.log('✅ Longitude updated:', lngInput.value);
+    }
+    if (addressInput) {
+      addressInput.value = locationResult.address;
+      console.log('✅ Address updated:', addressInput.value);
+    }
     
     // Update search input if it exists
     const searchInput = document.getElementById('location-search');
