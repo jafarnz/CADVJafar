@@ -410,7 +410,14 @@ const EditVenue = {
     async updateVenue(venueData) {
         try {
             const userData = Utils.getCurrentUser();
+            console.log('Current user data for venue update:', userData);
+            
             if (!userData || !userData.user_id) {
+                console.error('Authentication check failed:', {
+                    userData: userData,
+                    hasUserId: !!(userData && userData.user_id),
+                    isAuthenticated: Utils.isAuthenticated()
+                });
                 throw new Error('User not authenticated');
             }
 

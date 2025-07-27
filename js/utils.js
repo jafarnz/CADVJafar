@@ -394,8 +394,26 @@ const Utils = {
 
     // Get current user data
     getCurrentUser: function() {
+        // First try to get from localStorage
         const userData = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_DATA);
-        return userData ? JSON.parse(userData) : null;
+        if (userData) {
+            const parsed = JSON.parse(userData);
+            // Ensure user_id is available (map from sub if needed)
+            if (parsed && !parsed.user_id && parsed.sub) {
+                parsed.user_id = parsed.sub;
+            }
+            return parsed;
+        }
+        
+        // Fallback to token parsing if no localStorage data
+        const tokenUser = this.getUserFromToken();
+        if (tokenUser) {
+            // Store in localStorage for future use
+            localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(tokenUser));
+            return tokenUser;
+        }
+        
+        return null;
     },
 
     // Logout user
