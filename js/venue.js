@@ -430,10 +430,20 @@ const VenuesPage = {
                 const capacity = venue.capacity || 0;
                 const capacityClass = capacity <= 500 ? "small" : capacity <= 2000 ? "medium" : "large";
                 const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
-                const imageUrl = venue.imageUrl || "/api/placeholder/350/180";
+                
+                // Fix image URL - handle S3 URLs properly
+                let imageUrl = "/api/placeholder/350/180";
+                if (venue.imageUrl) {
+                    if (venue.imageUrl.startsWith('http')) {
+                        imageUrl = venue.imageUrl;
+                    } else {
+                        // Handle S3 paths
+                        imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
+                    }
+                }
 
                 return `
-      <div class="venue-card" data-venue-id="${venue.venueID}">
+      <div class="venue-card" data-venue-id="${venue.venueID}" onclick="VenuesPage.goToVenueDetails('${venue.venueID}')">
         <img src="${imageUrl}" alt="${Utils.sanitizeInput(venue.name)}" class="venue-card-image"
              onerror="this.src='/api/placeholder/350/180'">
         <div class="venue-card-content">
@@ -450,13 +460,13 @@ const VenuesPage = {
               ${venue.type ? `<span class="type-badge">${Utils.capitalize(venue.type.replace('-', ' '))}</span>` : ""}
             </div>
             <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary view-details-btn" data-venue-id="${venue.venueID}">
+              <button class="btn btn-secondary view-details-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation(); VenuesPage.goToVenueDetails('${venue.venueID}')">
                 View Details
               </button>
-              <button class="edit-btn" data-venue-id="${venue.venueID}">
+              <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();">
                 Edit
               </button>
-              <button class="delete-btn" data-venue-id="${venue.venueID}">
+              <button class="delete-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();">
                 Delete
               </button>
             </div>
@@ -1456,6 +1466,13 @@ const VenuesPage = {
     if (btn) {
       btn.textContent = "📍 Click on Map to Select Location";
       btn.style.background = "#007cbf";
+    }
+  },
+
+  // Navigate to venue details page
+  goToVenueDetails: function(venueId) {
+    if (venueId) {
+      window.location.href = `venue-details.html?id=${venueId}`;
     }
   },
 

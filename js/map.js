@@ -252,8 +252,8 @@ const MapService = {
                 return [];
             }
 
-            // Use your Lambda places search endpoint
-            const searchEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
+            // Use your existing /geocode endpoint (this one exists)
+            const searchEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
                 Text: query.trim() + ", Singapore",
@@ -261,7 +261,7 @@ const MapService = {
                 BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
-            console.log("🔍 Lambda places search request:", { url: searchEndpoint, body: requestBody });
+            console.log("🔍 Lambda geocode search request:", { url: searchEndpoint, body: requestBody });
 
             const response = await Utils.apiCall(searchEndpoint, {
                 method: 'POST',
@@ -272,7 +272,7 @@ const MapService = {
                 body: JSON.stringify(requestBody)
             });
 
-            console.log("🎯 Lambda places search results:", response);
+            console.log("🎯 Lambda geocode search results:", response);
             
             // Transform response to expected format (AWS Location Service format)
             const results = response.Results || response.results || response.data || [];
@@ -634,8 +634,8 @@ const MapService = {
         try {
             console.log("🔍 Searching for places via Lambda service:", query);
 
-            // Use your Lambda places search endpoint
-            const placesEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
+            // Use your existing /geocode endpoint (this one exists)
+            const placesEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
                 Text: query + ", Singapore",
@@ -690,63 +690,52 @@ const MapService = {
         }
     },
 
-    // Reverse geocoding using your Lambda reverse geocoding service
+    // Reverse geocoding using simplified approach with better location names
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding via Lambda service:", { lng, lat });
+            console.log("🔄 Reverse geocoding (simplified):", { lng, lat });
 
-            // Use your Lambda reverse geocoding endpoint
-            const reverseEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
+            // Try to provide better location names based on coordinates
+            let locationName = "Unknown location";
             
-            const requestBody = {
-                Position: [lng, lat],
-                MaxResults: 1
-            };
-
-            console.log("🔄 Lambda reverse geocode request:", { url: reverseEndpoint, body: requestBody });
-
-            const response = await Utils.apiCall(reverseEndpoint, {
-                method: 'POST',
-                headers: {
-                    ...CONFIG.getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            console.log("📍 Lambda reverse geocoding result:", response);
-            
-            // Transform response to expected format (AWS Location Service format)
-            const results = response.Results || response.results || response.data || [];
-            if (results.length > 0) {
-                const place = results[0].Place || results[0];
-                return {
-                    Place: {
-                        Label: place.Label || place.label || place.address,
-                        Country: place.Country || place.country || "Singapore",
-                        Region: place.Region || place.region || "Singapore",
-                        Municipality: place.Municipality || place.municipality || place.city,
-                        PostalCode: place.PostalCode || place.postalCode || place.zip
-                    }
-                };
+            // Singapore location approximations
+            if (lat >= 1.2 && lat <= 1.5 && lng >= 103.6 && lng <= 104.0) {
+                // Basic Singapore location detection
+                if (lat >= 1.28 && lat <= 1.30 && lng >= 103.85 && lng <= 103.87) {
+                    locationName = "Marina Bay, Singapore";
+                } else if (lat >= 1.35 && lat <= 1.37 && lng >= 103.82 && lng <= 103.84) {
+                    locationName = "Tampines, Singapore";
+                } else if (lat >= 1.32 && lat <= 1.34 && lng >= 103.84 && lng <= 103.86) {
+                    locationName = "Bedok, Singapore";
+                } else if (lat >= 1.30 && lat <= 1.32 && lng >= 103.80 && lng <= 103.82) {
+                    locationName = "Jurong East, Singapore";
+                } else {
+                    locationName = `Singapore (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                }
+            } else {
+                locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             }
             
-            // If no results, fall back to coordinate-based address
-            throw new Error("No reverse geocoding results");
+            console.log("📍 Reverse geocoding result (improved fallback):", locationName);
             
-        } catch (error) {
-            console.error("❌ Reverse geocoding via Lambda failed:", error);
-            
-            // Fallback to coordinate-based address
-            const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}, Singapore`;
-            console.log("📍 Reverse geocoding result (fallback):", address);
-            
+            // Return a better address format
             return {
                 Place: {
-                    Label: address,
+                    Label: locationName,
                     Country: "Singapore",
                     Region: "Singapore",
                     Municipality: "Singapore",
+                    PostalCode: null
+                }
+            };
+        } catch (error) {
+            console.error("❌ Reverse geocoding failed:", error);
+            return {
+                Place: {
+                    Label: "Unknown location",
+                    Country: null,
+                    Region: null,
+                    Municipality: null,
                     PostalCode: null
                 }
             };

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Venue Details - Local Gigs</title>
+        <link rel="stylesheet" href="css/style.css" />
+        
+        <!-- MapLibre GL CSS -->
+        <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+        
+        <!-- AWS SDK for Location Service -->
+        <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+        
+        <!-- MapLibre GL JS -->
+        <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+        
+        <style>
+            .venue-details-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                margin-top: 20px;
+            }
+            
+            .venue-header {
+                display: grid;
+                grid-template-columns: 1fr 400px;
+                gap: 30px;
+                margin-bottom: 30px;
+            }
+            
+            .venue-info {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .venue-title {
+                font-size: 2.5rem;
+                font-weight: bold;
+                color: #2d3748;
+                margin: 0;
+            }
+            
+            .venue-type {
+                display: inline-block;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                width: fit-content;
+            }
+            
+            .venue-address {
+                font-size: 1.1rem;
+                color: #4a5568;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .venue-contact {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .contact-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #4a5568;
+            }
+            
+            .venue-image {
+                width: 100%;
+                height: 300px;
+                object-fit: cover;
+                border-radius: 12px;
+                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #a0aec0;
+                font-size: 1.2rem;
+                border: 2px dashed #e2e8f0;
+            }
+            
+            .venue-description {
+                background: #f7fafc;
+                padding: 20px;
+                border-radius: 12px;
+                margin: 20px 0;
+                border-left: 4px solid #667eea;
+            }
+            
+            .venue-map {
+                height: 400px;
+                border-radius: 12px;
+                margin: 20px 0;
+                border: 2px solid #e2e8f0;
+            }
+            
+            .back-button {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+                color: white;
+                padding: 12px 20px;
+                border: none;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                margin-bottom: 20px;
+            }
+            
+            .back-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+                color: white;
+                text-decoration: none;
+            }
+            
+            .loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 400px;
+                color: #a0aec0;
+                font-size: 1.2rem;
+            }
+            
+            .error {
+                background: #fed7d7;
+                border: 2px solid #feb2b2;
+                color: #c53030;
+                padding: 20px;
+                border-radius: 12px;
+                text-align: center;
+                margin: 20px 0;
+            }
+            
+            @media (max-width: 768px) {
+                .venue-header {
+                    grid-template-columns: 1fr;
+                    gap: 20px;
+                }
+                
+                .venue-title {
+                    font-size: 2rem;
+                }
+                
+                .venue-details-container {
+                    margin: 10px;
+                    padding: 15px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="navbar-brand">
+                    <a href="dashboard.html">🎵 Local Gigs</a>
+                </div>
+                <ul class="navbar-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="events.html">Events</a></li>
+                    <li><a href="venues.html" class="active">Venues</a></li>
+                    <li><a href="profile.html">Profile</a></li>
+                    <li><a href="#" onclick="Auth.logout()">Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container">
+            <a href="venues.html" class="back-button">
+                ← Back to Venues
+            </a>
+            
+            <div id="venue-details" class="venue-details-container">
+                <div class="loading">
+                    <div>Loading venue details...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="js/config.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/map.js"></script>
+        
+        <script>
+            // Venue Details Controller
+            const VenueDetails = {
+                venue: null,
+                map: null,
+                
+                async init() {
+                    try {
+                        // Check authentication
+                        if (!Auth.isAuthenticated()) {
+                            window.location.href = 'login.html';
+                            return;
+                        }
+                        
+                        // Get venue ID from URL
+                        const venueId = this.getVenueIdFromUrl();
+                        if (!venueId) {
+                            this.showError('No venue ID specified');
+                            return;
+                        }
+                        
+                        // Load venue details
+                        await this.loadVenueDetails(venueId);
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to initialize venue details:', error);
+                        this.showError('Failed to initialize page');
+                    }
+                },
+                
+                getVenueIdFromUrl() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    return urlParams.get('id');
+                },
+                
+                async loadVenueDetails(venueId) {
+                    try {
+                        console.log('🏪 Loading venue details for ID:', venueId);
+                        
+                        const response = await Utils.apiCall(
+                            CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES + '/' + venueId), 
+                            {
+                                method: 'GET',
+                                headers: CONFIG.getAuthHeaders()
+                            }
+                        );
+                        
+                        console.log('✅ Venue details loaded:', response);
+                        
+                        // Handle wrapped response
+                        this.venue = response.venue || response.message?.venue || response.Item || response;
+                        
+                        if (this.venue && this.venue.venueId) {
+                            this.renderVenueDetails();
+                            await this.initializeMap();
+                        } else {
+                            this.showError('Venue not found');
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to load venue details:', error);
+                        this.showError('Failed to load venue details');
+                    }
+                },
+                
+                renderVenueDetails() {
+                    const container = document.getElementById('venue-details');
+                    
+                    // Build image URL
+                    let imageHtml = '';
+                    if (this.venue.imageUrl) {
+                        // Handle both S3 URLs and regular URLs
+                        const imageUrl = this.venue.imageUrl.startsWith('http') 
+                            ? this.venue.imageUrl 
+                            : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${this.venue.imageUrl}`;
+                        
+                        imageHtml = `<img src="${imageUrl}" alt="${this.venue.name}" class="venue-image" 
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                                    <div style="display: none;" class="venue-image">📷 No Image Available</div>`;
+                    } else {
+                        imageHtml = '<div class="venue-image">📷 No Image Available</div>';
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="venue-header">
+                            <div class="venue-info">
+                                <h1 class="venue-title">${this.venue.name || 'Unnamed Venue'}</h1>
+                                <div class="venue-type">${this.venue.type || 'Unknown Type'}</div>
+                                
+                                ${this.venue.address ? `
+                                    <div class="venue-address">
+                                        📍 ${this.venue.address}
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="venue-contact">
+                                    ${this.venue.phone ? `
+                                        <div class="contact-item">
+                                            📞 <a href="tel:${this.venue.phone}">${this.venue.phone}</a>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${this.venue.email ? `
+                                        <div class="contact-item">
+                                            ✉️ <a href="mailto:${this.venue.email}">${this.venue.email}</a>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${this.venue.website ? `
+                                        <div class="contact-item">
+                                            🌐 <a href="${this.venue.website}" target="_blank">${this.venue.website}</a>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                ${imageHtml}
+                            </div>
+                        </div>
+                        
+                        ${this.venue.description ? `
+                            <div class="venue-description">
+                                <h3>About This Venue</h3>
+                                <p>${this.venue.description}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="venue-map" id="venue-map"></div>
+                    `;
+                },
+                
+                async initializeMap() {
+                    try {
+                        console.log('🗺️ Initializing venue map...');
+                        
+                        // Get venue coordinates
+                        let coordinates = [103.8198, 1.3521]; // Default Singapore
+                        
+                        if (this.venue.coordinates) {
+                            if (Array.isArray(this.venue.coordinates)) {
+                                coordinates = this.venue.coordinates;
+                            } else if (this.venue.coordinates.lng && this.venue.coordinates.lat) {
+                                coordinates = [this.venue.coordinates.lng, this.venue.coordinates.lat];
+                            }
+                        } else if (this.venue.lng && this.venue.lat) {
+                            coordinates = [this.venue.lng, this.venue.lat];
+                        } else if (this.venue.latitude && this.venue.longitude) {
+                            coordinates = [this.venue.longitude, this.venue.latitude];
+                        }
+                        
+                        // Initialize map
+                        this.map = await MapService.initializeVenueMap('venue-map', {
+                            center: coordinates,
+                            zoom: 15
+                        });
+                        
+                        // Add venue marker
+                        const marker = new window.maplibregl.Marker({ 
+                            color: '#ff6b6b',
+                            scale: 1.2
+                        })
+                        .setLngLat(coordinates)
+                        .setPopup(new window.maplibregl.Popup().setHTML(`
+                            <div class="venue-popup">
+                                <h3>${this.venue.name}</h3>
+                                <p><strong>Type:</strong> ${this.venue.type}</p>
+                                ${this.venue.address ? `<p>${this.venue.address}</p>` : ''}
+                            </div>
+                        `))
+                        .addTo(this.map);
+                        
+                        console.log('✅ Venue map initialized with marker');
+                        
+                    } catch (error) {
+                        console.error('❌ Failed to initialize map:', error);
+                        document.getElementById('venue-map').innerHTML = `
+                            <div class="error">
+                                <h3>Map Unavailable</h3>
+                                <p>Unable to load map for this venue</p>
+                            </div>
+                        `;
+                    }
+                },
+                
+                showError(message) {
+                    const container = document.getElementById('venue-details');
+                    container.innerHTML = `
+                        <div class="error">
+                            <h3>Error</h3>
+                            <p>${message}</p>
+                            <a href="venues.html" class="back-button" style="margin-top: 15px;">
+                                ← Back to Venues
+                            </a>
+                        </div>
+                    `;
+                }
+            };
+            
+            // Initialize when page loads
+            document.addEventListener('DOMContentLoaded', () => {
+                VenueDetails.init();
+            });
+        </script>
+    </body>
+</html>
