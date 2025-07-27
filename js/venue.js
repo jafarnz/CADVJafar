@@ -584,9 +584,12 @@ const VenuesPage = {
 
       // Handle image upload if present
       const imageFile = formData.get("image");
+      let venueID = this.editingVenue ? this.editingVenue.venueID : CONFIG.generateVenueID();
+      
       if (imageFile && imageFile.size > 0) {
         try {
-          imageUrl = await Utils.uploadImage(imageFile, "venues");
+          // Upload with venue ID correlation
+          imageUrl = await Utils.uploadImageWithId(imageFile, "venues", venueID);
         } catch (error) {
           console.error("Image upload failed:", error);
           Utils.showError(
@@ -616,7 +619,7 @@ const VenuesPage = {
       }
 
       const venueData = {
-        venueID: this.editingVenue ? this.editingVenue.venueID : CONFIG.generateVenueID(),
+        venueID: venueID,
         name: formData.get("name"),
         address: formData.get("address"),
         description: formData.get("description") || null,

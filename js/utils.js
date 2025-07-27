@@ -1048,6 +1048,95 @@ const Utils = {
             });
         },
     },
+
+    // Upload image with specific ID correlation for better file organization
+    uploadImageWithId: async function(file, folder, entityId) {
+        folder = folder || "events";
+
+        try {
+            // Validate file
+            if (!file || !file.type.startsWith("image/")) {
+                throw new Error("Please select a valid image file");
+            }
+
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error("Image must be smaller than 5MB");
+            }
+
+            // Convert to base64
+            const base64Result = await Utils.fileToBase64(file);
+            const base64Data = base64Result.split(",")[1]; // Remove data:image/jpeg;base64, prefix
+
+            // Generate filename with entity ID correlation
+            const timestamp = Date.now();
+            const fileExtension = file.name.split(".").pop();
+            const fileName = `${folder}_${entityId}_${timestamp}.${fileExtension}`;
+
+            // Get current user ID for upload tracking
+            const currentUser = Utils.getCurrentUser();
+            const userID = currentUser ? currentUser.sub : null;
+
+            // Prepare upload data matching Lambda function expectations
+            const uploadData = {
+                bucket: "local-gigs-static",
+                folder: folder,
+                fileName: fileName,
+                fileType: file.type,
+                fileData: base64Data,
+                fileSize: file.size,
+                userID: userID, // Include user ID for tracking
+                entityId: entityId, // Include entity ID for correlation
+            };
+
+            console.log("🔄 Uploading image with ID correlation:", {
+                fileName: fileName,
+                fileType: file.type,
+                fileSize: file.size,
+                folder: folder,
+                entityId: entityId
+            });
+
+            // Upload via API Gateway
+            const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.UPLOAD);
+            const response = await Utils.apiCall(url, {
+                method: "POST",
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify(uploadData),
+            });
+
+            console.log("📤 Upload response:", response);
+
+            // Handle different response formats from Lambda
+            if (response && response.imageUrl) {
+                console.log("✅ Image uploaded successfully with ID correlation:", response.imageUrl);
+                return response.imageUrl;
+            } else if (response && response.url) {
+                console.log("✅ Image uploaded successfully with ID correlation:", response.url);
+                return response.url;
+            } else if (response && response.message) {
+                // Handle wrapped response (Lambda returns stringified JSON in message field)
+                try {
+                    const parsedResponse = JSON.parse(response.message);
+                    if (parsedResponse.imageUrl) {
+                        console.log("✅ Image uploaded successfully with ID correlation (parsed):", parsedResponse.imageUrl);
+                        return parsedResponse.imageUrl;
+                    } else if (parsedResponse.url) {
+                        console.log("✅ Image uploaded successfully with ID correlation (parsed):", parsedResponse.url);
+                        return parsedResponse.url;
+                    }
+                } catch (parseError) {
+                    console.error("❌ Failed to parse upload response message:", parseError);
+                }
+            }
+
+            console.error("❌ Unexpected upload response:", response);
+            throw new Error("Upload succeeded but no image URL returned");
+        } catch (error) {
+            console.error("Image upload with ID correlation failed:", error);
+            throw error;
+        }
+    }
 };
 
 // Export for use in other modules

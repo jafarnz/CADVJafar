@@ -256,9 +256,9 @@ const MapService = {
             const searchEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
-                Text: query.trim() + ", Singapore",
-                MaxResults: 10,
-                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+                address: query.trim() + ", Singapore",  // Lambda expects 'address', not 'Text'
+                maxResults: 10,
+                biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
             console.log("🔍 Lambda geocode search request:", { url: searchEndpoint, body: requestBody });
@@ -274,15 +274,26 @@ const MapService = {
 
             console.log("🎯 Lambda geocode search results:", response);
             
-            // Transform response to expected format (AWS Location Service format)
-            const results = response.Results || response.results || response.data || [];
-            return results.map(place => ({
-                label: place.Place?.Label || place.label || place.address,
-                coordinates: place.Place?.Geometry?.Point || place.coordinates,
-                country: place.Place?.Country || place.country || 'Singapore',
-                region: place.Place?.Region || place.region,
-                address: place.Place?.Label || place.label || place.address
-            }));
+            // Transform response to expected format (Lambda returns different structure)
+            if (response.latitude && response.longitude) {
+                return [{
+                    label: response.formatted || response.address,
+                    coordinates: [response.longitude, response.latitude],
+                    country: response.country || 'Singapore',
+                    region: response.region,
+                    address: response.formatted || response.address
+                }];
+            } else {
+                // Handle array results if any
+                const results = response.results || response.data || [];
+                return results.map(place => ({
+                    label: place.label || place.formatted || place.address,
+                    coordinates: [place.longitude, place.latitude],
+                    country: place.country || 'Singapore',
+                    region: place.region,
+                    address: place.label || place.formatted || place.address
+                }));
+            }
         } catch (error) {
             console.error("❌ Location search via Lambda failed:", error);
             
@@ -638,9 +649,9 @@ const MapService = {
             const placesEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
-                Text: query + ", Singapore",
-                MaxResults: 10,
-                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+                address: query + ", Singapore",  // Lambda expects 'address', not 'Text'
+                maxResults: 10,
+                biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
             console.log("🔍 Lambda places search request:", { url: placesEndpoint, body: requestBody });
@@ -656,20 +667,36 @@ const MapService = {
 
             console.log("🎯 Lambda places search results:", response);
             
-            // Transform response to expected format (AWS Location Service format)
-            const results = response.Results || response.results || response.data || [];
-            return results.map(place => ({
-                Place: {
-                    Label: place.Place?.Label || place.label || place.address,
-                    Geometry: {
-                        Point: place.Place?.Geometry?.Point || place.coordinates || [103.8198, 1.3521]
+            // Transform response to expected format (Lambda returns different structure)
+            if (response.latitude && response.longitude) {
+                return [{
+                    Place: {
+                        Label: response.formatted || response.address,
+                        Geometry: {
+                            Point: [response.longitude, response.latitude]
+                        },
+                        Country: response.country || "Singapore",
+                        Region: response.region || "Singapore",
+                        Municipality: response.municipality || "Singapore"
                     },
-                    Country: place.Place?.Country || place.country || "Singapore",
-                    Region: place.Place?.Region || place.region || "Singapore",
-                    Municipality: place.Place?.Municipality || place.municipality || place.city
-                },
-                Relevance: place.Relevance || place.relevance || 0.8
-            }));
+                    Relevance: response.confidence || 0.8
+                }];
+            } else {
+                // Handle array results if any
+                const results = response.results || response.data || [];
+                return results.map(place => ({
+                    Place: {
+                        Label: place.label || place.formatted,
+                        Geometry: {
+                            Point: [place.longitude, place.latitude]
+                        },
+                        Country: place.country || "Singapore",
+                        Region: place.region || "Singapore",
+                        Municipality: place.municipality || "Singapore"
+                    },
+                    Relevance: place.confidence || 0.8
+                }));
+            }
         } catch (error) {
             console.error("❌ Places search via Lambda failed:", error);
             
@@ -747,13 +774,13 @@ const MapService = {
         try {
             console.log("🏠 Geocoding address via Lambda service:", address);
 
-            // Use your Lambda geocoding endpoint
+            // Use your existing /geocode endpoint (this one exists)
             const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
-                Text: address + ", Singapore",
-                MaxResults: 1,
-                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+                address: address + ", Singapore",  // Lambda expects 'address', not 'Text'
+                maxResults: 1,
+                biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
             console.log("🏠 Lambda geocode request:", { url: geocodeEndpoint, body: requestBody });
@@ -769,19 +796,17 @@ const MapService = {
 
             console.log("📍 Lambda geocoding result:", response);
             
-            // Transform response to expected format (AWS Location Service format)
-            const results = response.Results || response.results || response.data || [];
-            if (results.length > 0) {
-                const place = results[0].Place || results[0];
+            // Transform response to expected format (Lambda returns different structure)
+            if (response.latitude && response.longitude) {
                 return {
                     Place: {
-                        Label: place.Label || place.label || place.address || address + ", Singapore",
+                        Label: response.formatted || response.address || address + ", Singapore",
                         Geometry: {
-                            Point: place.Geometry?.Point || place.coordinates || [103.8198, 1.3521]
+                            Point: [response.longitude, response.latitude]
                         },
-                        Country: place.Country || place.country || "Singapore",
-                        Region: place.Region || place.region || "Singapore",
-                        Municipality: place.Municipality || place.municipality || place.city
+                        Country: response.country || "Singapore",
+                        Region: response.region || "Singapore",
+                        Municipality: response.municipality || "Singapore"
                     }
                 };
             }
