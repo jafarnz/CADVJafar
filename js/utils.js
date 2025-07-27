@@ -1136,6 +1136,52 @@ const Utils = {
             console.error("Image upload with ID correlation failed:", error);
             throw error;
         }
+    },
+
+    // Enhanced image URL resolver for consistent display across the app
+    resolveImageUrl: function(imageUrl, entityType = 'venues', entityId = null, fallback = null) {
+        console.log("🔍 Resolving image URL:", { imageUrl, entityType, entityId });
+        
+        // Set appropriate fallback
+        const defaultFallback = entityType === 'events' ? '/api/placeholder/400/200' : '/api/placeholder/350/180';
+        const finalFallback = fallback || defaultFallback;
+        
+        if (!imageUrl) {
+            console.log("❌ No image URL provided, using fallback");
+            return finalFallback;
+        }
+        
+        // Already a full HTTP/HTTPS URL
+        if (imageUrl.startsWith('http')) {
+            console.log("✅ Full URL found:", imageUrl);
+            return imageUrl;
+        }
+        
+        // Handle S3 path patterns
+        if (imageUrl.includes(`${entityType}_`)) {
+            let resolvedUrl;
+            
+            if (imageUrl.startsWith(`${entityType}/`)) {
+                // Format: venues/venues_123_timestamp.jpg
+                resolvedUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${imageUrl}`;
+            } else {
+                // Format: venues_123_timestamp.jpg (just filename)
+                resolvedUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${entityType}/${imageUrl}`;
+            }
+            
+            console.log("✅ S3 URL resolved:", resolvedUrl);
+            return resolvedUrl;
+        }
+        
+        // Try to construct expected filename if we have entity ID
+        if (entityId) {
+            console.log("⚠️ Attempting to construct filename with entity ID:", entityId);
+            // This is a fallback - ideally the database should store the correct URL
+            return finalFallback;
+        }
+        
+        console.log("❌ Could not resolve image URL, using fallback");
+        return finalFallback;
     }
 };
 

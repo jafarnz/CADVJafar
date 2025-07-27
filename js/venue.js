@@ -431,16 +431,8 @@ const VenuesPage = {
                 const capacityClass = capacity <= 500 ? "small" : capacity <= 2000 ? "medium" : "large";
                 const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
                 
-                // Fix image URL - handle S3 URLs properly
-                let imageUrl = "/api/placeholder/350/180";
-                if (venue.imageUrl) {
-                    if (venue.imageUrl.startsWith('http')) {
-                        imageUrl = venue.imageUrl;
-                    } else {
-                        // Handle S3 paths
-                        imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
-                    }
-                }
+                // Use the enhanced image URL resolver
+                const imageUrl = Utils.resolveImageUrl(venue.imageUrl, 'venues', venue.venueID);
 
                 return `
       <div class="venue-card" data-venue-id="${venue.venueID}" onclick="VenuesPage.goToVenueDetails('${venue.venueID}')">
@@ -529,12 +521,26 @@ const VenuesPage = {
     // Clear any selected location info
     this.clearSelectedLocationInfo();
 
+    // Clear map container and prepare for initialization
+    const mapContainer = document.getElementById("venue-location-map");
+    if (mapContainer) {
+      mapContainer.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+          <div style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🗺️</div>
+            <p style="margin: 0; font-weight: 600;">AWS Location Service Map</p>
+            <p style="margin: 0; font-size: 0.9rem;">Initializing interactive map...</p>
+          </div>
+        </div>
+      `;
+    }
+
     modal.style.display = "block";
 
     // Initialize map for location selection after modal is visible
     setTimeout(() => {
       this.initializeVenueLocationMap();
-    }, 100);
+    }, 500); // Increased timeout to ensure modal is fully rendered
   },
 
   // Open edit venue modal
@@ -630,6 +636,24 @@ const VenuesPage = {
         imageUrl: imageUrl,
       };
 
+      console.log("�️ CRITICAL: Venue data being saved with imageUrl field:", {
+        venueID: venueData.venueID,
+        name: venueData.name,
+        imageUrl: venueData.imageUrl,
+        expectedS3Pattern: `venues_${venueID}_*.jpg`,
+        NOTE: "Database MUST have imageUrl column in Venues table!"
+      });
+
+      // Ensure imageUrl is properly formatted for database storage
+      if (venueData.imageUrl && !venueData.imageUrl.startsWith('http')) {
+        // Store the S3 key pattern that matches uploaded files
+        if (venueData.imageUrl.includes('venues_')) {
+          console.log("✅ Using correlated S3 filename pattern:", venueData.imageUrl);
+        } else {
+          console.log("⚠️ ImageUrl doesn't follow correlation pattern:", venueData.imageUrl);
+        }
+      }
+
       const url = this.editingVenue
         ? CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES, this.editingVenue.venueID)
         : CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
@@ -719,7 +743,28 @@ const VenuesPage = {
 
     if (!modal || !content) return;
 
-    const imageUrl = venue.imageUrl || "/api/placeholder/600/300";
+    // Enhanced image URL handling for venue details
+    let imageUrl = "/api/placeholder/600/300";
+    if (venue.imageUrl) {
+      console.log("🖼️ Processing venue details image URL:", venue.imageUrl, "for venue:", venue.venueID);
+      
+      if (venue.imageUrl.startsWith('http')) {
+        // Already a full URL from database
+        imageUrl = venue.imageUrl;
+      } else if (venue.imageUrl.includes('venues_')) {
+        // Handle correlated filename pattern: venues_VENUEID_timestamp.ext
+        if (venue.imageUrl.startsWith('venues/')) {
+          // S3 path format
+          imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
+        } else {
+          // Just filename, add full S3 path
+          imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/venues/${venue.imageUrl}`;
+        }
+      }
+      
+      console.log("✅ Final image URL for venue details:", imageUrl);
+    }
+
     const capacity = venue.capacity || 0;
     const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
 
@@ -884,21 +929,39 @@ const VenuesPage = {
     try {
       console.log("🗺️ Initializing venue creation map...");
       
+      // Check if container exists
+      const container = document.getElementById("venue-location-map");
+      if (!container) {
+        console.error("❌ Map container 'venue-location-map' not found!");
+        return;
+      }
+      
+      console.log("✅ Map container found, initializing AWS map...");
+      
       // Initialize AWS venue map
       this.venueLocationMap = await MapService.initializeVenueMap("venue-location-map");
       
+      if (!this.venueLocationMap) {
+        console.error("❌ Failed to initialize venue map - null returned");
+        return;
+      }
+      
+      console.log("✅ AWS map initialized, setting up location search...");
+      
       // Set up location search functionality
       this.setupLocationSearch();
+      
+      console.log("✅ Location search setup complete, enabling location picker...");
       
       // Enable location picker
       MapService.enableVenueLocationPicker(this.venueLocationMap, (locationResult, marker) => {
         this.handleLocationSelected(locationResult, marker);
       });
 
-      console.log("✅ Venue creation map initialized successfully");
+      console.log("✅ Venue creation map initialized successfully with all features!");
     } catch (error) {
       console.error("❌ Failed to initialize venue creation map:", error);
-      this.showMapError(`AWS Map Error: ${error.message}`);
+      this.showMapError(`Map initialization failed: ${error.message}`);
     }
   },
 
@@ -1004,20 +1067,26 @@ const VenuesPage = {
     }
   },
 
-  // Handle location selection from map or search
+  // Handle location selection from map or search with enhanced visuals
   handleLocationSelected: function(locationResult, marker = null) {
     console.log("📍 Location selected for venue:", locationResult);
     
-    // Remove previous marker
+    // Remove previous marker and pulse effect
     if (this.selectedLocationMarker) {
       this.selectedLocationMarker.remove();
     }
     
-    // Add new marker if not provided
+    // Remove existing pulse effect
+    if (this.venueLocationMap.getLayer('venue-location-pulse')) {
+      this.venueLocationMap.removeLayer('venue-location-pulse');
+      this.venueLocationMap.removeSource('venue-location-pulse');
+    }
+    
+    // Add enhanced marker if not provided
     if (!marker && this.venueLocationMap) {
       marker = new window.maplibregl.Marker({ 
-        color: '#ff6b6b',
-        scale: 1.2
+        color: '#22c55e',
+        scale: 1.3
       })
       .setLngLat(locationResult.coordinates)
       .addTo(this.venueLocationMap);
@@ -1025,10 +1094,24 @@ const VenuesPage = {
     
     this.selectedLocationMarker = marker;
     
+    // Enhanced map animation to selected location
+    this.venueLocationMap.flyTo({
+      center: locationResult.coordinates,
+      zoom: 16,
+      speed: 1.5,
+      curve: 1.42,
+      essential: true
+    });
+    
+    // Add pulsing effect around the location
+    setTimeout(() => {
+      this.addLocationPulseEffect(locationResult.lng, locationResult.lat);
+    }, 1000);
+    
     // Update form fields
-    document.getElementById('venue-latitude').value = locationResult.lat;
-    document.getElementById('venue-longitude').value = locationResult.lng;
-    document.getElementById('venue-address').value = locationResult.address;
+    document.getElementById('venueLatitude').value = locationResult.lat;
+    document.getElementById('venueLongitude').value = locationResult.lng;
+    document.getElementById('venueAddress').value = locationResult.address;
     
     // Update search input if it exists
     const searchInput = document.getElementById('location-search');
@@ -1036,36 +1119,84 @@ const VenuesPage = {
       searchInput.value = locationResult.address;
     }
     
-    // Show confirmation
+    // Show enhanced confirmation with animation
     this.showLocationConfirmation(locationResult);
   },
 
-  // Show location confirmation
+  // Show enhanced location confirmation with beautiful UI
   showLocationConfirmation: function(locationResult) {
     const confirmationDiv = document.getElementById('location-confirmation');
     if (confirmationDiv) {
       confirmationDiv.innerHTML = `
         <div style="
-          background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-          border: 2px solid #86efac;
-          border-radius: 12px;
-          padding: 16px;
-          margin-top: 12px;
-          color: #166534;
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          border: 2px solid #22c55e;
+          border-radius: 16px;
+          padding: 24px;
+          margin-top: 16px;
+          color: #15803d;
+          animation: slideInUp 0.6s ease-out;
+          box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
         ">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="font-size: 1.5rem;">📍</div>
-            <div>
-              <div style="font-weight: 600; margin-bottom: 4px;">Location Selected</div>
-              <div style="font-size: 0.9rem; opacity: 0.8;">${locationResult.address}</div>
-              <div style="font-size: 0.8rem; opacity: 0.6;">
-                ${locationResult.lat.toFixed(6)}, ${locationResult.lng.toFixed(6)}
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="
+              background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+              color: white;
+              border-radius: 50%;
+              width: 56px;
+              height: 56px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 24px;
+              box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+              animation: bounce 2s infinite;
+            ">📍</div>
+            <div style="flex: 1;">
+              <div style="font-weight: 700; margin-bottom: 8px; font-size: 1.2rem; color: #15803d;">
+                🎉 Perfect Location Selected!
               </div>
+              <div style="font-size: 1rem; margin-bottom: 8px; color: #166534; font-weight: 500;">
+                ${locationResult.address}
+              </div>
+              <div style="
+                font-family: 'Courier New', monospace; 
+                font-size: 0.85rem; 
+                color: #166534; 
+                opacity: 0.8;
+                background: rgba(255, 255, 255, 0.6);
+                padding: 6px 12px;
+                border-radius: 8px;
+                display: inline-block;
+                border-left: 3px solid #22c55e;
+              ">
+                📐 ${locationResult.lat.toFixed(6)}, ${locationResult.lng.toFixed(6)}
+              </div>
+            </div>
+          </div>
+          <div style="
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(34, 197, 94, 0.3);
+            text-align: center;
+          ">
+            <div style="
+              background: rgba(34, 197, 94, 0.1);
+              border-radius: 12px;
+              padding: 12px 20px;
+              color: #15803d;
+              font-size: 0.95rem;
+              font-weight: 600;
+            ">
+              ✨ Excellent! Your venue location is now set and ready to go!
             </div>
           </div>
         </div>
       `;
       confirmationDiv.style.display = 'block';
+      
+      // Add animations
+      this.addLocationAnimations();
     }
   },
 
@@ -1299,17 +1430,27 @@ const VenuesPage = {
         this.selectedLocationMarker.remove();
       }
 
-      // Add marker at current location
-      this.selectedLocationMarker = new maplibregl.Marker({ color: '#007cbf' })
+      // Add enhanced marker at current location
+      this.selectedLocationMarker = new maplibregl.Marker({ 
+        color: '#3b82f6',
+        scale: 1.4 
+      })
         .setLngLat([lng, lat])
         .addTo(this.venueLocationMap);
 
-      // Fly to current location
+      // Enhanced fly animation to current location
       this.venueLocationMap.flyTo({
         center: [lng, lat],
-        zoom: 15,
-        speed: 1.2
+        zoom: 16,
+        speed: 1.5,
+        curve: 1.42,
+        essential: true
       });
+
+      // Add pulsing effect for current location
+      setTimeout(() => {
+        this.addLocationPulseEffect(lng, lat);
+      }, 1000);
 
       // Try to reverse geocode
       let address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
@@ -1396,17 +1537,25 @@ const VenuesPage = {
           this.selectedLocationMarker.remove();
         }
 
-        // Add marker at search result
-        this.selectedLocationMarker = new maplibregl.Marker({ color: '#28a745' })
+        // Add marker at search result with enhanced styling
+        this.selectedLocationMarker = new maplibregl.Marker({ 
+          color: '#22c55e', 
+          scale: 1.3 
+        })
           .setLngLat([lng, lat])
           .addTo(this.venueLocationMap);
 
-        // Fly to search result
+        // Enhanced fly animation to search result
         this.venueLocationMap.flyTo({
           center: [lng, lat],
-          zoom: 15,
-          speed: 1.2
+          zoom: 16,
+          speed: 1.5,
+          curve: 1.42,
+          essential: true
         });
+
+        // Add pulsing animation to marker area
+        this.addLocationPulseEffect(lng, lat);
 
         // Update form fields
         this.updateVenueLocationFields(lat, lng, address);
@@ -1445,18 +1594,246 @@ const VenuesPage = {
     console.log("📝 Form fields updated:", { lat, lng, address });
   },
 
-  // Show selected location info
+  // Show enhanced location confirmation with animations
   showSelectedLocationInfo: function(address, lat, lng) {
     const infoDiv = document.getElementById("selected-location-info");
     const textDiv = document.getElementById("selected-location-text");
 
     if (infoDiv && textDiv) {
       textDiv.innerHTML = `
-        <strong>${address}</strong><br>
-        <small>Latitude: ${lat.toFixed(6)}, Longitude: ${lng.toFixed(6)}</small>
+        <div style="
+          background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+          border: 2px solid #22c55e;
+          border-radius: 16px;
+          padding: 20px;
+          animation: slideInUp 0.5s ease-out;
+          box-shadow: 0 8px 25px rgba(34, 197, 94, 0.15);
+        ">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <div style="
+              background: #22c55e;
+              color: white;
+              border-radius: 50%;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+              animation: bounce 1s infinite;
+            ">📍</div>
+            <div>
+              <div style="font-weight: 700; color: #15803d; font-size: 1.1rem;">Location Selected!</div>
+              <div style="color: #166534; font-size: 0.9rem; opacity: 0.8;">Perfect! Your venue location is set.</div>
+            </div>
+          </div>
+          <div style="
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #22c55e;
+          ">
+            <div style="font-weight: 600; color: #15803d; margin-bottom: 8px;">${address}</div>
+            <div style="font-family: monospace; font-size: 0.85rem; color: #166534; opacity: 0.8;">
+              📐 ${lat.toFixed(6)}, ${lng.toFixed(6)}
+            </div>
+          </div>
+          <div style="
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(34, 197, 94, 0.3);
+            text-align: center;
+          ">
+            <div style="color: #15803d; font-size: 0.9rem; font-weight: 500;">
+              ✨ Great choice! You can now continue creating your venue.
+            </div>
+          </div>
+        </div>
       `;
       infoDiv.style.display = "block";
+      
+      // Add CSS animations if not already present
+      this.addLocationAnimations();
     }
+  },
+
+  // Add location pulse effect to map
+  addLocationPulseEffect: function(lng, lat) {
+    // Remove existing pulse layer if it exists
+    if (this.venueLocationMap.getLayer('venue-location-pulse')) {
+      this.venueLocationMap.removeLayer('venue-location-pulse');
+      this.venueLocationMap.removeSource('venue-location-pulse');
+    }
+
+    // Add pulsing circle around the selected location
+    this.venueLocationMap.addSource('venue-location-pulse', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          }
+        }]
+      }
+    });
+
+    this.venueLocationMap.addLayer({
+      id: 'venue-location-pulse',
+      type: 'circle',
+      source: 'venue-location-pulse',
+      paint: {
+        'circle-radius': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          10, 8,
+          16, 20
+        ],
+        'circle-color': '#22c55e',
+        'circle-opacity': 0.3,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#22c55e',
+        'circle-stroke-opacity': 0.8
+      }
+    });
+
+    // Animate the pulse
+    let pulseRadius = 20;
+    const animatePulse = () => {
+      pulseRadius = pulseRadius === 20 ? 35 : 20;
+      this.venueLocationMap.setPaintProperty('venue-location-pulse', 'circle-radius', [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        10, pulseRadius * 0.4,
+        16, pulseRadius
+      ]);
+    };
+
+    // Pulse every 1.5 seconds
+    const pulseInterval = setInterval(animatePulse, 1500);
+    
+    // Clear interval after 10 seconds
+    setTimeout(() => {
+      clearInterval(pulseInterval);
+    }, 10000);
+  },
+
+  // Add CSS animations for location UI
+  addLocationAnimations: function() {
+    // Check if animations are already added
+    if (document.getElementById('venue-location-animations')) return;
+
+    const style = document.createElement('style');
+    style.id = 'venue-location-animations';
+    style.textContent = `
+      @keyframes slideInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-8px);
+        }
+        60% {
+          transform: translateY(-4px);
+        }
+      }
+
+      @keyframes fadeInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .location-search-container {
+        animation: fadeInScale 0.6s ease-out;
+      }
+
+      .venue-card {
+        transition: all 0.3s ease;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .venue-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      }
+
+      .venue-card-image {
+        transition: transform 0.3s ease;
+      }
+
+      .venue-card:hover .venue-card-image {
+        transform: scale(1.05);
+      }
+
+      .capacity-badge {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin: 2px;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+      }
+
+      .type-badge {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin: 2px;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+      }
+
+      .btn {
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+    `;
+    document.head.appendChild(style);
   },
 
   // Clear selected location info

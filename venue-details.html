@@ -210,8 +210,7 @@
                 async init() {
                     try {
                         // Check authentication
-                        if (!Auth.isAuthenticated()) {
-                            window.location.href = 'login.html';
+                        if (!Utils.requireAuth()) {
                             return;
                         }
                         
