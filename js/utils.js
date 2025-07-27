@@ -397,11 +397,26 @@ const Utils = {
         // First try to get from localStorage
         const userData = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_DATA);
         if (userData) {
-            const parsed = JSON.parse(userData);
-            // Ensure user_id is available (map from sub if needed)
-            if (parsed && !parsed.user_id && parsed.sub) {
-                parsed.user_id = parsed.sub;
+            let parsed = JSON.parse(userData);
+            
+            // Handle case where user data is wrapped in a message field
+            if (parsed && parsed.message && typeof parsed.message === 'string') {
+                try {
+                    parsed = JSON.parse(parsed.message);
+                } catch (e) {
+                    console.error('Failed to parse user data message:', e);
+                }
             }
+            
+            // Ensure user_id is available (map from userID or sub if needed)
+            if (parsed && !parsed.user_id) {
+                if (parsed.userID) {
+                    parsed.user_id = parsed.userID;
+                } else if (parsed.sub) {
+                    parsed.user_id = parsed.sub;
+                }
+            }
+            
             return parsed;
         }
         
