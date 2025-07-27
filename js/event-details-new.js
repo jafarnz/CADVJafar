@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (locationInfo && addressElement && coordsElement) {
                 addressElement.textContent = venue.address || 'Address not provided';
-                coordsElement.textContent = `${venue.location.lat.toFixed(6)}, ${venue.location.lng.toFixed(6)}`;
+                coordsElement.textContent = `${venue.location.lat}, ${venue.location.lng}`;
                 locationInfo.style.display = 'block';
                 
                 // Setup Google Maps buttons
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div style="text-align: center;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
                             <p>Unable to load map</p>
-                            <small style="color: #999;">Location: ${venue.location.lat.toFixed(4)}, ${venue.location.lng.toFixed(4)}</small>
+                            <small style="color: #999;">Location: ${venue.location.lat}, ${venue.location.lng}</small>
                         </div>
                     </div>
                 `;

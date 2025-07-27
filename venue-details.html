@@ -24,7 +24,7 @@
             }
             
             .navbar {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: #333;
                 padding: 1rem 0;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             }
@@ -133,7 +133,7 @@
                 height: 300px;
                 object-fit: cover;
                 border-radius: 12px;
-                background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+                background: #f8f9fa;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -388,7 +388,7 @@
                         <div class="venue-header">
                             <div class="venue-info">
                                 <h1 class="venue-title">${venueName}</h1>
-                                <div class="venue-type" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: inline-block; margin-bottom: 1rem;">
+                                <div class="venue-type" style="background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: inline-block; margin-bottom: 1rem;">
                                     🏢 ${venueType.charAt(0).toUpperCase() + venueType.slice(1).replace('-', ' ')}
                                 </div>
                                 
@@ -401,16 +401,16 @@
                                 </div>
                                 
                                 <div class="venue-actions" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
-                                    <button onclick="VenueDetails.openInGoogleMaps()" class="btn" style="background: linear-gradient(135deg, #4285f4 0%, #3367d6 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <button onclick="VenueDetails.openInGoogleMaps()" class="btn" style="background: #4285f4; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                         🗺️ Open in Google Maps
                                     </button>
-                                    <button onclick="VenueDetails.shareVenue()" class="btn" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <button onclick="VenueDetails.shareVenue()" class="btn" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                         📤 Share Venue
                                     </button>
-                                    <button onclick="VenueDetails.copyLink()" class="btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <button onclick="VenueDetails.copyLink()" class="btn" style="background: #6b7280; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                         🔗 Copy Link
                                     </button>
-                                    <a href="venues.html" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block;">
+                                    <a href="venues.html" class="btn" style="background: #ef4444; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block;">
                                         ← Back to Venues
                                     </a>
                                 </div>

@@ -920,8 +920,8 @@ const Dashboard = {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (latInput) latInput.value = position.coords.latitude.toFixed(6);
-        if (lngInput) lngInput.value = position.coords.longitude.toFixed(6);
+        if (latInput) latInput.value = position.coords.latitude;
+        if (lngInput) lngInput.value = position.coords.longitude;
         Utils.hideLoading(btn, "Get Current Location");
       },
       (error) => {

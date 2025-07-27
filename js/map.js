@@ -717,54 +717,46 @@ const MapService = {
         }
     },
 
-    // Reverse geocoding using simplified approach with better location names
+    // Reverse geocoding using AWS Location Services
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding (simplified):", { lng, lat });
+            console.log("🔄 Reverse geocoding:", { lng, lat });
 
-            // Try to provide better location names based on coordinates
-            let locationName = "Unknown location";
-            
-            // Singapore location approximations
-            if (lat >= 1.2 && lat <= 1.5 && lng >= 103.6 && lng <= 104.0) {
-                // Basic Singapore location detection
-                if (lat >= 1.28 && lat <= 1.30 && lng >= 103.85 && lng <= 103.87) {
-                    locationName = "Marina Bay, Singapore";
-                } else if (lat >= 1.35 && lat <= 1.37 && lng >= 103.82 && lng <= 103.84) {
-                    locationName = "Tampines, Singapore";
-                } else if (lat >= 1.32 && lat <= 1.34 && lng >= 103.84 && lng <= 103.86) {
-                    locationName = "Bedok, Singapore";
-                } else if (lat >= 1.30 && lat <= 1.32 && lng >= 103.80 && lng <= 103.82) {
-                    locationName = "Jurong East, Singapore";
-                } else {
-                    locationName = `Singapore (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-                }
-            } else {
-                locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
+            const response = await Utils.apiCall(url, {
+                method: "POST",
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify({
+                    longitude: lng,
+                    latitude: lat
+                })
+            });
+
+            if (response && response.address) {
+                console.log("📍 Reverse geocoding result:", response.address);
+                return {
+                    Place: {
+                        Label: response.address
+                    },
+                    address: response.address
+                };
             }
-            
-            console.log("📍 Reverse geocoding result (improved fallback):", locationName);
-            
-            // Return a better address format
-            return {
-                Place: {
-                    Label: locationName,
-                    Country: "Singapore",
-                    Region: "Singapore",
-                    Municipality: "Singapore",
-                    PostalCode: null
-                }
-            };
+
+            throw new Error("No address found");
+
         } catch (error) {
-            console.error("❌ Reverse geocoding failed:", error);
+            console.warn("🚨 Reverse geocoding failed:", error);
+            
+            // Simple fallback - just return coordinates
+            const locationName = `${lat}, ${lng}`;
+            
+            console.log("📍 Reverse geocoding result (coordinate fallback):", locationName);
+            
             return {
                 Place: {
-                    Label: "Unknown location",
-                    Country: null,
-                    Region: null,
-                    Municipality: null,
-                    PostalCode: null
-                }
+                    Label: locationName
+                },
+                address: locationName
             };
         }
     },

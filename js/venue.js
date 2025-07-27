@@ -567,11 +567,11 @@ const VenuesPage = {
                 View Details
               </button>
               <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();" 
-                      style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                      style="background: #333; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
                 ✏️ Edit
               </button>
               <button class="delete-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();" 
-                      style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                      style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
                 🗑️ Delete
               </button>
             </div>
@@ -946,8 +946,8 @@ const VenuesPage = {
 
       const location = await Utils.getCurrentLocation();
 
-      if (latInput) latInput.value = location.lat.toFixed(6);
-      if (lngInput) lngInput.value = location.lng.toFixed(6);
+      if (latInput) latInput.value = location.lat;
+      if (lngInput) lngInput.value = location.lng;
 
       Utils.showSuccess("Location retrieved successfully!");
     } catch (error) {
@@ -976,8 +976,8 @@ const VenuesPage = {
       const result = await MapService.geocodeAddress(addressInput.value.trim());
 
       if (result && result.lat && result.lng) {
-        if (latInput) latInput.value = result.lat.toFixed(6);
-        if (lngInput) lngInput.value = result.lng.toFixed(6);
+        if (latInput) latInput.value = result.lat;
+        if (lngInput) lngInput.value = result.lng;
         Utils.showSuccess("Coordinates found successfully!");
       } else {
         Utils.showError("Could not find coordinates for this address.");
@@ -1272,7 +1272,7 @@ const VenuesPage = {
     if (confirmationDiv) {
       confirmationDiv.innerHTML = `
         <div style="
-          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          background: #f8f9fa;
           border: 2px solid #22c55e;
           border-radius: 16px;
           padding: 24px;
@@ -1283,7 +1283,7 @@ const VenuesPage = {
         ">
           <div style="display: flex; align-items: center; gap: 16px;">
             <div style="
-              background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+              background: #333;
               color: white;
               border-radius: 50%;
               width: 56px;
@@ -1313,7 +1313,7 @@ const VenuesPage = {
                 display: inline-block;
                 border-left: 3px solid #22c55e;
               ">
-                📐 ${locationResult.lat.toFixed(6)}, ${locationResult.lng.toFixed(6)}
+                📐 ${locationResult.lat}, ${locationResult.lng}
               </div>
             </div>
           </div>
@@ -1417,7 +1417,7 @@ const VenuesPage = {
           justify-content: center; 
           height: 100%; 
           color: #dc3545; 
-          background: linear-gradient(135deg, #fdf2f2 0%, #fef2f2 100%);
+          background: #fef2f2;
           border: 2px solid #f87171;
           border-radius: 12px;
         ">
@@ -1428,7 +1428,7 @@ const VenuesPage = {
               onclick="VenuesPage.initializeVenueLocationMap()" 
               style="
                 padding: 12px 20px; 
-                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); 
+                background: #dc2626; 
                 color: white; 
                 border: none; 
                 border-radius: 8px; 
@@ -1508,16 +1508,22 @@ const VenuesPage = {
           .addTo(this.venueLocationMap);
 
         // Try to reverse geocode to get address
-        let address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        let address = `${lat}, ${lng}`;
         try {
           if (window.MapService && window.MapService.reverseGeocode) {
             const locationInfo = await window.MapService.reverseGeocode(lng, lat);
             if (locationInfo && locationInfo.Place && locationInfo.Place.Label) {
               address = locationInfo.Place.Label;
+            } else if (locationInfo && locationInfo.address) {
+              address = locationInfo.address;
             }
           }
         } catch (geocodeError) {
           console.warn("Reverse geocoding failed:", geocodeError);
+          // Fallback: try basic coordinate-to-area mapping
+          if (lat >= 1.2 && lat <= 1.5 && lng >= 103.6 && lng <= 104.0) {
+            address = "Singapore";
+          }
         }
 
         // Update form fields
@@ -1596,7 +1602,7 @@ const VenuesPage = {
       }, 1000);
 
       // Try to reverse geocode
-      let address = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      let address = `${lat}, ${lng}`;
       try {
         if (window.MapService && window.MapService.reverseGeocode) {
           const locationInfo = await window.MapService.reverseGeocode(lng, lat);
@@ -1728,8 +1734,8 @@ const VenuesPage = {
     const lngInput = document.getElementById("venueLongitude");
     const addressInput = document.getElementById("venueAddress");
 
-    if (latInput) latInput.value = lat.toFixed(6);
-    if (lngInput) lngInput.value = lng.toFixed(6);
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
     if (addressInput && !addressInput.value.trim()) {
       addressInput.value = address;
     }
@@ -1745,7 +1751,7 @@ const VenuesPage = {
     if (infoDiv && textDiv) {
       textDiv.innerHTML = `
         <div style="
-          background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+          background: #dcfce7;
           border: 2px solid #22c55e;
           border-radius: 16px;
           padding: 20px;
@@ -1778,7 +1784,7 @@ const VenuesPage = {
           ">
             <div style="font-weight: 600; color: #15803d; margin-bottom: 8px;">${address}</div>
             <div style="font-family: monospace; font-size: 0.85rem; color: #166534; opacity: 0.8;">
-              📐 ${lat.toFixed(6)}, ${lng.toFixed(6)}
+              📐 ${lat}, ${lng}
             </div>
           </div>
           <div style="

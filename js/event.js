@@ -516,31 +516,42 @@ const EventsPage = {
 
                 return `
       <div class="event-card" data-event-id="${event.eventID}">
-        <img src="${imageUrl}" alt="${Utils.sanitizeInput(event.name)}" class="event-card-image"
-             onerror="this.src='/api/placeholder/350/200'">
-        <div class="event-card-content">
-          <h3 class="event-card-title">${Utils.sanitizeInput(event.name)}</h3>
-          <div class="event-card-meta">
-            <span><strong>📅</strong> ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}</span>
-            <span><strong>📍</strong> ${venue ? Utils.sanitizeInput(venue.name) : "Venue TBA"}</span>
-            ${event.genre ? `<span><strong>🎵</strong> ${Utils.capitalize(event.genre)}</span>` : ""}
-          </div>
-          ${event.description ? `<p class="event-card-description">${Utils.sanitizeInput(event.description)}</p>` : ""}
-          <div class="event-card-actions">
-            <div>
-              ${event.genre ? `<span class="genre-badge">${Utils.capitalize(event.genre)}</span>` : ""}
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="btn btn-secondary view-details-btn" data-event-id="${event.eventID}">
-                View Details
-              </button>
-              <button class="btn edit-event-btn" data-event-id="${event.eventID}" 
-                      style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
-                ✏️ Edit
-              </button>
-              ${isUpcoming ? `<button class="join-btn" data-event-id="${event.eventID}">Join Event</button>` : `<button class="join-btn" disabled>Event Passed</button>`}
-            </div>
-          </div>
+        <div class="event-image">
+          ${imageUrl && imageUrl !== "/api/placeholder/350/200" ? 
+            `<img src="${imageUrl}" alt="${Utils.sanitizeInput(event.name)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" onerror="this.style.display='none'; this.parentElement.innerHTML='🎵';">` : 
+            '🎵'
+          }
+        </div>
+        
+        <div class="event-title">${Utils.sanitizeInput(event.name)}</div>
+        
+        <div class="event-venue">
+          📍 ${venue ? Utils.sanitizeInput(venue.name) : "Venue TBA"}
+        </div>
+        
+        <div class="event-date">
+          📅 ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}
+        </div>
+        
+        ${event.genre ? `<div class="event-genre">${Utils.capitalize(event.genre)}</div>` : ""}
+        
+        ${event.description ? `<p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.4;">${Utils.sanitizeInput(event.description)}</p>` : ""}
+        
+        <div class="event-actions">
+          <button class="event-btn primary view-details-btn" data-event-id="${event.eventID}">
+            👁️ Details
+          </button>
+          <button class="event-btn secondary edit-event-btn" data-event-id="${event.eventID}">
+            ✏️ Edit
+          </button>
+          ${venue && venue.location ? `
+          <button class="event-btn maps" onclick="EventsPage.openEventInGoogleMaps('${event.eventID}')" title="Open in Google Maps">
+            🗺️ Maps
+          </button>` : ''}
+          ${isUpcoming ? 
+            `<button class="event-btn primary join-btn" data-event-id="${event.eventID}">🎟️ Join</button>` : 
+            `<button class="event-btn secondary" disabled>⏰ Past Event</button>`
+          }
         </div>
       </div>
     `;
@@ -1419,20 +1430,20 @@ const EventsPage = {
                 popup: `
                   <div style="text-align: center; padding: 0.5rem;">
                     <strong>Selected Location</strong><br>
-                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                    ${lat}, ${lng}
                   </div>
                 `
               });
               
               // Update form fields
-              document.getElementById("createVenueLatitude").value = lat.toFixed(6);
-              document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+              document.getElementById("createVenueLatitude").value = lat;
+              document.getElementById("createVenueLongitude").value = lng;
               
               // Show location info
               const locationInfo = document.getElementById("create-selected-location-info");
               const locationText = document.getElementById("create-selected-location-text");
               if (locationInfo && locationText) {
-                locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                locationText.textContent = `${lat}, ${lng}`;
                 locationInfo.style.display = 'block';
               }
               
@@ -1473,20 +1484,20 @@ const EventsPage = {
                     popup: `
                       <div style="text-align: center; padding: 0.5rem;">
                         <strong>Your Current Location</strong><br>
-                        ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                        ${lat}, ${lng}
                       </div>
                     `
                   });
                   
                   // Update form fields
-                  document.getElementById("createVenueLatitude").value = lat.toFixed(6);
-                  document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+                  document.getElementById("createVenueLatitude").value = lat;
+                  document.getElementById("createVenueLongitude").value = lng;
                   
                   // Show location info
                   const locationInfo = document.getElementById("create-selected-location-info");
                   const locationText = document.getElementById("create-selected-location-text");
                   if (locationInfo && locationText) {
-                    locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} (Current Location)`;
+                    locationText.textContent = `${lat}, ${lng} (Current Location)`;
                     locationInfo.style.display = 'block';
                   }
                   
@@ -1544,21 +1555,21 @@ const EventsPage = {
                   <div style="text-align: center; padding: 0.5rem;">
                     <strong>Search Result</strong><br>
                     ${query}<br>
-                    ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                    ${lat}, ${lng}
                   </div>
                 `
               });
               
               // Update form fields
-              document.getElementById("createVenueLatitude").value = lat.toFixed(6);
-              document.getElementById("createVenueLongitude").value = lng.toFixed(6);
+              document.getElementById("createVenueLatitude").value = lat;
+              document.getElementById("createVenueLongitude").value = lng;
               document.getElementById("createVenueAddress").value = query;
               
               // Show location info
               const locationInfo = document.getElementById("create-selected-location-info");
               const locationText = document.getElementById("create-selected-location-text");
               if (locationInfo && locationText) {
-                locationText.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)} (${query})`;
+                locationText.textContent = `${lat}, ${lng} (${query})`;
                 locationInfo.style.display = 'block';
               }
               
