@@ -47,6 +47,9 @@
                     <button class="btn btn-outline btn-sm edit-picture-btn" id="editPictureBtn">
                             📷 Change Photo
                         </button>
+                    <button class="btn btn-sm" id="uploadPictureBtn" style="background: #000; color: white; margin-left: 0.5rem;">
+                            📁 Upload Picture  
+                        </button>
                 </div>
                 <div class="profile-info">
                     <h1 id="profileDisplayName">Loading...</h1>
@@ -292,15 +295,7 @@
             <form id="edit-preferences-form">
                 <div class="form-group">
                     <label>Favorite Genres (select up to 3)</label>
-                    <div class="genre-grid" style="
-                                display: grid;
-                                grid-template-columns: repeat(
-                                    auto-fit,
-                                    minmax(150px, 1fr)
-                                );
-                                gap: 0.5rem;
-                                margin-top: 0.5rem;
-                            ">
+                    <div class="genre-grid">
                         <label class="genre-option">
                                 <input
                                     type="checkbox"
@@ -618,9 +613,17 @@
                     if (email)
                         email.textContent =
                             profile.email || this.currentUser.email;
-                    if (genre)
-                        genre.textContent =
-                            profile.preferences?.genre || "Unknown";
+                    if (genre) {
+                        // Pick one random genre from favoriteGenres array, or use default
+                        let displayGenre = "Music Lover";
+                        if (profile.preferences?.favoriteGenres && Array.isArray(profile.preferences.favoriteGenres) && profile.preferences.favoriteGenres.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * profile.preferences.favoriteGenres.length);
+                            displayGenre = profile.preferences.favoriteGenres[randomIndex];
+                            // Capitalize first letter
+                            displayGenre = displayGenre.charAt(0).toUpperCase() + displayGenre.slice(1);
+                        }
+                        genre.textContent = displayGenre;
+                    }
 
                     // Set profile initials
                     if (initials && profile.name) {
@@ -666,6 +669,8 @@
                     // Edit picture button
                     const editPictureBtn =
                         document.getElementById("editPictureBtn");
+                    const uploadPictureBtn =
+                        document.getElementById("uploadPictureBtn");
                     const pictureModal = document.getElementById(
                         "profile-picture-modal",
                     );
@@ -679,8 +684,17 @@
                         document.getElementById("profilePictureFile");
 
                     if (editPictureBtn && pictureModal) {
-                        editPictureBtn.addEventListener("click", () => {
+                        editPictureBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
                             pictureModal.style.display = "block";
+                        });
+                    }
+                    
+                    // Direct file upload button
+                    if (uploadPictureBtn && pictureFileInput) {
+                        uploadPictureBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            pictureFileInput.click();
                         });
                     }
 
@@ -890,26 +904,50 @@
             .genre-option {
                 display: flex;
                 align-items: center;
-                padding: 0.75rem;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: all 0.3s ease;
+                background: #fff;
+                position: relative;
+                overflow: hidden;
             }
 
             .genre-option:hover {
-                border-color: #333;
-                background: #f8f9fa;
+                border-color: #007bff;
+                background: #f8f9ff;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,123,255,0.15);
             }
 
             .genre-option.selected {
-                border-color: #333;
-                background: #333;
+                border-color: #007bff;
+                background: #007bff;
                 color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,123,255,0.3);
             }
 
             .genre-option input[type="checkbox"] {
-                margin-right: 0.5rem;
+                margin-right: 0.75rem;
+                width: 18px;
+                height: 18px;
+                accent-color: #007bff;
+                cursor: pointer;
+            }
+
+            .genre-option span {
+                font-weight: 500;
+                font-size: 0.95rem;
+                user-select: none;
+            }
+
+            .genre-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 0.75rem;
+                margin-top: 1rem;
             }
 
             @media (max-width: 768px) {

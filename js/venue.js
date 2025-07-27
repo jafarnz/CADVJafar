@@ -544,7 +544,7 @@ const VenuesPage = {
               <button class="btn btn-secondary view-details-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation(); VenuesPage.goToVenueDetails('${venue.venueID}')">
                 View Details
               </button>
-              <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation();" 
+              <button class="edit-btn" data-venue-id="${venue.venueID}" onclick="event.stopPropagation(); window.location.href='edit-venue.html?id=${venue.venueID}';" 
                       style="background: #333; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
                 ✏️ Edit
               </button>
@@ -570,14 +570,14 @@ const VenuesPage = {
       });
     });
 
-    // Edit buttons
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const venueId = btn.getAttribute("data-venue-id");
-        this.openEditModal(venueId);
-      });
-    });
+    // Edit buttons - now handled by direct onclick navigation
+    // document.querySelectorAll(".edit-btn").forEach((btn) => {
+    //   btn.addEventListener("click", (e) => {
+    //     e.stopPropagation();
+    //     const venueId = btn.getAttribute("data-venue-id");
+    //     this.openEditModal(venueId);
+    //   });
+    // });
 
     // Delete buttons
     document.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -870,7 +870,7 @@ const VenuesPage = {
             Get Directions
           </button>
         ` : ""}
-        <button onclick="VenuesPage.openEditModal('${venue.venueID}')" class="btn btn-secondary">
+        <button onclick="window.location.href='edit-venue.html?id=${venue.venueID}'" class="btn btn-secondary">
           Edit Venue
         </button>
         <button onclick="Utils.copyToClipboard(window.location.href + '?venue=${venue.venueID}')" class="btn btn-secondary">
