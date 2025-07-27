@@ -103,8 +103,6 @@ const EditVenue = {
             document.getElementById('venueType').value = venueData.type || '';
             document.getElementById('venueCapacity').value = venueData.capacity || '';
             document.getElementById('venueDescription').value = venueData.description || '';
-            document.getElementById('venuePhone').value = venueData.phone || '';
-            document.getElementById('venueWebsite').value = venueData.website || '';
 
             // Location data
             if (venueData.latitude && venueData.longitude) {
@@ -363,9 +361,7 @@ const EditVenue = {
             name: formData.get('name')?.trim(),
             type: formData.get('type'),
             description: formData.get('description')?.trim(),
-            capacity: formData.get('capacity') ? parseInt(formData.get('capacity')) : null,
-            phone: formData.get('phone')?.trim(),
-            website: formData.get('website')?.trim()
+            capacity: formData.get('capacity') ? parseInt(formData.get('capacity')) : null
         };
 
         // Add location data if available
@@ -396,11 +392,6 @@ const EditVenue = {
 
         if (data.capacity && (data.capacity < 1 || data.capacity > 10000)) {
             Utils.showMessage('Capacity must be between 1 and 10,000', 'error');
-            return false;
-        }
-
-        if (data.website && !this.isValidUrl(data.website)) {
-            Utils.showMessage('Please enter a valid website URL', 'error');
             return false;
         }
 

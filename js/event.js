@@ -622,20 +622,20 @@ const EventsPage = {
       (e) => e.eventID.toString() === eventId.toString(),
     );
     if (!event) {
-      Utils.showNotification('Event not found', 'error');
+      Utils.showMessage('Event not found', 'error');
       return;
     }
 
     // Check authentication
     if (!Utils.isAuthenticated()) {
-      Utils.showNotification('Please login to join events', 'error');
+      Utils.showMessage('Please login to join events', 'error');
       window.location.href = 'login.html';
       return;
     }
 
     // Check if already joined
     if (Utils.isEventJoined(eventId)) {
-      Utils.showNotification(`You've already joined "${event.name}"`, 'info');
+      Utils.showMessage(`You've already joined "${event.name}"`, 'warning');
       return;
     }
 
@@ -644,7 +644,7 @@ const EventsPage = {
     const now = new Date();
     
     if (eventDateTime <= now) {
-      Utils.showNotification('Cannot join events that have already passed', 'error');
+      Utils.showMessage('Cannot join events that have already passed', 'error');
       return;
     }
 

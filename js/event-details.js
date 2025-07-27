@@ -176,21 +176,8 @@ class EventDetailsPage {
         // Venue details
         document.getElementById('venueAddress').textContent = 
             this.venueData.address || 'Address not available';
-        document.getElementById('venuePhone').textContent = 
-            this.venueData.phone || 'Phone not available';
-        document.getElementById('venueEmail').textContent = 
-            this.venueData.email || 'Email not available';
         document.getElementById('venueCapacity').textContent = 
             this.venueData.capacity ? `${this.venueData.capacity} capacity` : 'Capacity not available';
-        
-        const venueWebsite = document.getElementById('venueWebsite');
-        if (this.venueData.website) {
-            venueWebsite.href = this.venueData.website;
-            venueWebsite.textContent = this.venueData.website;
-        } else {
-            venueWebsite.textContent = 'Website not available';
-            venueWebsite.removeAttribute('href');
-        }
 
         // Venue description
         document.getElementById('venueDescription').textContent = 
