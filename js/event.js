@@ -1042,10 +1042,8 @@ const EventsPage = {
 
   // Enhanced venue management for events
   openCreateEventModal: async function() {
-    const modal = document.getElementById("create-event-modal");
-    this.clearEventForm();
-    await this.loadVenuesForDropdown();
-    modal.style.display = "block";
+    // Redirect to dedicated create event page instead of opening modal
+    window.location.href = 'create-event.html';
   },
 
   clearEventForm: function() {

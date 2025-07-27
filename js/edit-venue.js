@@ -43,7 +43,7 @@ const EditVenue = {
 
     async loadVenueData() {
         try {
-            const userData = Utils.getUserData();
+            const userData = Utils.getCurrentUser();
             if (!userData || !userData.user_id) {
                 throw new Error('User not authenticated');
             }
@@ -388,7 +388,7 @@ const EditVenue = {
 
     async updateVenue(venueData) {
         try {
-            const userData = Utils.getUserData();
+            const userData = Utils.getCurrentUser();
             if (!userData || !userData.user_id) {
                 throw new Error('User not authenticated');
             }

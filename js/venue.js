@@ -198,9 +198,6 @@ const VenuesPage = {
 
             // Close modals when clicking outside
             window.addEventListener("click", (e) => {
-                if (e.target === venueModal) {
-                    this.closeModal();
-                }
                 if (e.target === venueDetailsModal) {
                     venueDetailsModal.style.display = "none";
                 }

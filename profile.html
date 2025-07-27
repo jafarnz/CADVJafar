@@ -47,9 +47,6 @@
                     <button class="btn btn-outline btn-sm edit-picture-btn" id="editPictureBtn">
                             📷 Change Photo
                         </button>
-                    <button class="btn btn-sm" id="uploadPictureBtn" style="background: #000; color: white; margin-left: 0.5rem;">
-                            📁 Upload Picture  
-                        </button>
                 </div>
                 <div class="profile-info">
                     <h1 id="profileDisplayName">Loading...</h1>
@@ -492,57 +489,82 @@
 
         <!-- Profile Picture Upload Modal -->
         <div id="profile-picture-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" id="close-picture-modal">&times;</span>
-                <h2>Change Profile Picture</h2>
-                <div id="picture-modal-messages"></div>
-                <form id="profile-picture-form">
-                    <div class="form-group">
-                        <label for="profilePictureFile"
-                            >Choose Profile Picture</label
-                        >
-                        <input
-                            type="file"
-                            id="profilePictureFile"
-                            name="profilePicture"
-                            class="form-control"
-                            accept="image/*"
-                            required
-                        />
-                        <div class="form-text">
-                            Recommended: Square image, max 5MB
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div
-                            id="image-preview"
-                            style="
-                                text-align: center;
-                                margin: 1rem 0;
-                                display: none;
-                            "
-                        >
-                            <img
-                                id="preview-image"
-                                src=""
-                                alt="Preview"
-                                style="
-                                    max-width: 200px;
-                                    max-height: 200px;
+            <div class="modal-content" style="max-width: 500px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; text-align: center; position: relative;">
+                    <span class="close" id="close-picture-modal" style="position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">&times;</span>
+                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: 600;">📸 Update Profile Picture</h2>
+                    <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 0.9rem;">Choose a new photo to represent yourself</p>
+                </div>
+                
+                <div style="padding: 32px;">
+                    <div id="picture-modal-messages"></div>
+                    
+                    <form id="profile-picture-form">
+                        <!-- Image Preview Area -->
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div id="image-preview" style="display: none;">
+                                <img id="preview-image" src="" alt="Preview" style="
+                                    width: 150px;
+                                    height: 150px;
                                     border-radius: 50%;
-                                    border: 2px solid #dee2e6;
-                                "
-                            />
+                                    border: 4px solid #e9ecef;
+                                    object-fit: cover;
+                                    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                                    transition: all 0.3s ease;
+                                " />
+                                <p style="margin: 12px 0 0 0; color: #666; font-size: 0.9rem;">Looking good! 👍</p>
+                            </div>
+                            <div id="upload-placeholder" style="
+                                width: 150px;
+                                height: 150px;
+                                border: 3px dashed #d1d5db;
+                                border-radius: 50%;
+                                margin: 0 auto;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                background: #f9fafb;
+                                transition: all 0.3s ease;
+                                cursor: pointer;
+                            " onclick="document.getElementById('profilePictureFile').click()">
+                                <div style="text-align: center; color: #6b7280;">
+                                    <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
+                                    <div style="font-size: 0.85rem; font-weight: 500;">Click to choose</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Upload Picture
+                        <!-- Hidden File Input -->
+                        <input type="file" id="profilePictureFile" name="profilePicture" accept="image/*" required style="display: none;" />
+                        
+                        <!-- Upload Info -->
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+                            <div style="color: #666; font-size: 0.85rem; line-height: 1.4;">
+                                📋 <strong>Guidelines:</strong><br>
+                                • Square images work best<br>
+                                • Maximum size: 5MB<br>
+                                • Formats: JPEG, PNG, GIF
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button type="submit" class="btn" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 14px 24px;
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(102, 126, 234, 0.3)'">
+                            ✨ Upload & Save Picture
                         </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -615,7 +637,7 @@
                             profile.email || this.currentUser.email;
                     if (genre) {
                         // Pick one random genre from favoriteGenres array, or use default
-                        let displayGenre = "Music Lover";
+                        let displayGenre = "Music Fan";
                         if (profile.preferences?.favoriteGenres && Array.isArray(profile.preferences.favoriteGenres) && profile.preferences.favoriteGenres.length > 0) {
                             const randomIndex = Math.floor(Math.random() * profile.preferences.favoriteGenres.length);
                             displayGenre = profile.preferences.favoriteGenres[randomIndex];

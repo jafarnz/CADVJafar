@@ -49,15 +49,29 @@ const CreateEvent = {
         try {
             console.log("🏪 Loading venues from API");
 
-            const response = await Utils.apiCall('/venues', 'GET');
+            const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
+            const response = await Utils.apiCall(venuesUrl, {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
             console.log("✅ Venues loaded:", response);
 
             // Handle different response formats
             let venues = [];
             if (response.venues) {
                 venues = response.venues;
-            } else if (response.message && response.message.venues) {
-                venues = response.message.venues;
+            } else if (response.message) {
+                // Handle stringified JSON in message field
+                try {
+                    if (typeof response.message === 'string') {
+                        venues = JSON.parse(response.message);
+                    } else if (response.message.venues) {
+                        venues = response.message.venues;
+                    }
+                } catch (parseError) {
+                    console.error("❌ Failed to parse venues message:", parseError);
+                    venues = [];
+                }
             } else if (Array.isArray(response)) {
                 venues = response;
             } else if (response.Items) {
@@ -126,7 +140,12 @@ const CreateEvent = {
 
             // Submit to API
             console.log("📤 Submitting event to API...");
-            const response = await Utils.apiCall('/events', 'POST', formData);
+            const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+            const response = await Utils.apiCall(eventsUrl, {
+                method: 'POST',
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify(formData)
+            });
 
             console.log("✅ Event created successfully:", response);
             Utils.showSuccess("Event created successfully! Redirecting to dashboard...", "create-event-messages");
