@@ -46,22 +46,31 @@ const EditEvent = {
             // Check authentication first
             if (!Utils.isAuthenticated()) {
                 console.error('User not authenticated, redirecting to login');
-                window.location.href = 'login.html';
+                Utils.showError('Please log in to edit events', 'edit-event-messages');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
                 return;
             }
 
-            const userData = Utils.getCurrentUser();
-            console.log('Current user data:', userData);
+            // Get user data from token (more reliable)
+            const userData = Utils.getUserFromToken();
+            console.log('Current user data from token:', userData);
             
-            if (!userData || !userData.user_id) {
-                console.error('User data missing, redirecting to login');
-                window.location.href = 'login.html';
+            if (!userData || !userData.sub) {
+                console.error('User data missing or invalid');
+                Utils.showError('Unable to verify user identity. Please log in again.', 'edit-event-messages');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 3000);
                 return;
             }
 
             console.log('Loading event data for ID:', this.currentEventId);
 
             const eventUrl = CONFIG.buildApiUrl(`events/${this.currentEventId}`);
+            console.log('🔗 Event API URL:', eventUrl);
+            
             const response = await Utils.apiCall(eventUrl, {
                 method: 'GET',
                 headers: CONFIG.getAuthHeaders()
@@ -101,8 +110,26 @@ const EditEvent = {
             
         } catch (error) {
             console.error('Error loading event data:', error);
-            Utils.showError('Failed to load event data', 'edit-event-messages');
-            throw error;
+            Utils.showError(`Failed to load event data: ${error.message}`, 'edit-event-messages');
+            
+            // Don't throw the error to prevent further propagation
+            // Instead, show a user-friendly message and option to go back
+            setTimeout(() => {
+                const messagesDiv = document.getElementById('edit-event-messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML += `
+                        <div style="padding: 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 1rem;">
+                            <p style="margin: 0 0 1rem 0;">Unable to load event. This might be because:</p>
+                            <ul style="margin: 0 0 1rem 1rem;">
+                                <li>The event doesn't exist</li>
+                                <li>You don't have permission to edit this event</li>
+                                <li>There's a network connectivity issue</li>
+                            </ul>
+                            <a href="events.html" class="btn btn-primary">← Back to Events</a>
+                        </div>
+                    `;
+                }
+            }, 1000);
         }
     },
 
@@ -176,7 +203,14 @@ const EditEvent = {
 
         } catch (error) {
             console.error("❌ Failed to load venues:", error);
-            Utils.showError("Failed to load venues. Please refresh the page.", "edit-event-messages");
+            Utils.showError("Failed to load venues. You can still edit other event details.", "edit-event-messages");
+            
+            // Add a fallback message to the venue dropdown
+            const venueSelect = document.getElementById('eventVenue');
+            if (venueSelect) {
+                venueSelect.innerHTML = '<option value="">Venues could not be loaded</option>';
+                venueSelect.disabled = true;
+            }
         }
     },
 

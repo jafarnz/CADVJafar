@@ -472,14 +472,33 @@
 
         // Event image upload handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Simple authentication check
+            // Simple authentication check with detailed logging
+            console.log('🔧 Starting edit event page initialization...');
+            console.log('🔐 Authentication status:', Utils.isAuthenticated());
+            
             if (!Utils.isAuthenticated()) {
+                console.error('❌ User not authenticated, redirecting to login');
                 window.location.href = 'login.html';
                 return;
             }
             
             console.log('✅ User authenticated, initializing edit event');
-            EditEvent.init();
+            
+            // Add error handling for initialization
+            try {
+                EditEvent.init();
+            } catch (error) {
+                console.error('❌ Failed to initialize EditEvent:', error);
+                // Show user-friendly error message
+                const messagesDiv = document.getElementById('edit-event-messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = `
+                        <div style="padding: 1rem; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24; margin-bottom: 1rem;">
+                            ❌ Failed to load event data. Please <a href="events.html">return to events</a> and try again.
+                        </div>
+                    `;
+                }
+            }
 
             // Event image upload
             const eventImageInput = document.getElementById('eventImageInput');
