@@ -2,9 +2,7 @@
 <html lang="en">
 
 <head>
-    <meta                    <a href="create-venue.html" id="new-venue-button" class="btn btn-secondary">
-                        🏢 Add New Venue
-                    </a>arset="UTF-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - Local Gigs</title>
     <link rel="stylesheet" href="css/style.css" />
@@ -54,14 +52,11 @@
                     <button id="new-event-button" class="btn">
                             Create Event
                         </button>
-                    <button id="new-venue-button" class="btn btn-secondary">
-                            Add Venue
-                        </button>
+                    <a href="create-venue.html" id="new-venue-button" class="btn btn-secondary">
+                            🏢 Add New Venue
+                        </a>
                     <button id="findEventsBtn" class="btn btn-secondary">
                             Find Events Near Me
-                        </button>
-                    <button id="testAWSBtn" class="btn btn-outline">
-                            🔧 Test AWS Services
                         </button>
                 </div>
             </div>
@@ -332,150 +327,6 @@
                             type="button"
                             class="btn btn-secondary btn-lg"
                             onclick="document.getElementById('create-event-modal').style.display='none'"
-                            style="flex: 1"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Add Venue Modal -->
-        <div id="add-venue-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Add New Venue</h2>
-                    <span class="close-modal" id="close-venue-modal"
-                        >&times;</span
-                    >
-                </div>
-                <div id="venue-modal-messages"></div>
-                <form id="add-venue-form">
-                    <div class="form-group">
-                        <label for="venueName" class="form-label"
-                            >Venue Name *</label
-                        >
-                        <input
-                            type="text"
-                            id="venueName"
-                            name="name"
-                            class="form-input"
-                            required
-                            placeholder="Enter the venue name"
-                            maxlength="100"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="venueAddress" class="form-label"
-                            >Address *</label
-                        >
-                        <input
-                            type="text"
-                            id="venueAddress"
-                            name="address"
-                            class="form-input"
-                            required
-                            placeholder="Enter the full venue address"
-                            maxlength="200"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="venueCapacity" class="form-label"
-                            >Capacity</label
-                        >
-                        <input
-                            type="number"
-                            id="venueCapacity"
-                            name="capacity"
-                            class="form-input"
-                            placeholder="Maximum number of people (optional)"
-                            min="1"
-                            max="100000"
-                        />
-                    </div>
-
-                    <!-- Venue Image Upload -->
-                    <div class="form-group">
-                        <label class="form-label">Venue Image</label>
-                        <div class="image-upload-container">
-                            <div class="image-preview-wrapper venue-image-preview">
-                                <img id="venueImagePreview" class="image-preview" style="display: none;" alt="Venue preview">
-                                <div class="upload-placeholder" id="venueUploadPlaceholder">
-                                    <div class="upload-icon">🏢</div>
-                                    <p>Add a venue photo</p>
-                                    <small>JPEG, PNG, or GIF (max 5MB)</small>
-                                </div>
-                            </div>
-                            <input type="file" id="venueImageInput" name="venueImage" accept="image/*" style="display: none;">
-                            <div class="upload-actions">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('venueImageInput').click()">
-                                    Choose Photo
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm" id="removeVenuePhotoBtn" style="display: none;" onclick="removeVenuePhoto()">
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="venueLatitude" class="form-label"
-                                >Latitude</label
-                            >
-                            <input
-                                type="number"
-                                id="venueLatitude"
-                                name="latitude"
-                                class="form-input"
-                                placeholder="Latitude coordinate"
-                                step="any"
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="venueLongitude" class="form-label"
-                                >Longitude</label
-                            >
-                            <input
-                                type="number"
-                                id="venueLongitude"
-                                name="longitude"
-                                class="form-input"
-                                placeholder="Longitude coordinate"
-                                step="any"
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        class="form-group"
-                        style="text-align: center; margin: 1.5rem 0"
-                    >
-                        <button
-                            type="button"
-                            class="btn btn-outline"
-                            id="get-location-btn"
-                        >
-                            📍 Get My Current Location
-                        </button>
-                    </div>
-
-                    <div style="display: flex; gap: 1rem; margin-top: 2rem">
-                        <button
-                            type="submit"
-                            class="btn btn-lg"
-                            style="flex: 1"
-                        >
-                            Add Venue
-                        </button>
-                        <button
-                            type="button"
-                            class="btn btn-secondary btn-lg"
-                            onclick="document.getElementById('add-venue-modal').style.display='none'"
                             style="flex: 1"
                         >
                             Cancel

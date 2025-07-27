@@ -79,37 +79,7 @@ const Dashboard = {
                 });
             }
 
-            // Create Venue button and modal
-            const newVenueBtn = document.getElementById("new-venue-button");
-            const addVenueModal = document.getElementById("add-venue-modal");
-            const closeVenueModal = document.getElementById("close-venue-modal");
-            const addVenueForm = document.getElementById("add-venue-form");
-            const getLocationBtn = document.getElementById("get-location-btn");
-
-            if (newVenueBtn && addVenueModal) {
-                newVenueBtn.addEventListener("click", () => {
-                    addVenueModal.style.display = "block";
-                });
-            }
-
-            if (closeVenueModal && addVenueModal) {
-                closeVenueModal.addEventListener("click", () => {
-                    addVenueModal.style.display = "none";
-                });
-            }
-
-            if (addVenueForm) {
-                addVenueForm.addEventListener("submit", (e) => {
-                    e.preventDefault();
-                    this.handleCreateVenue(e);
-                });
-            }
-
-            if (getLocationBtn) {
-                getLocationBtn.addEventListener("click", () => {
-                    this.getCurrentLocationForVenue();
-                });
-            }
+            // Venue creation is now handled by dedicated create-venue.html page
 
             // Find Events Near Me button
             const findEventsBtn = document.getElementById("findEventsBtn");
@@ -124,20 +94,9 @@ const Dashboard = {
                 if (e.target === createEventModal) {
                     createEventModal.style.display = "none";
                 }
-                if (e.target === addVenueModal) {
-                    addVenueModal.style.display = "none";
-                }
             });
 
-            // AWS Test button
-            const testAWSBtn = document.getElementById("testAWSBtn");
-            if (testAWSBtn) {
-                testAWSBtn.addEventListener("click", () => {
-                    this.runAWSTests();
-                });
-            }
-
-            // Hide test results button
+            // Hide test results button (legacy)
             const hideTestResults = document.getElementById("hide-test-results");
             if (hideTestResults) {
                 hideTestResults.addEventListener("click", () => {
@@ -798,140 +757,6 @@ const Dashboard = {
     } finally {
       Utils.hideLoading(submitBtn, "Create Event");
     }
-  },
-
-  // Handle venue creation
-  handleCreateVenue: async function (e) {
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const messagesDiv = document.getElementById("venue-modal-messages");
-
-    try {
-      Utils.showLoading(submitBtn, "Creating...");
-
-      const formData = new FormData(form);
-      const venueID = CONFIG.generateVenueID();
-
-      let imageUrl = null;
-
-      // Upload venue image if selected
-      const imageFile = formData.get("venueImage");
-      if (imageFile && imageFile.size > 0) {
-        try {
-          Utils.showLoading(submitBtn, "Uploading image...");
-          imageUrl = await Utils.uploadImage(imageFile, "venues");
-          console.log("Venue image uploaded:", imageUrl);
-        } catch (uploadError) {
-          console.error("Venue image upload failed:", uploadError);
-          // Continue without image, but log the error
-          Utils.showError(
-            "Image upload failed, but venue will be created without image",
-            messagesDiv.id,
-          );
-        }
-      }
-
-      // Geocode address if lat/lng not provided
-      let latitude = parseFloat(formData.get("latitude"));
-      let longitude = parseFloat(formData.get("longitude"));
-
-      if (!latitude || !longitude) {
-        const address = formData.get("address");
-        if (address) {
-          Utils.showLoading(submitBtn, "Geocoding address...");
-          const geocoded = await MapService.geocodeAddress(address);
-          if (geocoded) {
-            latitude = geocoded.lat;
-            longitude = geocoded.lng;
-          }
-        }
-      }
-
-      const venueData = {
-        venueID: venueID,
-        name: formData.get("name"),
-        address: formData.get("address"),
-        capacity: formData.get("capacity")
-          ? parseInt(formData.get("capacity"))
-          : null,
-        latitude: latitude || null,
-        longitude: longitude || null,
-      };
-
-      // Add image URL if uploaded successfully
-      if (imageUrl) {
-        venueData.imageUrl = imageUrl;
-      }
-
-      Utils.showLoading(submitBtn, "Creating venue...");
-
-      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
-      const response = await Utils.apiCall(url, {
-        method: "POST",
-        headers: CONFIG.getAuthHeaders(),
-        body: JSON.stringify(venueData),
-      });
-
-      Utils.showSuccess("Venue created successfully!", messagesDiv.id);
-      form.reset();
-
-      // Reset form and image selection
-      form.reset();
-      if (typeof removeVenuePhoto === "function") {
-        removeVenuePhoto();
-      }
-
-      // Reload data and re-render
-      await this.loadAllData();
-      this.render();
-
-      // Update map
-      if (this.mapInitialized) {
-        MapService.addVenueMarkers(this.venues);
-      }
-
-      // Close modal after a delay
-      setTimeout(() => {
-        document.getElementById("add-venue-modal").style.display = "none";
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to create venue:", error);
-      Utils.showError(
-        error.message || "Failed to create venue",
-        messagesDiv.id,
-      );
-    } finally {
-      Utils.hideLoading(submitBtn, "Add Venue");
-    }
-  },
-
-  // Get current location for venue
-  getCurrentLocationForVenue: function () {
-    const latInput = document.getElementById("venueLatitude");
-    const lngInput = document.getElementById("venueLongitude");
-    const btn = document.getElementById("get-location-btn");
-
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
-      return;
-    }
-
-    Utils.showLoading(btn, "Getting location...");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (latInput) latInput.value = position.coords.latitude;
-        if (lngInput) lngInput.value = position.coords.longitude;
-        Utils.hideLoading(btn, "Get Current Location");
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        alert(
-          "Could not get your location. Please enter coordinates manually.",
-        );
-        Utils.hideLoading(btn, "Get Current Location");
-      },
-    );
   },
 
   // Find events near user's location

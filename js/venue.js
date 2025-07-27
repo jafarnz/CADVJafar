@@ -114,13 +114,6 @@ const VenuesPage = {
             // The create venue button is now a link to create-venue.html
             // No need for modal functionality since we have a dedicated page
 
-            if (venueForm) {
-                venueForm.addEventListener("submit", (e) => {
-                    e.preventDefault();
-                    this.handleVenueSubmit(e);
-                });
-            }
-
             // Venue details modal
             const venueDetailsModal = document.getElementById("venue-details-modal");
             const closeDetailsModal = document.getElementById("close-details-modal");
