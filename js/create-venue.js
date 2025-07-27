@@ -9,8 +9,8 @@ const CreateVenuePage = {
         console.log("🏢 Initializing Create Venue Page");
         
         // Check authentication
-        if (!Auth.isAuthenticated()) {
-            Router.navigate('login.html');
+        if (!Utils.isAuthenticated()) {
+            window.location.href = 'login.html';
             return;
         }
 
@@ -41,7 +41,7 @@ const CreateVenuePage = {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                Auth.logout();
+                Utils.logout();
             });
         }
 
@@ -89,7 +89,7 @@ const CreateVenuePage = {
         const viewVenuesBtn = document.getElementById('view-venues-btn');
         if (viewVenuesBtn) {
             viewVenuesBtn.addEventListener('click', () => {
-                Router.navigate('venues.html');
+                window.location.href = 'venues.html';
             });
         }
 
@@ -572,22 +572,19 @@ const CreateVenuePage = {
             type: document.getElementById('venueType').value,
             description: document.getElementById('venueDescription').value.trim(),
             address: document.getElementById('venueAddress').value.trim(),
-            phone: document.getElementById('venuePhone').value.trim(),
-            website: document.getElementById('venueWebsite').value.trim(),
             capacity: document.getElementById('venueCapacity').value ? parseInt(document.getElementById('venueCapacity').value) : null,
-            price: document.getElementById('venuePrice').value ? parseFloat(document.getElementById('venuePrice').value) : null,
+            imageUrl: document.getElementById('venueImageUrl').value.trim(),
             latitude: parseFloat(document.getElementById('venueLatitude').value),
-            longitude: parseFloat(document.getElementById('venueLongitude').value),
-            coordinates: [
-                parseFloat(document.getElementById('venueLongitude').value),
-                parseFloat(document.getElementById('venueLatitude').value)
-            ]
+            longitude: parseFloat(document.getElementById('venueLongitude').value)
         };
 
-        // Remove empty fields
+        // Remove empty fields except for required ones
         Object.keys(formData).forEach(key => {
             if (formData[key] === '' || formData[key] === null) {
-                delete formData[key];
+                // Keep required fields even if empty (they'll be validated)
+                if (!['name', 'type', 'address', 'latitude', 'longitude'].includes(key)) {
+                    delete formData[key];
+                }
             }
         });
 
@@ -597,7 +594,7 @@ const CreateVenuePage = {
     // Handle cancel action
     handleCancel: function() {
         if (confirm('Are you sure you want to cancel? All entered data will be lost.')) {
-            Router.navigate('venues.html');
+            window.location.href = 'venues.html';
         }
     },
 
