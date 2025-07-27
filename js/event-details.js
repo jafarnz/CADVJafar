@@ -177,9 +177,11 @@ class EventDetailsPage {
         document.getElementById('venueAddress').textContent = 
             this.venueData.address || 'Address not available';
         document.getElementById('venuePhone').textContent = 
-            this.venueData.phoneNumber || 'Phone not available';
+            this.venueData.phone || 'Phone not available';
         document.getElementById('venueEmail').textContent = 
             this.venueData.email || 'Email not available';
+        document.getElementById('venueCapacity').textContent = 
+            this.venueData.capacity ? `${this.venueData.capacity} capacity` : 'Capacity not available';
         
         const venueWebsite = document.getElementById('venueWebsite');
         if (this.venueData.website) {

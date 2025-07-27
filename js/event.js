@@ -665,12 +665,12 @@ const EventsPage = {
         // Update button states
         this.updateEventButtonStates();
       } else {
-        Utils.showNotification('Failed to join event. You may have already joined.', 'error');
+        Utils.showMessage('Failed to join event. You may have already joined.', 'error');
       }
 
     } catch (error) {
       console.error('❌ Failed to join event:', error);
-      Utils.showNotification('Failed to join event. Please try again.', 'error');
+      Utils.showMessage('Failed to join event. Please try again.', 'error');
     } finally {
       // Reset button state
       if (joinBtn) {

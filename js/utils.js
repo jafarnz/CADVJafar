@@ -372,6 +372,7 @@ const Utils = {
                 email: userData.email,
                 preferredUsername: userData.preferred_username,
                 sub: userData.sub,
+                user_id: userData.sub, // Map sub to user_id for consistency
             };
 
             console.log("✅ User info extracted:", userInfo);
