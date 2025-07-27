@@ -612,188 +612,30 @@ const EventsPage = {
 
   // Show event details with venue map
   showEventDetails: function (eventId) {
-    const event = this.events.find(
-      (e) => e.eventID.toString() === eventId.toString(),
-    );
-    if (!event) return;
-
-    const venue = this.venues.find((v) => v.venueID === event.venueID || v.venueId === event.venueID);
-    const modal = document.getElementById("event-details-modal");
-    const content = document.getElementById("event-details-content");
-
-    if (!modal || !content) return;
-
-    const eventDate = new Date(event.eventDate);
-    const isUpcoming = eventDate >= new Date();
-    const imageUrl = event.imageUrl || "/api/placeholder/600/300";
-
-    content.innerHTML = `
-      <div style="text-align: center; margin-bottom: 2rem;">
-        <img src="${imageUrl}" alt="${Utils.sanitizeInput(event.name)}"
-             style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px;"
-             onerror="this.style.display='none'">
-        <h2 style="margin: 1rem 0 0.5rem 0;">${Utils.sanitizeInput(event.name)}</h2>
-        ${event.genre ? `<span class="genre-badge" style="font-size: 1rem; padding: 0.5rem 1rem;">${Utils.capitalize(event.genre)}</span>` : ""}
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; color: #333;">📅 Date & Time</h4>
-          <p style="margin: 0; color: #666;">${Utils.formatDate(event.eventDate)}<br>${Utils.formatTime(event.eventTime)}</p>
-        </div>
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; color: #333;">📍 Venue</h4>
-          <p style="margin: 0; color: #666;">
-            ${venue ? `${Utils.sanitizeInput(venue.name)}<br><small>${Utils.sanitizeInput(venue.address)}</small>` : "Venue TBA"}
-          </p>
-        </div>
-      </div>
-
-      ${venue ? `
-        <!-- Venue Map -->
-        <div style="margin-bottom: 1.5rem;">
-          <h4 style="margin: 0 0 1rem 0; color: #333; display: flex; align-items: center; gap: 0.5rem;">
-            🗺️ Venue Location
-          </h4>
-          <div id="event-venue-map" style="
-            height: 300px; 
-            width: 100%; 
-            border: 2px solid #e2e8f0; 
-            border-radius: 12px; 
-            background: #f8fafc;
-          ">
-            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #64748b;">
-              <div style="text-align: center;">
-                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🗺️</div>
-                <p style="margin: 0; font-weight: 600;">Loading venue map...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ` : ''}
-
-      ${
-        event.description
-          ? `
-        <div style="margin-bottom: 1.5rem;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #333;">About This Event</h4>
-          <p style="margin: 0; color: #666; line-height: 1.6;">${Utils.sanitizeInput(event.description)}</p>
-        </div>
-      `
-          : ""
-      }
-
-      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-        ${
-          isUpcoming
-            ? `
-          <button onclick="EventsPage.joinEvent('${event.eventID}')" class="join-btn" style="padding: 0.75rem 2rem;">
-            Join This Event
-          </button>
-        `
-            : `
-          <button class="btn btn-secondary" disabled style="padding: 0.75rem 2rem;">
-            Event Ended
-          </button>
-        `
-        }
-        <button onclick="document.getElementById('event-details-modal').style.display='none'" class="btn btn-secondary" style="padding: 0.75rem 2rem;">
-          Close
-        </button>
-      </div>
-    `;
-
-    modal.style.display = "block";
-
-    // Initialize venue map if venue has coordinates
-    if (venue && (venue.coordinates || (venue.latitude && venue.longitude))) {
-      setTimeout(async () => {
-        try {
-          await this.initializeEventVenueMap(venue);
-        } catch (error) {
-          console.error("❌ Failed to initialize venue map:", error);
-        }
-      }, 100);
-    }
-  },
-  
-  // Initialize map for event venue
-  initializeEventVenueMap: async function(venue) {
-    try {
-      console.log("🗺️ Initializing event venue map for:", venue.name);
-      
-      // Get coordinates
-      let coordinates;
-      if (venue.coordinates && Array.isArray(venue.coordinates)) {
-        coordinates = venue.coordinates; // [lng, lat]
-      } else if (venue.latitude && venue.longitude) {
-        coordinates = [parseFloat(venue.longitude), parseFloat(venue.latitude)];
-      } else {
-        throw new Error("No valid coordinates found for venue");
-      }
-      
-      // Initialize map
-      const map = await MapService.initializeVenueMap('event-venue-map', {
-        center: coordinates,
-        zoom: 15
-      });
-      
-      // Add venue marker with popup
-      const popupContent = `
-        <div style="text-align: center; padding: 8px;">
-          <h4 style="margin: 0 0 8px 0; color: #1e293b;">${venue.name}</h4>
-          ${venue.address ? `<p style="margin: 0; color: #64748b; font-size: 0.9rem;">${venue.address}</p>` : ''}
-        </div>
-      `;
-      
-      MapService.addMarker(map, {
-        lng: coordinates[0],
-        lat: coordinates[1],
-        popup: popupContent
-      });
-      
-      console.log("✅ Event venue map initialized successfully");
-      
-    } catch (error) {
-      console.error("❌ Failed to initialize event venue map:", error);
-      
-      // Show error in map container
-      const mapContainer = document.getElementById('event-venue-map');
-      if (mapContainer) {
-        mapContainer.innerHTML = `
-          <div style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border-radius: 10px;
-            color: #991b1b;
-          ">
-            <div style="text-align: center;">
-              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
-              <p style="margin: 0; font-weight: 600;">Map Unavailable</p>
-              <p style="margin: 0; font-size: 0.8rem; opacity: 0.8;">Venue location could not be displayed</p>
-            </div>
-          </div>
-        `;
-      }
-    }
+    // Redirect to event details page
+    window.location.href = `event-details.html?id=${eventId}`;
   },
 
   // Join an event
-  joinEvent: function (eventId) {
+  joinEvent: async function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
     );
     if (!event) {
-      Utils.showError('Event not found');
+      Utils.showNotification('Event not found', 'error');
+      return;
+    }
+
+    // Check authentication
+    if (!Utils.isAuthenticated()) {
+      Utils.showNotification('Please login to join events', 'error');
+      window.location.href = 'login.html';
       return;
     }
 
     // Check if already joined
     if (Utils.isEventJoined(eventId)) {
-      Utils.showWarning(`You've already joined "${event.name}"`);
+      Utils.showNotification(`You've already joined "${event.name}"`, 'info');
       return;
     }
 
@@ -802,30 +644,155 @@ const EventsPage = {
     const now = new Date();
     
     if (eventDateTime <= now) {
-      Utils.showError('Cannot join events that have already passed');
+      Utils.showNotification('Cannot join events that have already passed', 'error');
       return;
     }
 
+    // Show loading state on join button
+    const joinBtn = document.querySelector(`[onclick*="${eventId}"].join-btn`);
+    const originalText = joinBtn ? joinBtn.textContent : '';
+    if (joinBtn) {
+      joinBtn.disabled = true;
+      joinBtn.textContent = 'Joining...';
+    }
+
     try {
-      // Add event to joined events
-      const success = Utils.addJoinedEvent(event);
+      // Use new Utils API to join event
+      const success = await Utils.addJoinedEvent(event);
       
       if (success) {
-        Utils.showSuccess(
-          `You've successfully joined "${event.name}"! You'll receive updates about this event.`,
-        );
-        
-        // Update the UI to reflect joined status
+        console.log('✅ Successfully joined event');
+        // Update button states
         this.updateEventButtonStates();
-        
-        console.log('✅ Joined event:', event.name);
       } else {
-        Utils.showWarning(`You've already joined "${event.name}"`);
+        Utils.showNotification('Failed to join event. You may have already joined.', 'error');
       }
+
     } catch (error) {
       console.error('❌ Failed to join event:', error);
-      Utils.showError('Failed to join event. Please try again.');
+      Utils.showNotification('Failed to join event. Please try again.', 'error');
+    } finally {
+      // Reset button state
+      if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = originalText;
+      }
     }
+  },
+
+  // Show join notification popup
+  showJoinNotification: function(event) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'join-notification';
+    notification.innerHTML = `
+      <div class="join-notification-content">
+        <div class="join-notification-icon">🎉</div>
+        <div class="join-notification-text">
+          <h4>You've joined "${Utils.sanitizeInput(event.name)}"!</h4>
+          <p>You'll receive updates about this event.</p>
+        </div>
+        <button class="join-notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+      </div>
+    `;
+    
+    // Add styles
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      padding: 0;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);
+      z-index: 10000;
+      max-width: 350px;
+      animation: slideInRight 0.5s ease-out;
+      backdrop-filter: blur(10px);
+    `;
+    
+    const content = notification.querySelector('.join-notification-content');
+    content.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+    `;
+    
+    const icon = notification.querySelector('.join-notification-icon');
+    icon.style.cssText = `
+      font-size: 2rem;
+      animation: bounce 1s ease-in-out;
+    `;
+    
+    const text = notification.querySelector('.join-notification-text');
+    text.style.cssText = `
+      flex: 1;
+    `;
+    
+    const title = text.querySelector('h4');
+    title.style.cssText = `
+      margin: 0 0 0.25rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    `;
+    
+    const desc = text.querySelector('p');
+    desc.style.cssText = `
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    `;
+    
+    const closeBtn = notification.querySelector('.join-notification-close');
+    closeBtn.style.cssText = `
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    `;
+    
+    // Add animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+      .join-notification-close:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.style.animation = 'slideInRight 0.5s ease-in reverse';
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 500);
+      }
+    }, 5000);
   },
 
   // Update event button states based on joined status
@@ -842,7 +809,7 @@ const EventsPage = {
   },
 
   // Leave an event
-  leaveEvent: function(eventId) {
+  leaveEvent: async function(eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
     );
@@ -857,9 +824,30 @@ const EventsPage = {
     }
 
     if (confirm(`Are you sure you want to leave "${event.name}"?`)) {
-      Utils.removeJoinedEvent(eventId);
-      Utils.showSuccess(`You've left "${event.name}"`);
-      this.updateEventButtonStates();
+      try {
+        // Remove from API first
+        const currentUser = Utils.getCurrentUser();
+        if (currentUser && currentUser.user_id) {
+          console.log('📡 Sending leave request to API...');
+          
+          const leaveUrl = CONFIG.buildApiUrl(`user-events/${currentUser.user_id}/${eventId}`);
+          await Utils.apiCall(leaveUrl, {
+            method: 'DELETE',
+            headers: CONFIG.getAuthHeaders()
+          });
+
+          console.log('✅ Successfully left event in API');
+        }
+
+        // Remove from local storage
+        Utils.removeJoinedEvent(eventId);
+        Utils.showSuccess(`You've left "${event.name}"`);
+        this.updateEventButtonStates();
+        
+      } catch (error) {
+        console.error('❌ Failed to leave event:', error);
+        Utils.showError('Failed to leave event. Please try again.');
+      }
     }
   },
 

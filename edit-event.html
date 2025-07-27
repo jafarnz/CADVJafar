@@ -472,38 +472,14 @@
 
         // Event image upload handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Auth to complete initialization
-            let attempts = 0;
-            const maxAttempts = 15;
+            // Simple authentication check
+            if (!Utils.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
             
-            const checkAuthAndInit = () => {
-                attempts++;
-                console.log(`Authentication check attempt ${attempts}`);
-                
-                if (Utils.isAuthenticated()) {
-                    console.log('✅ User authenticated, initializing edit event');
-                    EditEvent.init();
-                } else if (attempts < maxAttempts) {
-                    console.log('⏳ User not yet authenticated, retrying...');
-                    setTimeout(checkAuthAndInit, 500);
-                } else {
-                    console.error('❌ Authentication timeout after', maxAttempts, 'attempts');
-                    const hasTokens = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN) && 
-                                     localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
-                    
-                    if (hasTokens) {
-                        console.log('🔄 Tokens exist but auth check failed, trying to refresh...');
-                        window.location.reload();
-                    } else {
-                        Utils.showError('Authentication required. Redirecting to login...', 'edit-event-messages');
-                        setTimeout(() => {
-                            window.location.href = 'login.html';
-                        }, 2000);
-                    }
-                }
-            };
-            
-            setTimeout(checkAuthAndInit, 500);
+            console.log('✅ User authenticated, initializing edit event');
+            EditEvent.init();
 
             // Event image upload
             const eventImageInput = document.getElementById('eventImageInput');

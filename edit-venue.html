@@ -499,46 +499,14 @@
 
         // Venue image upload handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Auth to complete initialization with longer timeout
-            let attempts = 0;
-            const maxAttempts = 15; // Increased attempts
+            // Simple authentication check
+            if (!Utils.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
             
-            const checkAuthAndInit = () => {
-                attempts++;
-                console.log(`Authentication check attempt ${attempts}`);
-                console.log('Auth state:', {
-                    isAuthenticated: Utils.isAuthenticated(),
-                    hasTokens: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
-                    currentUser: Utils.getCurrentUser()
-                });
-                
-                if (Utils.isAuthenticated()) {
-                    console.log('✅ User authenticated, initializing edit venue');
-                    EditVenue.init();
-                } else if (attempts < maxAttempts) {
-                    console.log('⏳ User not yet authenticated, retrying...');
-                    setTimeout(checkAuthAndInit, 500); // Increased timeout
-                } else {
-                    console.error('❌ Authentication timeout after', maxAttempts, 'attempts');
-                    // Instead of redirecting to login, check if we're actually logged in
-                    const hasTokens = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN) && 
-                                     localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
-                    
-                    if (hasTokens) {
-                        console.log('🔄 Tokens exist but auth check failed, trying to refresh...');
-                        // Force a page refresh to re-initialize auth
-                        window.location.reload();
-                    } else {
-                        Utils.showError('Authentication required. Redirecting to login...', 'edit-venue-messages');
-                        setTimeout(() => {
-                            window.location.href = 'login.html';
-                        }, 2000);
-                    }
-                }
-            };
-            
-            // Start the authentication check after a longer delay
-            setTimeout(checkAuthAndInit, 500);
+            console.log('✅ User authenticated, initializing edit venue');
+            EditVenue.init();
 
             // Venue image upload
             const venueImageInput = document.getElementById('venueImageInput');

@@ -422,48 +422,287 @@ const Utils = {
         if (element) element.style.display = 'block';
     },
 
-    // Joined Events Management
+    // Joined Events Management using Users endpoint
     getJoinedEvents: function() {
         const userData = this.getCurrentUser();
         if (!userData) return [];
         
+        // First try localStorage for offline access
         const joinedEvents = localStorage.getItem(`joined_events_${userData.user_id}`);
         return joinedEvents ? JSON.parse(joinedEvents) : [];
     },
 
-    addJoinedEvent: function(eventData) {
-        const userData = this.getCurrentUser();
-        if (!userData) return false;
-        
-        const joinedEvents = this.getJoinedEvents();
-        
-        // Check if already joined
-        const alreadyJoined = joinedEvents.find(e => e.eventID === eventData.eventID);
-        if (alreadyJoined) {
-            return false; // Already joined
+    // Load joined events from API users endpoint
+    loadJoinedEventsFromAPI: async function() {
+        try {
+            const userData = this.getCurrentUser();
+            if (!userData || !userData.user_id) {
+                console.log('No user data for loading joined events');
+                return [];
+            }
+
+            console.log('📡 Loading user profile with joined events from API...');
+            const userUrl = CONFIG.buildApiUrl(`users/${userData.user_id}`);
+            const response = await this.apiCall(userUrl, {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
+
+            console.log('✅ User profile loaded from API:', response);
+
+            // Extract joined events from user profile
+            // Your Lambda returns the user object directly, not wrapped
+            let joinedEvents = [];
+            if (response && response.joinedEvents) {
+                joinedEvents = Array.isArray(response.joinedEvents) ? response.joinedEvents : [];
+            } else if (response && response.message) {
+                try {
+                    const parsed = typeof response.message === 'string' ? JSON.parse(response.message) : response.message;
+                    joinedEvents = parsed.joinedEvents || [];
+                } catch (parseError) {
+                    console.error("❌ Failed to parse user data:", parseError);
+                    joinedEvents = [];
+                }
+            }
+
+            // Store in localStorage for offline access
+            if (joinedEvents && joinedEvents.length >= 0) {
+                localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(joinedEvents));
+                console.log(`✅ Synced ${joinedEvents.length} joined events to localStorage`);
+            }
+
+            return joinedEvents || [];
+        } catch (error) {
+            console.error('❌ Failed to load joined events from API:', error);
+            // Fall back to localStorage
+            return this.getJoinedEvents();
         }
-        
-        // Add event with join timestamp
-        const joinedEvent = {
-            ...eventData,
-            joinedAt: new Date().toISOString()
-        };
-        
-        joinedEvents.push(joinedEvent);
-        localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(joinedEvents));
-        
-        return true;
     },
 
-    removeJoinedEvent: function(eventID) {
+    // Add joined event via API
+    addJoinedEvent: async function(eventData) {
         const userData = this.getCurrentUser();
         if (!userData) return false;
         
-        const joinedEvents = this.getJoinedEvents();
-        const filteredEvents = joinedEvents.filter(e => e.eventID !== eventID);
+        try {
+            console.log('📡 Adding joined event via API...');
+            
+            // First check if already joined
+            const currentJoinedEvents = await this.loadJoinedEventsFromAPI();
+            const alreadyJoined = currentJoinedEvents.find(e => e.eventID === eventData.eventID);
+            if (alreadyJoined) {
+                console.log('Event already joined');
+                return false;
+            }
+            
+            // Add event with join timestamp
+            const joinedEvent = {
+                eventID: eventData.eventID,
+                name: eventData.name,
+                eventDate: eventData.eventDate,
+                eventTime: eventData.eventTime,
+                venueID: eventData.venueID,
+                description: eventData.description,
+                imageUrl: eventData.imageUrl,
+                joinedAt: new Date().toISOString()
+            };
+            
+            // Update joined events array
+            const updatedJoinedEvents = [...currentJoinedEvents, joinedEvent];
+            
+            // Get current user profile first to preserve other data
+            const currentUserProfile = await this.apiCall(CONFIG.buildApiUrl(`users/${userData.user_id}`), {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
+            
+            // Update user profile with new joined events (preserving all existing data)
+            const userUrl = CONFIG.buildApiUrl(`users/${userData.user_id}`);
+            const updateData = {
+                userID: userData.user_id,
+                name: currentUserProfile.name || userData.name || '',
+                email: currentUserProfile.email || userData.email || '',
+                preferences: currentUserProfile.preferences || {},
+                profilePictureUrl: currentUserProfile.profilePictureUrl || null,
+                bio: currentUserProfile.bio || null,
+                location: currentUserProfile.location || null,
+                website: currentUserProfile.website || null,
+                joinedEvents: updatedJoinedEvents
+            };
+            
+            const response = await this.apiCall(userUrl, {
+                method: 'PUT',
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify(updateData)
+            });
+            
+            console.log('✅ Joined event added to user profile:', response);
+            
+            // Update localStorage
+            localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(updatedJoinedEvents));
+            
+            // Show success notification
+            this.showJoinSuccessNotification(eventData.name);
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to add joined event via API:', error);
+            
+            // Fallback to localStorage only
+            const joinedEvents = this.getJoinedEvents();
+            const alreadyJoined = joinedEvents.find(e => e.eventID === eventData.eventID);
+            if (alreadyJoined) {
+                return false;
+            }
+            
+            const joinedEvent = {
+                ...eventData,
+                joinedAt: new Date().toISOString()
+            };
+            
+            joinedEvents.push(joinedEvent);
+            localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(joinedEvents));
+            
+            this.showJoinSuccessNotification(eventData.name);
+            return true;
+        }
+    },
+
+    // Remove joined event via API
+    removeJoinedEvent: async function(eventID) {
+        const userData = this.getCurrentUser();
+        if (!userData) return false;
         
-        localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(filteredEvents));
-        return true;
+        try {
+            console.log('📡 Removing joined event via API...');
+            
+            // Load current joined events
+            const currentJoinedEvents = await this.loadJoinedEventsFromAPI();
+            const filteredEvents = currentJoinedEvents.filter(e => e.eventID !== eventID);
+            
+            // Get current user profile to preserve other data
+            const currentUserProfile = await this.apiCall(CONFIG.buildApiUrl(`users/${userData.user_id}`), {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
+            
+            // Update user profile (preserving all existing data)
+            const userUrl = CONFIG.buildApiUrl(`users/${userData.user_id}`);
+            const updateData = {
+                userID: userData.user_id,
+                name: currentUserProfile.name || userData.name || '',
+                email: currentUserProfile.email || userData.email || '',
+                preferences: currentUserProfile.preferences || {},
+                profilePictureUrl: currentUserProfile.profilePictureUrl || null,
+                bio: currentUserProfile.bio || null,
+                location: currentUserProfile.location || null,
+                website: currentUserProfile.website || null,
+                joinedEvents: filteredEvents
+            };
+            
+            const response = await this.apiCall(userUrl, {
+                method: 'PUT',
+                headers: CONFIG.getAuthHeaders(),
+                body: JSON.stringify(updateData)
+            });
+            
+            console.log('✅ Joined event removed from user profile:', response);
+            
+            // Update localStorage
+            localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(filteredEvents));
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to remove joined event via API:', error);
+            
+            // Fallback to localStorage only
+            const joinedEvents = this.getJoinedEvents();
+            const filteredEvents = joinedEvents.filter(e => e.eventID !== eventID);
+            localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(filteredEvents));
+            return true;
+        }
+    },
+
+    // Show join success notification
+    showJoinSuccessNotification: function(eventName) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'join-success-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fa fa-check-circle"></i>
+                <span>Successfully joined "${eventName}"!</span>
+            </div>
+        `;
+        
+        // Add styles
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+            z-index: 10000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid #2E7D32;
+        `;
+        
+        // Add animation styles to head if not exists
+        if (!document.getElementById('notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOutRight {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+                .notification-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .notification-content i {
+                    font-size: 18px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Add to body
+        document.body.appendChild(notification);
+        
+        // Remove after 4 seconds with slide out animation
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
     },
 
     isEventJoined: function(eventID) {

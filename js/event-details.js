@@ -1,634 +1,347 @@
-// Event Details page functionality for Local Gigs App
-const EventDetailsPage = {
-        eventId: null,
-        event: null,
-        venue: null,
-        mapInitialized: false,
-        similarEvents: [],
+// Event Details Page JavaScript
+class EventDetailsPage {
+    constructor() {
+        this.eventData = null;
+        this.venueData = null;
+        this.eventID = null;
+        this.map = null;
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
+    }
 
-        // Initialize the event details page
-        init: async function() {
-            console.log("Initializing event details page...");
+    init() {
+        console.log('🎯 Initializing Event Details Page...');
+        
+        // Get event ID from URL
+        this.eventID = this.getEventIdFromUrl();
+        
+        if (!this.eventID) {
+            this.showError('No event ID provided');
+            return;
+        }
 
-            // Check authentication
-            if (!Utils.requireAuth()) {
-                return;
-            }
+        // Setup join button
+        this.setupJoinButton();
+        
+        // Load event data
+        this.loadEventDetails();
+    }
 
-            // Get event ID from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            this.eventId = urlParams.get('id');
+    getEventIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('id');
+    }
 
-            if (!this.eventId) {
-                this.showError();
-                return;
-            }
+    setupJoinButton() {
+        const joinBtn = document.getElementById('joinEventBtn');
+        if (joinBtn) {
+            joinBtn.addEventListener('click', () => this.handleJoinEvent());
+        }
+    }
 
-            // Set up event listeners
-            this.setupEventListeners();
+    async loadEventDetails() {
+        try {
+            console.log(`📡 Loading event details for ID: ${this.eventID}`);
+            
+            // Show loading state
+            this.showLoading();
 
             // Load event data
-            await this.loadEventData();
+            const eventUrl = CONFIG.buildApiUrl(`events/${this.eventID}`);
+            const eventResponse = await Utils.apiCall(eventUrl, {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
 
-            console.log("Event details page initialized successfully");
-        },
+            console.log('✅ Event data loaded:', eventResponse);
 
-        // Set up all event listeners
-        setupEventListeners: function() {
-            // Logout button
-            const logoutBtn = document.getElementById("logout-button");
-            if (logoutBtn) {
-                logoutBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    Utils.logout();
-                });
+            // Parse event data
+            if (eventResponse.event) {
+                this.eventData = eventResponse.event;
+            } else if (eventResponse.message) {
+                this.eventData = typeof eventResponse.message === 'string' 
+                    ? JSON.parse(eventResponse.message) 
+                    : eventResponse.message;
+            } else {
+                this.eventData = eventResponse;
             }
 
-            // Join Event Modal
-            const joinEventModal = document.getElementById("join-event-modal");
-            const closeJoinModal = document.getElementById("close-join-modal");
-
-            if (closeJoinModal && joinEventModal) {
-                closeJoinModal.addEventListener("click", () => {
-                    joinEventModal.style.display = "none";
-                });
+            // Load venue data if venue ID is available
+            if (this.eventData.venueID) {
+                await this.loadVenueDetails(this.eventData.venueID);
             }
 
-            // Share Event Modal
-            const shareEventModal = document.getElementById("share-event-modal");
-            const closeShareModal = document.getElementById("close-share-modal");
-            const copyLinkBtn = document.getElementById("copy-link-btn");
+            // Render the event details
+            this.renderEventDetails();
+            
+            // Initialize map
+            this.initializeMap();
 
-            if (closeShareModal && shareEventModal) {
-                closeShareModal.addEventListener("click", () => {
-                    shareEventModal.style.display = "none";
-                });
+        } catch (error) {
+            console.error('❌ Failed to load event details:', error);
+            this.showError('Failed to load event details. Please try again.');
+        }
+    }
+
+    async loadVenueDetails(venueID) {
+        try {
+            console.log(`📡 Loading venue details for ID: ${venueID}`);
+            
+            const venueUrl = CONFIG.buildApiUrl(`venues/${venueID}`);
+            const venueResponse = await Utils.apiCall(venueUrl, {
+                method: 'GET',
+                headers: CONFIG.getAuthHeaders()
+            });
+
+            console.log('✅ Venue data loaded:', venueResponse);
+
+            // Parse venue data
+            if (venueResponse.venue) {
+                this.venueData = venueResponse.venue;
+            } else if (venueResponse.message) {
+                this.venueData = typeof venueResponse.message === 'string' 
+                    ? JSON.parse(venueResponse.message) 
+                    : venueResponse.message;
+            } else {
+                this.venueData = venueResponse;
             }
 
-            if (copyLinkBtn) {
-                copyLinkBtn.addEventListener("click", () => {
-                    this.copyEventLink();
-                });
+        } catch (error) {
+            console.error('❌ Failed to load venue details:', error);
+            // Continue without venue data
+        }
+    }
+
+    renderEventDetails() {
+        try {
+            console.log('🎨 Rendering event details...');
+
+            // Hide loading and show content
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('errorContainer').style.display = 'none';
+            document.getElementById('eventDetailsContent').style.display = 'block';
+
+            // Render event information
+            this.renderEventInfo();
+            this.renderVenueInfo();
+            this.updateJoinButton();
+
+        } catch (error) {
+            console.error('❌ Failed to render event details:', error);
+            this.showError('Failed to display event details');
+        }
+    }
+
+    renderEventInfo() {
+        // Event image
+        const eventImage = document.getElementById('eventImage');
+        if (this.eventData.imageUrl) {
+            eventImage.src = this.eventData.imageUrl;
+            eventImage.alt = this.eventData.name || 'Event Image';
+        } else {
+            eventImage.src = 'https://via.placeholder.com/800x400/667eea/ffffff?text=Event+Image';
+            eventImage.alt = 'Default Event Image';
+        }
+
+        // Event title
+        document.getElementById('eventTitle').textContent = this.eventData.name || 'Event Name';
+
+        // Event meta information
+        document.getElementById('eventDate').textContent = this.formatDate(this.eventData.eventDate);
+        document.getElementById('eventTime').textContent = this.eventData.eventTime || 'Time TBA';
+        document.getElementById('venueName').textContent = this.venueData?.name || 'Venue TBA';
+        document.getElementById('eventCapacity').textContent = this.eventData.capacity 
+            ? `${this.eventData.capacity} attendees` 
+            : 'Capacity TBA';
+
+        // Event description
+        document.getElementById('eventDescription').textContent = 
+            this.eventData.description || 'No description available';
+    }
+
+    renderVenueInfo() {
+        if (!this.venueData) {
+            document.querySelector('.venue-info').style.display = 'none';
+            return;
+        }
+
+        // Venue details
+        document.getElementById('venueAddress').textContent = 
+            this.venueData.address || 'Address not available';
+        document.getElementById('venuePhone').textContent = 
+            this.venueData.phoneNumber || 'Phone not available';
+        document.getElementById('venueEmail').textContent = 
+            this.venueData.email || 'Email not available';
+        
+        const venueWebsite = document.getElementById('venueWebsite');
+        if (this.venueData.website) {
+            venueWebsite.href = this.venueData.website;
+            venueWebsite.textContent = this.venueData.website;
+        } else {
+            venueWebsite.textContent = 'Website not available';
+            venueWebsite.removeAttribute('href');
+        }
+
+        // Venue description
+        document.getElementById('venueDescription').textContent = 
+            this.venueData.description || 'No venue description available';
+    }
+
+    updateJoinButton() {
+        const joinBtn = document.getElementById('joinEventBtn');
+        const isJoined = Utils.isEventJoined(this.eventID);
+        
+        if (isJoined) {
+            joinBtn.classList.add('joined');
+            joinBtn.innerHTML = '<i class="fas fa-check"></i><span>Joined</span>';
+            joinBtn.disabled = true;
+        } else {
+            joinBtn.classList.remove('joined');
+            joinBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Join Event</span>';
+            joinBtn.disabled = false;
+        }
+    }
+
+    async handleJoinEvent() {
+        if (!Utils.isAuthenticated()) {
+            Utils.showNotification('Please login to join events', 'error');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (Utils.isEventJoined(this.eventID)) {
+            Utils.showNotification('You have already joined this event', 'info');
+            return;
+        }
+
+        try {
+            console.log('🎯 Joining event...');
+            
+            const joinBtn = document.getElementById('joinEventBtn');
+            const originalContent = joinBtn.innerHTML;
+            
+            // Show loading state
+            joinBtn.disabled = true;
+            joinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Joining...</span>';
+
+            // Join the event
+            const success = await Utils.addJoinedEvent(this.eventData);
+            
+            if (success) {
+                this.updateJoinButton();
+                console.log('✅ Successfully joined event');
+            } else {
+                Utils.showNotification('Failed to join event. You may have already joined.', 'error');
+                joinBtn.disabled = false;
+                joinBtn.innerHTML = originalContent;
             }
 
-            // Social sharing buttons
-            const shareFacebookBtn = document.getElementById("share-facebook-btn");
-            const shareTwitterBtn = document.getElementById("share-twitter-btn");
-            const shareWhatsappBtn = document.getElementById("share-whatsapp-btn");
-            const shareEmailBtn = document.getElementById("share-email-btn");
+        } catch (error) {
+            console.error('❌ Failed to join event:', error);
+            Utils.showNotification('Failed to join event. Please try again.', 'error');
+            
+            // Reset button
+            const joinBtn = document.getElementById('joinEventBtn');
+            joinBtn.disabled = false;
+            joinBtn.innerHTML = '<i class="fas fa-user-plus"></i><span>Join Event</span>';
+        }
+    }
 
-            if (shareFacebookBtn) {
-                shareFacebookBtn.addEventListener("click", () => {
-                    this.shareOnFacebook();
-                });
-            }
+    initializeMap() {
+        if (!this.venueData || !this.venueData.latitude || !this.venueData.longitude) {
+            console.log('No venue coordinates available for map');
+            document.querySelector('.map-container').style.display = 'none';
+            return;
+        }
 
-            if (shareTwitterBtn) {
-                shareTwitterBtn.addEventListener("click", () => {
-                    this.shareOnTwitter();
-                });
-            }
+        try {
+            console.log('🗺️ Initializing event map...');
+            
+            const mapOptions = {
+                center: {
+                    lat: parseFloat(this.venueData.latitude),
+                    lng: parseFloat(this.venueData.longitude)
+                },
+                zoom: 15,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
 
-            if (shareWhatsappBtn) {
-                shareWhatsappBtn.addEventListener("click", () => {
-                    this.shareOnWhatsApp();
-                });
-            }
+            this.map = new google.maps.Map(document.getElementById('eventMap'), mapOptions);
 
-            if (shareEmailBtn) {
-                shareEmailBtn.addEventListener("click", () => {
-                    this.shareViaEmail();
-                });
-            }
-
-            // Close modals when clicking outside
-            window.addEventListener("click", (e) => {
-                if (e.target === joinEventModal) {
-                    joinEventModal.style.display = "none";
-                }
-                if (e.target === shareEventModal) {
-                    shareEventModal.style.display = "none";
+            // Add marker for venue
+            const marker = new google.maps.Marker({
+                position: mapOptions.center,
+                map: this.map,
+                title: this.venueData.name || 'Event Venue',
+                icon: {
+                    url: 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%23667eea"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+                    scaledSize: new google.maps.Size(32, 32)
                 }
             });
-        },
 
-        // Load event data and related information
-        loadEventData: async function() {
-            try {
-                // Load event details
-                const eventUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS, this.eventId);
-                this.event = await Utils.apiCall(eventUrl, {
-                    method: "GET",
-                    headers: CONFIG.getAuthHeaders(),
-                });
+            // Add info window
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 10px;">
+                        <h3 style="margin: 0 0 5px 0; color: #667eea;">${this.venueData.name || 'Event Venue'}</h3>
+                        <p style="margin: 0; color: #666;">${this.venueData.address || 'Venue Address'}</p>
+                        <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">${this.eventData.name}</p>
+                    </div>
+                `
+            });
 
-                // Load venue details if event has a venue
-                if (this.event.venueID) {
-                    await this.loadVenueData();
-                }
+            marker.addListener('click', () => {
+                infoWindow.open(this.map, marker);
+            });
 
-                // Load similar events
-                await this.loadSimilarEvents();
+            console.log('✅ Map initialized successfully');
 
-                // Render the event details
-                this.renderEventDetails();
-
-                // Initialize map if venue has coordinates
-                if (this.venue && this.venue.latitude && this.venue.longitude) {
-                    await this.initializeMap();
-                }
-
-            } catch (error) {
-                console.error("Failed to load event data:", error);
-                this.showError();
-            }
-        },
-
-        // Load venue data for the event
-        loadVenueData: async function() {
-            try {
-                const venueUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES, this.event.venueID);
-                this.venue = await Utils.apiCall(venueUrl, {
-                    method: "GET",
-                    headers: CONFIG.getAuthHeaders(),
-                });
-            } catch (error) {
-                console.error("Failed to load venue data:", error);
-                this.venue = null;
-            }
-        },
-
-        // Load similar events (same genre or nearby)
-        loadSimilarEvents: async function() {
-            try {
-                const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
-                const eventsResponse = await Utils.apiCall(eventsUrl, {
-                    method: "GET",
-                    headers: CONFIG.getAuthHeaders(),
-                });
-
-                let allEvents = [];
-
-                // Handle different response formats
-                if (Array.isArray(eventsResponse)) {
-                    allEvents = eventsResponse;
-                } else if (eventsResponse && eventsResponse.events && Array.isArray(eventsResponse.events)) {
-                    allEvents = eventsResponse.events;
-                } else if (eventsResponse && eventsResponse.Items && Array.isArray(eventsResponse.Items)) {
-                    allEvents = eventsResponse.Items;
-                } else if (eventsResponse && eventsResponse.message) {
-                    try {
-                        const parsedEvents = JSON.parse(eventsResponse.message);
-                        if (Array.isArray(parsedEvents)) {
-                            allEvents = parsedEvents;
-                        }
-                    } catch (parseError) {
-                        console.error("Failed to parse events from message:", parseError);
-                    }
-                }
-
-                // Ensure allEvents is an array before filtering
-                if (!Array.isArray(allEvents)) {
-                    console.warn("Events data is not an array:", allEvents);
-                    allEvents = [];
-                }
-
-                // Filter out current event and find similar ones
-                this.similarEvents = allEvents
-                    .filter(event =>
-                        event.eventID !== this.event.eventID &&
-                        (event.genre === this.event.genre || event.venueID === this.event.venueID)
-                    )
-                    .slice(0, 3); // Show up to 3 similar events
-
-            } catch (error) {
-                console.error("Failed to load similar events:", error);
-                this.similarEvents = [];
-            }
-        },
-
-        // Render event details
-        renderEventDetails: function() {
-            this.hideLoading();
-            this.showContent();
-
-            // Render event header
-            this.renderEventHeader();
-
-            // Render event details section
-            this.renderEventDetailsSection();
-
-            // Render venue section
-            this.renderVenueSection();
-
-            // Render actions section
-            this.renderActionsSection();
-
-            // Render similar events
-            this.renderSimilarEvents();
-
-            // Set up share URL
-            this.setupShareUrl();
-        },
-
-        // Render event header
-        renderEventHeader: function() {
-                const eventHeader = document.getElementById("event-header");
-                if (!eventHeader) return;
-
-                const eventDate = new Date(this.event.eventDate);
-                const today = new Date();
-                const isToday = eventDate.toDateString() === today.toDateString();
-                const isPassed = eventDate < today;
-
-                let statusClass = "upcoming";
-                let statusText = "Upcoming Event";
-
-                if (isToday) {
-                    statusClass = "today";
-                    statusText = "Today";
-                } else if (isPassed) {
-                    statusClass = "passed";
-                    statusText = "Event Passed";
-                }
-
-                const imageUrl = this.event.imageUrl || "/api/placeholder/800/300";
-
-                eventHeader.innerHTML = `
-      ${this.event.imageUrl ? `
-        <img src="${imageUrl}" alt="${Utils.sanitizeInput(this.event.name)}"
-             class="event-header-image" onerror="this.style.display='none'">
-      ` : ''}
-
-      <div class="event-status ${statusClass}">${statusText}</div>
-
-      <h1 class="event-title">${Utils.sanitizeInput(this.event.name)}</h1>
-
-      ${this.event.description ? `
-        <p class="event-subtitle">${Utils.sanitizeInput(this.event.description)}</p>
-      ` : ''}
-
-      ${this.event.genre ? `
-        <div style="margin-top: 1rem;">
-          <span class="genre-badge">${Utils.capitalize(this.event.genre)}</span>
-        </div>
-      ` : ''}
-    `;
-  },
-
-  // Render event details section
-  renderEventDetailsSection: function () {
-    const eventDetails = document.getElementById("event-details");
-    if (!eventDetails) return;
-
-    const eventDate = new Date(this.event.eventDate);
-    const dayOfWeek = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
-
-    eventDetails.innerHTML = `
-      <div class="detail-item">
-        <div class="detail-icon">📅</div>
-        <div class="detail-content">
-          <div class="detail-label">Date & Time</div>
-          <div class="detail-value">
-            ${dayOfWeek}, ${Utils.formatDate(this.event.eventDate)}<br>
-            ${Utils.formatTime(this.event.eventTime)}
-          </div>
-        </div>
-      </div>
-
-      ${this.event.genre ? `
-        <div class="detail-item">
-          <div class="detail-icon">🎵</div>
-          <div class="detail-content">
-            <div class="detail-label">Genre</div>
-            <div class="detail-value">${Utils.capitalize(this.event.genre)}</div>
-          </div>
-        </div>
-      ` : ''}
-
-      <div class="detail-item">
-        <div class="detail-icon">🎫</div>
-        <div class="detail-content">
-          <div class="detail-label">Event ID</div>
-          <div class="detail-value">#${this.event.eventID}</div>
-        </div>
-      </div>
-
-      ${this.event.description ? `
-        <div class="detail-item">
-          <div class="detail-icon">📝</div>
-          <div class="detail-content">
-            <div class="detail-label">Description</div>
-            <div class="detail-value">${Utils.sanitizeInput(this.event.description)}</div>
-          </div>
-        </div>
-      ` : ''}
-    `;
-  },
-
-  // Render venue section
-  renderVenueSection: function () {
-    const venueDetails = document.getElementById("venue-details");
-    if (!venueDetails) return;
-
-    if (!this.venue) {
-      venueDetails.innerHTML = `
-        <div class="detail-item">
-          <div class="detail-icon">📍</div>
-          <div class="detail-content">
-            <div class="detail-label">Venue</div>
-            <div class="detail-value">Venue information not available</div>
-          </div>
-        </div>
-      `;
-      return;
+        } catch (error) {
+            console.error('❌ Failed to initialize map:', error);
+            document.querySelector('.map-container').style.display = 'none';
+        }
     }
 
-    venueDetails.innerHTML = `
-      <div class="detail-item">
-        <div class="detail-icon">🏢</div>
-        <div class="detail-content">
-          <div class="detail-label">Venue Name</div>
-          <div class="detail-value">${Utils.sanitizeInput(this.venue.name)}</div>
-        </div>
-      </div>
-
-      <div class="detail-item">
-        <div class="detail-icon">📍</div>
-        <div class="detail-content">
-          <div class="detail-label">Address</div>
-          <div class="detail-value">${Utils.sanitizeInput(this.venue.address)}</div>
-        </div>
-      </div>
-
-      ${this.venue.capacity ? `
-        <div class="detail-item">
-          <div class="detail-icon">👥</div>
-          <div class="detail-content">
-            <div class="detail-label">Capacity</div>
-            <div class="detail-value">${this.venue.capacity.toLocaleString()} people</div>
-          </div>
-        </div>
-      ` : ''}
-
-      ${this.venue.type ? `
-        <div class="detail-item">
-          <div class="detail-icon">🏛️</div>
-          <div class="detail-content">
-            <div class="detail-label">Venue Type</div>
-            <div class="detail-value">${Utils.capitalize(this.venue.type.replace('-', ' '))}</div>
-          </div>
-        </div>
-      ` : ''}
-    `;
-  },
-
-  // Render actions section
-  renderActionsSection: function () {
-    const eventActions = document.getElementById("event-actions");
-    if (!eventActions) return;
-
-    const eventDate = new Date(this.event.eventDate);
-    const isPassed = eventDate < new Date();
-
-    eventActions.innerHTML = `
-      <button class="action-btn primary" onclick="EventDetailsPage.joinEvent()" ${isPassed ? 'disabled' : ''}>
-        ${isPassed ? 'Event Has Passed' : 'Join This Event'}
-      </button>
-
-      <button class="action-btn secondary" onclick="EventDetailsPage.shareEvent()">
-        📤 Share Event
-      </button>
-
-      ${this.venue && this.venue.latitude && this.venue.longitude ? `
-        <button class="action-btn secondary" onclick="EventDetailsPage.getDirections()">
-          🗺️ Get Directions
-        </button>
-      ` : ''}
-
-      <button class="action-btn secondary" onclick="EventDetailsPage.addToCalendar()">
-        📅 Add to Calendar
-      </button>
-
-      <button class="action-btn secondary" onclick="window.location.href='venues.html?venue=${this.event.venueID}'">
-        🏢 View Venue Details
-      </button>
-    `;
-  },
-
-  // Render similar events
-  renderSimilarEvents: function () {
-    const similarEventsDiv = document.getElementById("similar-events");
-    if (!similarEventsDiv) return;
-
-    if (this.similarEvents.length === 0) {
-      similarEventsDiv.innerHTML = `
-        <div style="text-align: center; padding: 2rem; color: #666;">
-          <p>No similar events found.</p>
-          <button onclick="window.location.href='events.html'" class="btn btn-secondary">
-            Browse All Events
-          </button>
-        </div>
-      `;
-      return;
+    formatDate(dateString) {
+        if (!dateString) return 'Date TBA';
+        
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            return dateString;
+        }
     }
 
-    similarEventsDiv.innerHTML = `
-      <div class="similar-events-grid">
-        ${this.similarEvents.map(event => `
-          <div class="similar-event-card" onclick="window.location.href='event-details.html?id=${event.eventID}'">
-            <div class="similar-event-title">${Utils.sanitizeInput(event.name)}</div>
-            <div class="similar-event-meta">
-              ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}
-              ${event.genre ? `• ${Utils.capitalize(event.genre)}` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  },
-
-  // Initialize map
-  initializeMap: async function () {
-    try {
-      const success = await MapService.init("event-map");
-      if (success) {
-        this.mapInitialized = true;
-
-        // Add marker for the venue
-        MapService.addMarker(
-          parseFloat(this.venue.latitude),
-          parseFloat(this.venue.longitude),
-          `
-            <div style="text-align: center;">
-              <h4>${Utils.sanitizeInput(this.venue.name)}</h4>
-              <p>${Utils.sanitizeInput(this.event.name)}</p>
-              <small>${Utils.formatDate(this.event.eventDate)} at ${Utils.formatTime(this.event.eventTime)}</small>
-            </div>
-          `,
-          "#007bff"
-        );
-
-        // Center map on venue
-        MapService.centerOn(
-          parseFloat(this.venue.latitude),
-          parseFloat(this.venue.longitude),
-          15
-        );
-      }
-    } catch (error) {
-      console.error("Failed to initialize map:", error);
-      document.getElementById("event-map").innerHTML = `
-        <div style="text-align: center; padding: 2rem; color: #666;">
-          <p>Map not available</p>
-        </div>
-      `;
+    showLoading() {
+        document.getElementById('loadingIndicator').style.display = 'block';
+        document.getElementById('errorContainer').style.display = 'none';
+        document.getElementById('eventDetailsContent').style.display = 'none';
     }
-  },
 
-  // Join event functionality
-  joinEvent: function () {
-    const modal = document.getElementById("join-event-modal");
-    const content = document.getElementById("join-event-content");
-
-    content.innerHTML = `
-      <div style="text-align: center; padding: 1rem 0;">
-        <h3>Join "${Utils.sanitizeInput(this.event.name)}"</h3>
-        <p style="color: #666; margin: 1rem 0;">
-          Are you sure you want to join this event? You'll receive updates and reminders about the event.
-        </p>
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-          <button onclick="EventDetailsPage.confirmJoinEvent()" class="btn">
-            Yes, Join Event
-          </button>
-          <button onclick="document.getElementById('join-event-modal').style.display='none'" class="btn btn-secondary">
-            Cancel
-          </button>
-        </div>
-      </div>
-    `;
-
-    modal.style.display = "block";
-  },
-
-  // Confirm join event
-  confirmJoinEvent: function () {
-    // In a real app, this would make an API call to join the event
-    Utils.showSuccess(`You've successfully joined "${this.event.name}"! You'll receive updates about this event.`);
-    document.getElementById("join-event-modal").style.display = "none";
-
-    // TODO: Implement actual join event API call
-    // const joinUrl = CONFIG.buildApiUrl(`/events/${this.eventId}/join`);
-    // await Utils.apiCall(joinUrl, { method: 'POST', headers: CONFIG.getAuthHeaders() });
-  },
-
-  // Share event functionality
-  shareEvent: function () {
-    document.getElementById("share-event-modal").style.display = "block";
-  },
-
-  // Setup share URL
-  setupShareUrl: function () {
-    const shareUrlInput = document.getElementById("event-share-url");
-    if (shareUrlInput) {
-      shareUrlInput.value = window.location.href;
+    showError(message) {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('errorContainer').style.display = 'block';
+        document.getElementById('eventDetailsContent').style.display = 'none';
+        document.getElementById('errorMessage').textContent = message;
     }
-  },
+}
 
-  // Copy event link
-  copyEventLink: function () {
-    const shareUrlInput = document.getElementById("event-share-url");
-    if (shareUrlInput) {
-      shareUrlInput.select();
-      document.execCommand('copy');
-      Utils.showSuccess("Event link copied to clipboard!");
-    }
-  },
+// Initialize when the page loads
+new EventDetailsPage();
 
-  // Social sharing functions
-  shareOnFacebook: function () {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Check out this event: ${this.event.name}`);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
-  },
-
-  shareOnTwitter: function () {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Check out this event: ${this.event.name} on ${Utils.formatDate(this.event.eventDate)}`);
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-  },
-
-  shareOnWhatsApp: function () {
-    const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Check out this event: ${this.event.name} on ${Utils.formatDate(this.event.eventDate)} ${url}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-  },
-
-  shareViaEmail: function () {
-    const subject = encodeURIComponent(`Event: ${this.event.name}`);
-    const body = encodeURIComponent(`Hi!\n\nI wanted to share this event with you:\n\n${this.event.name}\nDate: ${Utils.formatDate(this.event.eventDate)} at ${Utils.formatTime(this.event.eventTime)}\n${this.venue ? `Venue: ${this.venue.name}` : ''}\n\nCheck it out: ${window.location.href}\n\nSee you there!`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  },
-
-  // Get directions to venue
-  getDirections: function () {
-    if (this.venue && this.venue.latitude && this.venue.longitude) {
-      MapService.showDirections(
-        parseFloat(this.venue.latitude),
-        parseFloat(this.venue.longitude),
-        this.venue.name
-      );
-    }
-  },
-
-  // Add event to calendar
-  addToCalendar: function () {
-    const startDate = new Date(`${this.event.eventDate}T${this.event.eventTime}`);
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours
-
-    const formatDate = (date) => {
-      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    };
-
-    const title = encodeURIComponent(this.event.name);
-    const description = encodeURIComponent(this.event.description || '');
-    const location = encodeURIComponent(this.venue ? this.venue.address : '');
-    const startTime = formatDate(startDate);
-    const endTime = formatDate(endDate);
-
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${description}&location=${location}`;
-
-    window.open(googleCalendarUrl, '_blank');
-  },
-
-  // Show loading state
-  showLoading: function () {
-    document.getElementById("loading-state").style.display = "block";
-    document.getElementById("error-state").style.display = "none";
-    document.getElementById("event-content").style.display = "none";
-  },
-
-  // Hide loading state
-  hideLoading: function () {
-    document.getElementById("loading-state").style.display = "none";
-  },
-
-  // Show error state
-  showError: function () {
-    document.getElementById("loading-state").style.display = "none";
-    document.getElementById("error-state").style.display = "block";
-    document.getElementById("event-content").style.display = "none";
-  },
-
-  // Show content
-  showContent: function () {
-    document.getElementById("loading-state").style.display = "none";
-    document.getElementById("error-state").style.display = "none";
-    document.getElementById("event-content").style.display = "block";
-  },
-};
-
-// Initialize when DOM is ready
-document.addEventListener("DOMContentLoaded", () => {
-  EventDetailsPage.init();
-});
+// Global initMap function for Google Maps callback
+function initMap() {
+    console.log('🗺️ Google Maps API loaded');
+    // The map will be initialized by EventDetailsPage when needed
+}
