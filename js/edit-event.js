@@ -68,7 +68,7 @@ const EditEvent = {
 
             console.log('Loading event data for ID:', this.currentEventId);
 
-            const eventUrl = CONFIG.buildApiUrl(`events/${this.currentEventId}`);
+            const eventUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS, this.currentEventId);
             console.log('🔗 Event API URL:', eventUrl);
             
             const response = await Utils.apiCall(eventUrl, {

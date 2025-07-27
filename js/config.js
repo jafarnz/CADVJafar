@@ -111,7 +111,13 @@ const CONFIG = {
 
   // Helper method to build full API URLs
   buildApiUrl: function (endpoint, pathParam = null) {
-    let url = this.API.BASE_URL + endpoint;
+    // Ensure there's a slash between BASE_URL and endpoint
+    let url = this.API.BASE_URL;
+    if (!url.endsWith('/') && !endpoint.startsWith('/')) {
+      url += '/';
+    }
+    url += endpoint;
+    
     if (pathParam) {
       url += "/" + pathParam;
     }
