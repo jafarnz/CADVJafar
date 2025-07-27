@@ -43,18 +43,8 @@ const EditVenue = {
 
     async loadVenueData() {
         try {
-            // Check authentication first
+            // Simple authentication check - just use what edit-event.js uses
             if (!Utils.isAuthenticated()) {
-                console.error('User not authenticated, redirecting to login');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            const userData = Utils.getCurrentUser();
-            console.log('Current user data:', userData);
-            
-            if (!userData || !userData.user_id) {
-                console.error('User data missing, redirecting to login');
                 window.location.href = 'login.html';
                 return;
             }

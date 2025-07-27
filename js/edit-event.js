@@ -138,7 +138,7 @@ const EditEvent = {
             // Basic event info
             document.getElementById('eventName').value = eventData.name || '';
             document.getElementById('eventDescription').value = eventData.description || '';
-            document.getElementById('eventDate').value = eventData.eventDate || '';
+            document.getElementById('eventDate').value = this.formatDateForInput(eventData.eventDate) || '';
             document.getElementById('eventTime').value = eventData.eventTime || '';
             
             // Set venue selection (will be set after venues are loaded)
@@ -447,6 +447,27 @@ const EditEvent = {
         } catch (error) {
             console.error('❌ Image upload failed:', error);
             throw new Error('Failed to upload event image');
+        }
+    },
+
+    // Utility function to format ISO date for HTML date input (yyyy-MM-dd format)
+    formatDateForInput(dateString) {
+        if (!dateString) return '';
+        
+        try {
+            // Handle ISO date strings like "2026-10-26T00:00:00.000Z"
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            
+            // Format as yyyy-MM-dd for HTML date input
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.error('❌ Error formatting date for input:', error);
+            return '';
         }
     }
 };
