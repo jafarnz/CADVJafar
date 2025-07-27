@@ -598,21 +598,42 @@ const ProfilePage = {
                 margin-bottom: 1rem;
                 background: ${isUpcoming ? '#f8fff8' : '#f8f9fa'};
                 border-left: 4px solid ${isUpcoming ? '#28a745' : '#6c757d'};
-                cursor: pointer;
                 transition: all 0.3s ease;
-            " onclick="window.location.href='event-details.html?id=${event.eventID}'">
+                position: relative;
+            ">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <h4 style="margin: 0; color: #333; font-size: 1.1rem;">${Utils.sanitizeInput(event.name)}</h4>
-                    <span style="
-                        font-size: 0.8rem;
-                        color: ${isUpcoming ? '#28a745' : '#6c757d'};
-                        font-weight: 500;
-                        padding: 2px 8px;
-                        border-radius: 12px;
-                        background: ${isUpcoming ? '#d4edda' : '#e9ecef'};
-                    ">
-                        ${isUpcoming ? '🟢 Upcoming' : '⚪ Past'}
-                    </span>
+                    <h4 style="margin: 0; color: #333; font-size: 1.1rem; cursor: pointer;" 
+                        onclick="window.location.href='event-details.html?id=${event.eventID}'">${Utils.sanitizeInput(event.name)}</h4>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span style="
+                            font-size: 0.8rem;
+                            color: ${isUpcoming ? '#28a745' : '#6c757d'};
+                            font-weight: 500;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            background: ${isUpcoming ? '#d4edda' : '#e9ecef'};
+                        ">
+                            ${isUpcoming ? '🟢 Upcoming' : '⚪ Past'}
+                        </span>
+                        ${isUpcoming ? `
+                            <button onclick="ProfilePage.leaveEvent('${event.eventID}', '${Utils.sanitizeInput(event.name).replace(/'/g, "\\'")}'); event.stopPropagation();" 
+                                    style="
+                                        background: #dc3545; 
+                                        color: white; 
+                                        border: none; 
+                                        padding: 0.25rem 0.5rem; 
+                                        border-radius: 4px; 
+                                        font-size: 0.8rem; 
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                    "
+                                    onmouseover="this.style.background='#c82333'"
+                                    onmouseout="this.style.background='#dc3545'"
+                                    title="Leave this event">
+                                ❌ Leave
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem; color: #666;">
                     <div>📅 ${Utils.formatDate(event.eventDate)}</div>
@@ -622,12 +643,89 @@ const ProfilePage = {
                     Joined ${Utils.formatDate(joinDate.toISOString().split('T')[0])}
                 </div>
                 ${event.description ? `
-                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666; line-height: 1.4;">
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666; line-height: 1.4; cursor: pointer;"
+                       onclick="window.location.href='event-details.html?id=${event.eventID}'">
                         ${Utils.sanitizeInput(event.description).substring(0, 100)}${event.description.length > 100 ? '...' : ''}
                     </p>
                 ` : ''}
+                <div style="margin-top: 0.5rem;">
+                    <button onclick="window.location.href='event-details.html?id=${event.eventID}'" 
+                            style="
+                                background: #007bff; 
+                                color: white; 
+                                border: none; 
+                                padding: 0.5rem 1rem; 
+                                border-radius: 4px; 
+                                font-size: 0.9rem; 
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            "
+                            onmouseover="this.style.background='#0056b3'"
+                            onmouseout="this.style.background='#007bff'">
+                        📋 View Details
+                    </button>
+                </div>
             </div>
         `;
+    },
+
+    // Leave event functionality
+    async leaveEvent(eventID, eventName) {
+        if (!confirm(`Are you sure you want to leave "${eventName}"?`)) {
+            return;
+        }
+
+        try {
+            console.log('🚪 Leaving event:', eventID);
+            
+            // Show loading state by finding and disabling the button
+            const leaveButtons = document.querySelectorAll(`button[onclick*="${eventID}"]`);
+            leaveButtons.forEach(btn => {
+                if (btn.textContent.includes('Leave')) {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Leaving...';
+                }
+            });
+
+            // Remove the joined event
+            const success = await Utils.removeJoinedEvent(eventID);
+            
+            if (success) {
+                Utils.showMessage(`Successfully left "${eventName}"!`, 'success');
+                
+                // Re-render joined events to update the display
+                this.renderJoinedEvents();
+                
+                // Update activity count
+                await this.loadActivityData();
+                this.renderActivitySummary();
+                
+                console.log('✅ Successfully left event');
+            } else {
+                Utils.showMessage('Failed to leave event. Please try again.', 'error');
+                
+                // Re-enable buttons on failure
+                leaveButtons.forEach(btn => {
+                    if (btn.textContent.includes('Leaving')) {
+                        btn.disabled = false;
+                        btn.textContent = '❌ Leave';
+                    }
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Failed to leave event:', error);
+            Utils.showMessage('Failed to leave event. Please try again.', 'error');
+            
+            // Re-enable buttons on error
+            const leaveButtons = document.querySelectorAll(`button[onclick*="${eventID}"]`);
+            leaveButtons.forEach(btn => {
+                if (btn.textContent.includes('Leaving')) {
+                    btn.disabled = false;
+                    btn.textContent = '❌ Leave';
+                }
+            });
+        }
     },
 
     // Open edit profile modal

@@ -6,6 +6,9 @@ class EventDetailsPage {
         this.eventID = null;
         this.map = null;
         
+        // Store instance reference for global access
+        EventDetailsPage.instance = this;
+        
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
@@ -209,13 +212,13 @@ class EventDetailsPage {
 
     async handleJoinEvent() {
         if (!Utils.isAuthenticated()) {
-            Utils.showNotification('Please login to join events', 'error');
+            Utils.showMessage('Please login to join events', 'error');
             window.location.href = 'login.html';
             return;
         }
 
         if (Utils.isEventJoined(this.eventID)) {
-            Utils.showNotification('You have already joined this event', 'info');
+            Utils.showMessage('You have already joined this event', 'info');
             return;
         }
 
@@ -234,16 +237,17 @@ class EventDetailsPage {
             
             if (success) {
                 this.updateJoinButton();
+                Utils.showMessage('Successfully joined event!', 'success');
                 console.log('✅ Successfully joined event');
             } else {
-                Utils.showNotification('Failed to join event. You may have already joined.', 'error');
+                Utils.showMessage('Failed to join event. You may have already joined.', 'error');
                 joinBtn.disabled = false;
                 joinBtn.innerHTML = originalContent;
             }
 
         } catch (error) {
             console.error('❌ Failed to join event:', error);
-            Utils.showNotification('Failed to join event. Please try again.', 'error');
+            Utils.showMessage('Failed to join event. Please try again.', 'error');
             
             // Reset button
             const joinBtn = document.getElementById('joinEventBtn');
@@ -252,7 +256,7 @@ class EventDetailsPage {
         }
     }
 
-    initializeMap() {
+    async initializeMap() {
         if (!this.venueData || !this.venueData.latitude || !this.venueData.longitude) {
             console.log('No venue coordinates available for map');
             document.querySelector('.map-container').style.display = 'none';
@@ -260,50 +264,91 @@ class EventDetailsPage {
         }
 
         try {
-            console.log('🗺️ Initializing event map...');
+            console.log('🗺️ Initializing AWS event map...');
             
-            const mapOptions = {
-                center: {
-                    lat: parseFloat(this.venueData.latitude),
-                    lng: parseFloat(this.venueData.longitude)
-                },
-                zoom: 15,
-                mapTypeId: google.maps.MapTypeId.ROADMAP
-            };
+            const coordinates = [
+                parseFloat(this.venueData.longitude),
+                parseFloat(this.venueData.latitude)
+            ];
 
-            this.map = new google.maps.Map(document.getElementById('eventMap'), mapOptions);
-
-            // Add marker for venue
-            const marker = new google.maps.Marker({
-                position: mapOptions.center,
-                map: this.map,
-                title: this.venueData.name || 'Event Venue',
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%23667eea"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
-                    scaledSize: new google.maps.Size(32, 32)
-                }
+            // Initialize AWS map using MapService
+            this.map = await MapService.initializeVenueMap('eventMap', {
+                center: coordinates,
+                zoom: 15
             });
 
-            // Add info window
-            const infoWindow = new google.maps.InfoWindow({
-                content: `
-                    <div style="padding: 10px;">
-                        <h3 style="margin: 0 0 5px 0; color: #667eea;">${this.venueData.name || 'Event Venue'}</h3>
-                        <p style="margin: 0; color: #666;">${this.venueData.address || 'Venue Address'}</p>
-                        <p style="margin: 5px 0 0 0; font-weight: bold; color: #333;">${this.eventData.name}</p>
-                    </div>
-                `
-            });
+            if (!this.map) {
+                throw new Error('Failed to initialize AWS map');
+            }
 
-            marker.addListener('click', () => {
-                infoWindow.open(this.map, marker);
-            });
+            // Add venue marker
+            const marker = new window.maplibregl.Marker({ 
+                color: '#667eea',
+                scale: 1.2
+            })
+            .setLngLat(coordinates)
+            .setPopup(new window.maplibregl.Popup().setHTML(`
+                <div style="text-align: center; padding: 1rem; max-width: 250px;">
+                    <h3 style="margin: 0 0 0.5rem 0; color: #667eea; font-size: 1.1rem;">${this.venueData.name || 'Event Venue'}</h3>
+                    <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">${this.venueData.address || 'Venue Address'}</p>
+                    <p style="margin: 0 0 1rem 0; font-weight: bold; color: #333; font-size: 1rem;">${this.eventData.name}</p>
+                    <button onclick="EventDetailsPage.instance.openInGoogleMaps()" 
+                            style="background: #4285f4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.9rem; cursor: pointer;">
+                        📍 Open in Google Maps
+                    </button>
+                </div>
+            `))
+            .addTo(this.map);
 
-            console.log('✅ Map initialized successfully');
+            // Show popup automatically
+            marker.getPopup().addTo(this.map);
+
+            console.log('✅ AWS map initialized successfully with venue marker');
 
         } catch (error) {
-            console.error('❌ Failed to initialize map:', error);
-            document.querySelector('.map-container').style.display = 'none';
+            console.error('❌ Failed to initialize AWS map:', error);
+            
+            // Show fallback message
+            const mapContainer = document.getElementById('eventMap');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; background: #f8f9fa; border-radius: 8px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
+                            <p style="margin: 0 0 1rem 0;">Map not available</p>
+                            <button onclick="EventDetailsPage.instance.openInGoogleMaps()" 
+                                    style="background: #4285f4; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                                📍 Open in Google Maps
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    openInGoogleMaps() {
+        if (!this.venueData) {
+            alert('Venue information not available');
+            return;
+        }
+        
+        const lat = this.venueData.latitude;
+        const lng = this.venueData.longitude;
+        const eventName = this.eventData.name || 'Event';
+        const venueName = this.venueData.name || 'Venue';
+        const address = this.venueData.address || '';
+        
+        if (lat && lng) {
+            // Use coordinates for precise location
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(eventName + ' at ' + venueName)}`;
+            window.open(googleMapsUrl, '_blank');
+        } else if (address) {
+            // Fallback to address search
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', Singapore')}`;
+            window.open(googleMapsUrl, '_blank');
+        } else {
+            alert('Location information not available for this event');
         }
     }
 

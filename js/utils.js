@@ -481,11 +481,21 @@ const Utils = {
 
     // Add joined event via API
     addJoinedEvent: async function(eventData) {
-        const userData = this.getCurrentUser();
-        if (!userData) return false;
-        
         try {
             console.log('📡 Adding joined event via API...');
+            
+            // Simple authentication check like edit pages
+            if (!this.isAuthenticated()) {
+                console.error('User not authenticated');
+                return false;
+            }
+
+            // Get user ID from token
+            const userData = this.getCurrentUser();
+            if (!userData || !userData.user_id) {
+                console.error('No user ID found in token');
+                return false;
+            }
             
             // First check if already joined
             const currentJoinedEvents = await this.loadJoinedEventsFromAPI();
