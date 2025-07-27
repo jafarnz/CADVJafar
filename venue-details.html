@@ -249,13 +249,26 @@
                         
                         console.log('✅ Venue details loaded:', response);
                         
-                        // Handle wrapped response
-                        this.venue = response.venue || response.message?.venue || response.Item || response;
+                        // Handle wrapped response - parse JSON string from message field
+                        let venueData = response;
+                        if (response.message && typeof response.message === 'string') {
+                            try {
+                                venueData = JSON.parse(response.message);
+                                console.log('📊 Parsed venue data from message field:', venueData);
+                            } catch (parseError) {
+                                console.error('❌ Failed to parse venue data from message:', parseError);
+                                venueData = response;
+                            }
+                        }
                         
-                        if (this.venue && this.venue.venueId) {
+                        this.venue = venueData.venue || venueData.Item || venueData;
+                        
+                        if (this.venue && (this.venue.venueID || this.venue.venueId)) {
+                            console.log('✅ Processing venue:', this.venue);
                             this.renderVenueDetails();
                             await this.initializeMap();
                         } else {
+                            console.error('❌ Venue data structure invalid:', this.venue);
                             this.showError('Venue not found');
                         }
                         
@@ -268,67 +281,82 @@
                 renderVenueDetails() {
                     const container = document.getElementById('venue-details');
                     
+                    // Use proper field names from the venue data
+                    const venueName = this.venue.name || 'Unnamed Venue';
+                    const venueType = this.venue.type || 'Venue';
+                    const venueAddress = this.venue.address || 'Address not available';
+                    const venueCapacity = this.venue.capacity || 'Not specified';
+                    const venueDescription = this.venue.description || null;
+                    const venueID = this.venue.venueID || this.venue.venueId || 'unknown';
+                    
                     // Build image URL
                     let imageHtml = '';
                     if (this.venue.imageUrl) {
+                        console.log('🖼️ Processing venue image URL:', this.venue.imageUrl);
                         // Handle both S3 URLs and regular URLs
                         const imageUrl = this.venue.imageUrl.startsWith('http') 
                             ? this.venue.imageUrl 
                             : `https://local-gigs-static.s3.us-east-1.amazonaws.com/${this.venue.imageUrl}`;
                         
-                        imageHtml = `<img src="${imageUrl}" alt="${this.venue.name}" class="venue-image" 
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                                    <div style="display: none;" class="venue-image">📷 No Image Available</div>`;
+                        imageHtml = `
+                            <img src="${imageUrl}" alt="${venueName}" class="venue-image" 
+                                 style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px;" 
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                            <div style="display: none; justify-content: center; align-items: center; height: 200px; background: #f8f9fa; border-radius: 12px; color: #6c757d; font-size: 2rem;">
+                                📷 No Image Available
+                            </div>`;
                     } else {
-                        imageHtml = '<div class="venue-image">📷 No Image Available</div>';
+                        imageHtml = `
+                            <div style="display: flex; justify-content: center; align-items: center; height: 200px; background: #f8f9fa; border-radius: 12px; color: #6c757d; font-size: 2rem;">
+                                📷 No Image Available
+                            </div>`;
                     }
                     
                     container.innerHTML = `
                         <div class="venue-header">
                             <div class="venue-info">
-                                <h1 class="venue-title">${this.venue.name || 'Unnamed Venue'}</h1>
-                                <div class="venue-type">${this.venue.type || 'Unknown Type'}</div>
+                                <h1 class="venue-title">${venueName}</h1>
+                                <div class="venue-type" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: inline-block; margin-bottom: 1rem;">
+                                    🏢 ${venueType.charAt(0).toUpperCase() + venueType.slice(1).replace('-', ' ')}
+                                </div>
                                 
-                                ${this.venue.address ? `
-                                    <div class="venue-address">
-                                        📍 ${this.venue.address}
-                                    </div>
-                                ` : ''}
+                                <div class="venue-address" style="margin-bottom: 1rem;">
+                                    <strong>📍 Address:</strong> ${venueAddress}
+                                </div>
                                 
-                                <div class="venue-contact">
-                                    ${this.venue.phone ? `
-                                        <div class="contact-item">
-                                            📞 <a href="tel:${this.venue.phone}">${this.venue.phone}</a>
-                                        </div>
-                                    ` : ''}
-                                    
-                                    ${this.venue.email ? `
-                                        <div class="contact-item">
-                                            ✉️ <a href="mailto:${this.venue.email}">${this.venue.email}</a>
-                                        </div>
-                                    ` : ''}
-                                    
-                                    ${this.venue.website ? `
-                                        <div class="contact-item">
-                                            🌐 <a href="${this.venue.website}" target="_blank">${this.venue.website}</a>
-                                        </div>
-                                    ` : ''}
+                                <div class="venue-capacity" style="margin-bottom: 1rem;">
+                                    <strong>� Capacity:</strong> ${venueCapacity}
+                                </div>
+                                
+                                <div class="venue-actions" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem;">
+                                    <button onclick="VenueDetails.shareVenue()" class="btn" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                        📤 Share Venue
+                                    </button>
+                                    <button onclick="VenueDetails.copyLink()" class="btn" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                        🔗 Copy Link
+                                    </button>
+                                    <a href="venues.html" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block;">
+                                        ← Back to Venues
+                                    </a>
                                 </div>
                             </div>
                             
-                            <div>
+                            <div style="flex: 1; max-width: 400px;">
                                 ${imageHtml}
                             </div>
                         </div>
                         
-                        ${this.venue.description ? `
-                            <div class="venue-description">
-                                <h3>About This Venue</h3>
-                                <p>${this.venue.description}</p>
+                        ${venueDescription ? `
+                            <div class="venue-description" style="margin: 2rem 0; padding: 1.5rem; background: #f8f9fa; border-radius: 12px;">
+                                <h3 style="margin: 0 0 1rem 0; color: #333;">About This Venue</h3>
+                                <p style="margin: 0; color: #666; line-height: 1.6;">${venueDescription}</p>
                             </div>
                         ` : ''}
                         
-                        <div class="venue-map" id="venue-map"></div>
+                        <div class="venue-map-section" style="margin-top: 2rem;">
+                            <h3 style="margin: 0 0 1rem 0; color: #333;">📍 Location</h3>
+                            <div class="venue-map" id="venue-map" style="height: 300px; width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                        </div>
                     `;
                 },
                 
@@ -339,16 +367,15 @@
                         // Get venue coordinates
                         let coordinates = [103.8198, 1.3521]; // Default Singapore
                         
-                        if (this.venue.coordinates) {
-                            if (Array.isArray(this.venue.coordinates)) {
-                                coordinates = this.venue.coordinates;
-                            } else if (this.venue.coordinates.lng && this.venue.coordinates.lat) {
-                                coordinates = [this.venue.coordinates.lng, this.venue.coordinates.lat];
-                            }
+                        if (this.venue.longitude && this.venue.latitude) {
+                            coordinates = [parseFloat(this.venue.longitude), parseFloat(this.venue.latitude)];
+                            console.log('✅ Using venue coordinates:', coordinates);
                         } else if (this.venue.lng && this.venue.lat) {
                             coordinates = [this.venue.lng, this.venue.lat];
-                        } else if (this.venue.latitude && this.venue.longitude) {
-                            coordinates = [this.venue.longitude, this.venue.latitude];
+                        } else if (this.venue.coordinates && Array.isArray(this.venue.coordinates)) {
+                            coordinates = this.venue.coordinates;
+                        } else {
+                            console.warn('⚠️ No coordinates found for venue, using default Singapore coordinates');
                         }
                         
                         // Initialize map
@@ -357,32 +384,84 @@
                             zoom: 15
                         });
                         
-                        // Add venue marker
+                        console.log('✅ Map initialized, adding venue marker...');
+                        
+                        // Add venue marker with popup
                         const marker = new window.maplibregl.Marker({ 
-                            color: '#ff6b6b',
-                            scale: 1.2
+                            color: '#ef4444',
+                            scale: 1.5
                         })
                         .setLngLat(coordinates)
                         .setPopup(new window.maplibregl.Popup().setHTML(`
-                            <div class="venue-popup">
-                                <h3>${this.venue.name}</h3>
-                                <p><strong>Type:</strong> ${this.venue.type}</p>
-                                ${this.venue.address ? `<p>${this.venue.address}</p>` : ''}
+                            <div style="text-align: center; padding: 0.5rem;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #333;">${this.venue.name}</h4>
+                                <p style="margin: 0; color: #666; font-size: 0.9rem;">${this.venue.address}</p>
+                                <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.8rem;">👥 Capacity: ${this.venue.capacity || 'Not specified'}</p>
                             </div>
                         `))
                         .addTo(this.map);
                         
-                        console.log('✅ Venue map initialized with marker');
+                        // Show popup automatically
+                        marker.getPopup().addTo(this.map);
+                        
+                        console.log('✅ Venue map initialized successfully with marker');
                         
                     } catch (error) {
-                        console.error('❌ Failed to initialize map:', error);
-                        document.getElementById('venue-map').innerHTML = `
-                            <div class="error">
-                                <h3>Map Unavailable</h3>
-                                <p>Unable to load map for this venue</p>
-                            </div>
-                        `;
+                        console.error('❌ Failed to initialize venue map:', error);
+                        const mapContainer = document.getElementById('venue-map');
+                        if (mapContainer) {
+                            mapContainer.innerHTML = `
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; color: #6c757d; border-radius: 12px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗺️</div>
+                                        <p style="margin: 0;">Map not available</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
+                },
+                
+                shareVenue() {
+                    const venueUrl = window.location.href;
+                    const venueName = this.venue.name || 'Venue';
+                    
+                    if (navigator.share) {
+                        navigator.share({
+                            title: `Check out ${venueName}`,
+                            text: `${venueName} - ${this.venue.address}`,
+                            url: venueUrl
+                        }).catch((error) => {
+                            console.log('Share failed:', error);
+                            this.copyLink();
+                        });
+                    } else {
+                        this.copyLink();
+                    }
+                },
+                
+                copyLink() {
+                    const venueUrl = window.location.href;
+                    
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(venueUrl).then(() => {
+                            alert('🔗 Venue link copied to clipboard!');
+                        }).catch(() => {
+                            this.fallbackCopyLink(venueUrl);
+                        });
+                    } else {
+                        this.fallbackCopyLink(venueUrl);
+                    }
+                },
+                
+                fallbackCopyLink(text) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('🔗 Venue link copied to clipboard!');
                 },
                 
                 showError(message) {

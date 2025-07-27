@@ -422,12 +422,64 @@ const Dashboard = {
                 if (!mapContainer) return;
 
                 const success = await MapService.init("map-container");
-                if (success && this.events.length > 0) {
+                if (success) {
                     this.mapInitialized = true;
-                    MapService.addEventMarkers(this.events, this.venues);
+                    await this.renderDashboardMap();
                 }
             } catch (error) {
                 console.error("Map initialization failed:", error);
+            }
+        },
+
+        // Render dashboard map with events and venues
+        renderDashboardMap: async function() {
+            try {
+                console.log("🗺️ Loading dashboard map with events and venues...");
+                
+                // Load and show venue markers
+                await MapService.loadVenues();
+                MapService.addVenueMarkers();
+                
+                // Add event pins for upcoming events
+                let eventPinsCount = 0;
+                const upcomingEvents = this.events.filter(event => {
+                    const eventDate = new Date(event.eventDate);
+                    return eventDate >= new Date();
+                });
+
+                for (const event of upcomingEvents) {
+                    const venue = this.venues.find(v => v.venueID === event.venueID);
+                    if (venue && venue.latitude && venue.longitude) {
+                        // Create event marker
+                        const marker = new window.maplibregl.Marker({
+                            color: '#ef4444',
+                            scale: 1.1
+                        })
+                        .setLngLat([parseFloat(venue.longitude), parseFloat(venue.latitude)])
+                        .setPopup(new window.maplibregl.Popup().setHTML(`
+                            <div style="text-align: center; padding: 0.5rem; max-width: 250px;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1rem;">${event.name}</h4>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    📅 ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}
+                                </p>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    📍 ${venue.name}
+                                </p>
+                                <a href="events.html" style="background: #3b82f6; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; text-decoration: none; display: inline-block; margin-top: 0.5rem;">
+                                    View All Events
+                                </a>
+                            </div>
+                        `))
+                        .addTo(MapService.map);
+                        
+                        eventPinsCount++;
+                    }
+                }
+                
+                console.log(`✅ Dashboard map loaded with ${MapService.venueMarkers.length} venues and ${eventPinsCount} event pins`);
+                
+            } catch (error) {
+                console.error("❌ Failed to load dashboard map:", error);
             }
         },
 

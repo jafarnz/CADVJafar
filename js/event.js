@@ -225,17 +225,69 @@ const EventsPage = {
 
                 // Load events
                 const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
-                this.events = await Utils.apiCall(eventsUrl, {
+                const eventsResponse = await Utils.apiCall(eventsUrl, {
                     method: "GET",
                     headers: CONFIG.getAuthHeaders(),
                 });
 
+                // Handle different response formats for events
+                if (Array.isArray(eventsResponse)) {
+                    this.events = eventsResponse;
+                } else if (eventsResponse && eventsResponse.events && Array.isArray(eventsResponse.events)) {
+                    this.events = eventsResponse.events;
+                } else if (eventsResponse && eventsResponse.Items && Array.isArray(eventsResponse.Items)) {
+                    this.events = eventsResponse.Items;
+                } else if (eventsResponse && eventsResponse.message) {
+                    try {
+                        const parsedEvents = JSON.parse(eventsResponse.message);
+                        if (Array.isArray(parsedEvents)) {
+                            this.events = parsedEvents;
+                            console.log("✅ Events parsed from message field:", this.events.length);
+                        } else {
+                            console.log("Parsed events message is not an array:", parsedEvents);
+                            this.events = [];
+                        }
+                    } catch (parseError) {
+                        console.error("Failed to parse events from message:", parseError);
+                        this.events = [];
+                    }
+                } else {
+                    console.log("Unexpected events response format:", eventsResponse);
+                    this.events = [];
+                }
+
                 // Load venues
                 const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
-                this.venues = await Utils.apiCall(venuesUrl, {
+                const venuesResponse = await Utils.apiCall(venuesUrl, {
                     method: "GET",
                     headers: CONFIG.getAuthHeaders(),
                 });
+
+                // Handle different response formats for venues
+                if (Array.isArray(venuesResponse)) {
+                    this.venues = venuesResponse;
+                } else if (venuesResponse && venuesResponse.venues && Array.isArray(venuesResponse.venues)) {
+                    this.venues = venuesResponse.venues;
+                } else if (venuesResponse && venuesResponse.Items && Array.isArray(venuesResponse.Items)) {
+                    this.venues = venuesResponse.Items;
+                } else if (venuesResponse && venuesResponse.message) {
+                    try {
+                        const parsedVenues = JSON.parse(venuesResponse.message);
+                        if (Array.isArray(parsedVenues)) {
+                            this.venues = parsedVenues;
+                            console.log("✅ Venues parsed from message field:", this.venues.length);
+                        } else {
+                            console.log("Parsed venues message is not an array:", parsedVenues);
+                            this.venues = [];
+                        }
+                    } catch (parseError) {
+                        console.error("Failed to parse venues from message:", parseError);
+                        this.venues = [];
+                    }
+                } else {
+                    console.log("Unexpected venues response format:", venuesResponse);
+                    this.venues = [];
+                }
 
                 console.log(
                     `Loaded ${this.events.length} events and ${this.venues.length} venues`,
@@ -375,18 +427,79 @@ const EventsPage = {
             // Show both venues and event pins on the map
             if (this.mapInitialized) {
                 try {
-                    const mapData = await MapService.showVenuesAndEvents();
-                    console.log(`✅ Events map loaded with ${mapData.venues} venues and ${mapData.events} event pins`);
-                    
-                    // Update map info display if it exists
-                    const mapInfo = document.getElementById("events-map-info");
-                    if (mapInfo) {
-                        mapInfo.textContent = `Showing ${mapData.events} events and ${mapData.venues} venues`;
-                    }
+                    // Pass events data to the map service for rendering
+                    await this.renderEventsAndVenuesOnMap();
                 } catch (error) {
                     console.error("❌ Failed to load map data:", error);
                     Utils.showError("Failed to load events on map. Please try refreshing.");
                 }
+            }
+        },
+
+        // Render events and venues on map with proper data passing
+        renderEventsAndVenuesOnMap: async function() {
+            try {
+                console.log("🗺️ Loading venues and event pins...");
+                
+                // First load and show venue markers
+                await MapService.loadVenues();
+                MapService.addVenueMarkers();
+                
+                // Then add event pins with our events data
+                let eventPinsCount = 0;
+                const validEvents = this.filteredEvents.filter(event => {
+                    const venue = this.venues.find(v => v.venueID === event.venueID);
+                    return venue && venue.latitude && venue.longitude;
+                });
+
+                console.log(`📍 Adding ${validEvents.length} event pins to map...`);
+
+                for (const event of validEvents) {
+                    const venue = this.venues.find(v => v.venueID === event.venueID);
+                    if (venue && venue.latitude && venue.longitude) {
+                        // Create event marker
+                        const eventDate = new Date(event.eventDate);
+                        const isUpcoming = eventDate >= new Date();
+                        
+                        const marker = new window.maplibregl.Marker({
+                            color: isUpcoming ? '#ef4444' : '#6b7280',
+                            scale: 1.2
+                        })
+                        .setLngLat([parseFloat(venue.longitude), parseFloat(venue.latitude)])
+                        .setPopup(new window.maplibregl.Popup().setHTML(`
+                            <div style="text-align: center; padding: 0.5rem; max-width: 250px;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1rem;">${event.name}</h4>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    📅 ${Utils.formatDate(event.eventDate)} at ${Utils.formatTime(event.eventTime)}
+                                </p>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    📍 ${venue.name}
+                                </p>
+                                ${event.genre ? `<p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">🎵 ${Utils.capitalize(event.genre)}</p>` : ''}
+                                <button onclick="EventsPage.showEventDetails('${event.eventID}')" 
+                                        style="background: #3b82f6; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-top: 0.5rem;">
+                                    View Details
+                                </button>
+                            </div>
+                        `))
+                        .addTo(MapService.map);
+                        
+                        eventPinsCount++;
+                    }
+                }
+                
+                console.log(`✅ Events map loaded with ${MapService.venueMarkers.length} venues and ${eventPinsCount} event pins`);
+                
+                // Update map info display if it exists
+                const mapInfo = document.getElementById("events-map-info");
+                if (mapInfo) {
+                    mapInfo.textContent = `Showing ${eventPinsCount} events and ${MapService.venueMarkers.length} venues`;
+                }
+                
+                return { venues: MapService.venueMarkers.length, events: eventPinsCount };
+            } catch (error) {
+                console.error("❌ Failed to load venues and events:", error);
+                return { venues: 0, events: 0 };
             }
         },
 
@@ -417,6 +530,10 @@ const EventsPage = {
               <button class="btn btn-secondary view-details-btn" data-event-id="${event.eventID}">
                 View Details
               </button>
+              <button class="btn edit-event-btn" data-event-id="${event.eventID}" 
+                      style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                ✏️ Edit
+              </button>
               ${isUpcoming ? `<button class="join-btn" data-event-id="${event.eventID}">Join Event</button>` : `<button class="join-btn" disabled>Event Passed</button>`}
             </div>
           </div>
@@ -433,6 +550,15 @@ const EventsPage = {
         e.stopPropagation();
         const eventId = btn.getAttribute("data-event-id");
         this.showEventDetails(eventId);
+      });
+    });
+
+    // Edit event buttons
+    document.querySelectorAll(".edit-event-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const eventId = btn.getAttribute("data-event-id");
+        this.editEvent(eventId);
       });
     });
 
@@ -643,11 +769,76 @@ const EventsPage = {
     // await Utils.apiCall(joinUrl, { method: 'POST', headers: CONFIG.getAuthHeaders() });
   },
 
+  // Edit an event
+  editEvent: function (eventId) {
+    const event = this.events.find(
+      (e) => e.eventID.toString() === eventId.toString(),
+    );
+    if (!event) {
+      Utils.showError('Event not found');
+      return;
+    }
+
+    // Pre-populate the create event form with existing data
+    this.populateEditForm(event);
+    
+    // Show the create event modal (which will now be in edit mode)
+    const modal = document.getElementById("create-event-modal");
+    if (modal) {
+      const modalTitle = modal.querySelector("h2");
+      if (modalTitle) {
+        modalTitle.textContent = "Edit Event";
+      }
+      
+      // Add edit mode flag and event ID to form
+      const form = document.getElementById("create-event-form");
+      if (form) {
+        form.setAttribute("data-edit-mode", "true");
+        form.setAttribute("data-event-id", eventId);
+      }
+      
+      modal.style.display = "block";
+    }
+  },
+
+  // Populate form with event data for editing
+  populateEditForm: function(event) {
+    const form = document.getElementById("create-event-form");
+    if (!form) return;
+
+    // Populate form fields
+    const eventNameField = form.querySelector("#event-name");
+    if (eventNameField) eventNameField.value = event.name || '';
+
+    const eventDateField = form.querySelector("#event-date");
+    if (eventDateField) eventDateField.value = event.eventDate || '';
+
+    const eventTimeField = form.querySelector("#event-time");
+    if (eventTimeField) eventTimeField.value = event.eventTime || '';
+
+    const eventGenreField = form.querySelector("#event-genre");
+    if (eventGenreField) eventGenreField.value = event.genre || '';
+
+    const eventDescriptionField = form.querySelector("#event-description");
+    if (eventDescriptionField) eventDescriptionField.value = event.description || '';
+
+    const venueSelectField = form.querySelector("#venue-select");
+    if (venueSelectField) venueSelectField.value = event.venueID || '';
+  },
+
   // Toggle to map view
   toggleMapView: function () {
     this.isMapView = true;
     document.getElementById("map-container-wrapper").style.display = "block";
     document.getElementById("events-list-wrapper").style.display = "none";
+    
+    // Trigger map resize after container is visible
+    setTimeout(() => {
+      if (MapService.map) {
+        MapService.map.resize();
+      }
+    }, 100);
+    
     this.render();
   },
 
@@ -718,8 +909,12 @@ const EventsPage = {
     const submitBtn = form.querySelector('button[type="submit"]');
     const messagesDiv = document.getElementById("event-modal-messages");
 
+    // Check if this is edit mode
+    const isEditMode = form.getAttribute("data-edit-mode") === "true";
+    const eventId = form.getAttribute("data-event-id");
+
     try {
-      Utils.showLoading(submitBtn, "Creating...");
+      Utils.showLoading(submitBtn, isEditMode ? "Updating..." : "Creating...");
 
       const formData = new FormData(form);
       let imageUrl = null;
@@ -732,31 +927,49 @@ const EventsPage = {
         } catch (error) {
           console.error("Image upload failed:", error);
           Utils.showError(
-            "Image upload failed, but event will be created without image.",
+            `Image upload failed, but event will be ${isEditMode ? 'updated' : 'created'} without image.`,
             messagesDiv.id,
           );
         }
       }
 
       const eventData = {
-        eventID: CONFIG.generateEventID(),
         name: formData.get("name"),
         description: formData.get("description") || "",
         genre: formData.get("genre") || null,
         eventDate: formData.get("eventDate"),
         eventTime: formData.get("eventTime"),
         venueID: parseInt(formData.get("venueID")),
-        imageUrl: imageUrl,
       };
 
-      const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+      // Add imageUrl only if provided
+      if (imageUrl) {
+        eventData.imageUrl = imageUrl;
+      }
+
+      let url, method;
+      if (isEditMode && eventId) {
+        // Update existing event
+        eventData.eventID = eventId;
+        url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS + '/' + eventId);
+        method = "PUT";
+      } else {
+        // Create new event
+        eventData.eventID = CONFIG.generateEventID();
+        url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
+        method = "POST";
+      }
+
       const response = await Utils.apiCall(url, {
-        method: "POST",
+        method: method,
         headers: CONFIG.getAuthHeaders(),
         body: JSON.stringify(eventData),
       });
 
-      Utils.showSuccess("Event created successfully!", messagesDiv.id);
+      Utils.showSuccess(
+        `Event ${isEditMode ? 'updated' : 'created'} successfully!`, 
+        messagesDiv.id
+      );
       form.reset();
 
       // Reload data and re-render
@@ -791,6 +1004,19 @@ const EventsPage = {
     const form = document.getElementById("create-event-form");
     if (form) {
       form.reset();
+      
+      // Clear edit mode attributes
+      form.removeAttribute("data-edit-mode");
+      form.removeAttribute("data-event-id");
+    }
+    
+    // Reset modal title
+    const modal = document.getElementById("create-event-modal");
+    if (modal) {
+      const modalTitle = modal.querySelector("h2");
+      if (modalTitle) {
+        modalTitle.textContent = "Create New Event";
+      }
     }
     
     // Clear venue preview

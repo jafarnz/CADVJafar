@@ -407,21 +407,102 @@ const VenuesPage = {
                 }
             }
 
-            // Show both venues and event pins on the map
+            // Show venue markers on the map
             if (this.mapInitialized) {
                 try {
-                    const mapData = await MapService.showVenuesAndEvents();
-                    console.log(`✅ Venues map loaded with ${mapData.venues} venues and ${mapData.events} event pins`);
-                    
-                    // Update map info display if it exists
-                    const mapInfo = document.getElementById("venues-map-info");
-                    if (mapInfo) {
-                        mapInfo.textContent = `Showing ${mapData.venues} venues and ${mapData.events} events`;
-                    }
+                    await this.renderVenuesOnMap();
                 } catch (error) {
                     console.error("❌ Failed to load map data:", error);
-                    Utils.showError("Failed to load venues and events on map. Please try refreshing.");
+                    Utils.showError("Failed to load venues on map. Please try refreshing.");
                 }
+            }
+        },
+
+        // Render venues on map with proper data and hover functionality
+        renderVenuesOnMap: async function() {
+            try {
+                console.log("🗺️ Loading venue markers...");
+                
+                // Clear any existing markers
+                if (MapService.venueMarkers) {
+                    MapService.venueMarkers.forEach(marker => marker.remove());
+                    MapService.venueMarkers = [];
+                }
+
+                let venueMarkersCount = 0;
+                const validVenues = this.filteredVenues.filter(venue => 
+                    venue.latitude && venue.longitude
+                );
+
+                console.log(`📍 Adding ${validVenues.length} venue markers to map...`);
+
+                for (const venue of validVenues) {
+                    if (venue.latitude && venue.longitude) {
+                        // Create venue marker with custom styling
+                        const marker = new window.maplibregl.Marker({
+                            color: '#10b981',
+                            scale: 1.3
+                        })
+                        .setLngLat([parseFloat(venue.longitude), parseFloat(venue.latitude)])
+                        .setPopup(new window.maplibregl.Popup().setHTML(`
+                            <div style="text-align: center; padding: 0.75rem; max-width: 280px;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.1rem;">${venue.name}</h4>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    📍 ${venue.address || 'Address not available'}
+                                </p>
+                                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">
+                                    👥 Capacity: ${venue.capacity || 'Not specified'}
+                                </p>
+                                ${venue.type ? `<p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.9rem;">🏢 ${venue.type.charAt(0).toUpperCase() + venue.type.slice(1).replace('-', ' ')}</p>` : ''}
+                                ${venue.description ? `<p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.85rem; line-height: 1.4; max-height: 60px; overflow-y: auto;">${venue.description}</p>` : ''}
+                                <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.75rem;">
+                                    <button onclick="window.location.href='venue-details.html?id=${venue.venueID || venue.venueId}'" 
+                                            style="background: #3b82f6; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                        View Details
+                                    </button>
+                                    <button onclick="VenuesPage.createEventAtVenue('${venue.venueID || venue.venueId}')" 
+                                            style="background: #10b981; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">
+                                        Create Event
+                                    </button>
+                                </div>
+                            </div>
+                        `))
+                        .addTo(MapService.map);
+                        
+                        // Store marker reference
+                        if (!MapService.venueMarkers) {
+                            MapService.venueMarkers = [];
+                        }
+                        MapService.venueMarkers.push(marker);
+                        
+                        venueMarkersCount++;
+                    }
+                }
+                
+                console.log(`✅ Venues map loaded with ${venueMarkersCount} venue markers`);
+                
+                // Update map info display if it exists
+                const mapInfo = document.getElementById("venues-map-info");
+                if (mapInfo) {
+                    mapInfo.textContent = `Showing ${venueMarkersCount} venues`;
+                }
+                
+                return { venues: venueMarkersCount, events: 0 };
+            } catch (error) {
+                console.error("❌ Failed to load venue markers:", error);
+                return { venues: 0, events: 0 };
+            }
+        },
+
+        // Create event at specific venue (helper function for map popup)
+        createEventAtVenue: function(venueId) {
+            // Pre-select the venue in create event form
+            const createEventBtn = document.getElementById("create-event-btn");
+            if (createEventBtn) {
+                // Store venue ID for pre-selection
+                sessionStorage.setItem('preselectedVenueId', venueId);
+                // Redirect to events page to create event
+                window.location.href = 'events.html';
             }
         },
 
@@ -873,6 +954,14 @@ const VenuesPage = {
     this.isMapView = true;
     document.getElementById("map-container-wrapper").style.display = "block";
     document.getElementById("venues-list-wrapper").style.display = "none";
+    
+    // Trigger map resize after container is visible
+    setTimeout(() => {
+      if (MapService.map) {
+        MapService.map.resize();
+      }
+    }, 100);
+    
     this.render();
   },
 
@@ -1109,9 +1198,13 @@ const VenuesPage = {
     }, 1000);
     
     // Update form fields
-    document.getElementById('venueLatitude').value = locationResult.lat;
-    document.getElementById('venueLongitude').value = locationResult.lng;
-    document.getElementById('venueAddress').value = locationResult.address;
+    const latInput = document.getElementById('venueLatitude') || document.getElementById('latitude');
+    const lngInput = document.getElementById('venueLongitude') || document.getElementById('longitude'); 
+    const addressInput = document.getElementById('venueAddress') || document.getElementById('address');
+    
+    if (latInput) latInput.value = locationResult.lat;
+    if (lngInput) lngInput.value = locationResult.lng;
+    if (addressInput) addressInput.value = locationResult.address;
     
     // Update search input if it exists
     const searchInput = document.getElementById('location-search');
