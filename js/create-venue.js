@@ -53,6 +53,22 @@ const CreateVenuePage = {
             });
         }
 
+        // Image file input change
+        const imageInput = document.getElementById('venueImage');
+        if (imageInput) {
+            imageInput.addEventListener('change', (e) => {
+                this.handleImageSelection(e);
+            });
+        }
+
+        // Remove image button
+        const removeImageBtn = document.getElementById('removeImage');
+        if (removeImageBtn) {
+            removeImageBtn.addEventListener('click', () => {
+                this.removeImagePreview();
+            });
+        }
+
         // Geocode button
         const geocodeBtn = document.getElementById('geocode-btn');
         if (geocodeBtn) {
@@ -673,6 +689,100 @@ const CreateVenuePage = {
                 center: [103.8198, 1.3521],
                 zoom: 11
             });
+        }
+    },
+
+    // Handle image selection and preview
+    handleImageSelection: function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            this.hideImagePreview();
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            Utils.showError('Please select a valid image file.');
+            this.removeImagePreview();
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            Utils.showError('Image file size must be less than 5MB.');
+            this.removeImagePreview();
+            return;
+        }
+
+        // Show preview
+        this.showImagePreview(file);
+    },
+
+    // Show image preview
+    showImagePreview: function(file) {
+        const previewContainer = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        if (!previewContainer || !previewImg) return;
+
+        // Create FileReader to read the file
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Update file info
+        if (fileName) {
+            fileName.textContent = `📁 ${file.name}`;
+        }
+        if (fileSize) {
+            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+            fileSize.textContent = `📏 ${sizeInMB} MB`;
+        }
+
+        // Show preview container
+        previewContainer.style.display = 'block';
+
+        console.log("✅ Image preview displayed:", {
+            name: file.name,
+            size: file.size,
+            type: file.type
+        });
+    },
+
+    // Remove/hide image preview
+    removeImagePreview: function() {
+        const imageInput = document.getElementById('venueImage');
+        const previewContainer = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        // Clear file input
+        if (imageInput) {
+            imageInput.value = '';
+        }
+
+        // Clear preview image
+        if (previewImg) {
+            previewImg.src = '';
+        }
+
+        // Hide preview container
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+        }
+
+        console.log("🗑️ Image preview removed");
+    },
+
+    // Hide image preview (without clearing input)
+    hideImagePreview: function() {
+        const previewContainer = document.getElementById('imagePreview');
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
         }
     },
 
