@@ -43,28 +43,58 @@ const EditVenue = {
 
     async loadVenueData() {
         try {
+            // Check authentication first
+            if (!Utils.isAuthenticated()) {
+                console.error('User not authenticated, redirecting to login');
+                window.location.href = 'login.html';
+                return;
+            }
+
             const userData = Utils.getCurrentUser();
+            console.log('Current user data:', userData);
+            
             if (!userData || !userData.user_id) {
-                throw new Error('User not authenticated');
+                console.error('User data missing, redirecting to login');
+                window.location.href = 'login.html';
+                return;
             }
 
             console.log('Loading venue data for ID:', this.currentVenueId);
 
-            const response = await fetch(`${CONFIG.API_BASE_URL}/venues/${this.currentVenueId}`, {
+            const venueUrl = CONFIG.buildApiUrl(`venues/${this.currentVenueId}`);
+            const response = await Utils.apiCall(venueUrl, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': CONFIG.API_KEY,
-                    'x-user-id': userData.user_id
-                }
+                headers: CONFIG.getAuthHeaders()
             });
 
-            if (!response.ok) {
-                throw new Error(`Failed to load venue: ${response.status}`);
+            console.log('Loaded venue data:', response);
+            
+            // Handle different response formats
+            let venueData = null;
+            if (response.venue) {
+                venueData = response.venue;
+            } else if (response.message) {
+                // Handle stringified JSON in message field
+                try {
+                    if (typeof response.message === 'string') {
+                        venueData = JSON.parse(response.message);
+                    } else {
+                        venueData = response.message;
+                    }
+                } catch (parseError) {
+                    console.error("❌ Failed to parse venue message:", parseError);
+                    throw new Error('Failed to parse venue data');
+                }
+            } else if (response.venueID || response.name) {
+                // Direct venue object
+                venueData = response;
+            } else {
+                throw new Error('Invalid venue data format received');
             }
 
-            const venueData = await response.json();
-            console.log('Loaded venue data:', venueData);
+            if (!venueData) {
+                throw new Error('No venue data received');
+            }
             
             this.originalVenueData = venueData;
             this.populateForm(venueData);

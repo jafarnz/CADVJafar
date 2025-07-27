@@ -499,13 +499,31 @@
 
         // Venue image upload handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Auth to complete initialization
-            setTimeout(() => {
-                // Only initialize if user is authenticated
+            // Wait for Auth to complete initialization with longer timeout
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const checkAuthAndInit = () => {
+                attempts++;
+                console.log(`Authentication check attempt ${attempts}`);
+                
                 if (Utils.isAuthenticated()) {
+                    console.log('✅ User authenticated, initializing edit venue');
                     EditVenue.init();
+                } else if (attempts < maxAttempts) {
+                    console.log('⏳ User not yet authenticated, retrying...');
+                    setTimeout(checkAuthAndInit, 300);
+                } else {
+                    console.error('❌ Authentication timeout, redirecting to login');
+                    Utils.showError('Please log in to edit venues.', 'edit-venue-messages');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
                 }
-            }, 200);
+            };
+            
+            // Start the authentication check
+            setTimeout(checkAuthAndInit, 200);
 
             // Venue image upload
             const venueImageInput = document.getElementById('venueImageInput');

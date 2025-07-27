@@ -97,9 +97,14 @@ const CreateEvent = {
 
         this.venues.forEach(venue => {
             const option = document.createElement('option');
-            option.value = venue.venueId || venue.id;
+            // Use the correct venue ID field based on database schema (venueID)
+            const venueId = venue.venueID || venue.venueId || venue.id;
+            option.value = venueId;
             option.textContent = venue.name || 'Unnamed Venue';
             venueSelect.appendChild(option);
+            
+            // Debug logging to see venue structure
+            console.log('Venue:', venue, 'Using ID:', venueId);
         });
 
         console.log(`✅ Populated venue dropdown with ${this.venues.length} venues`);
@@ -186,6 +191,18 @@ const CreateEvent = {
             return { isValid: false, message: "Please select a venue." };
         }
 
+        // Validate that the selected venue exists in our loaded venues
+        const selectedVenue = this.venues.find(venue => {
+            const venueId = venue.venueID || venue.venueId || venue.id;
+            return venueId && venueId.toString() === venueID.toString();
+        });
+
+        if (!selectedVenue) {
+            return { isValid: false, message: "Selected venue is invalid. Please refresh the page and try again." };
+        }
+
+        console.log('✅ Venue validation passed:', selectedVenue);
+
         // Check if date is in the future
         const selectedDate = new Date(eventDate + 'T' + eventTime);
         const now = new Date();
@@ -207,6 +224,15 @@ const CreateEvent = {
 
         // Generate unique event ID
         const eventID = 'event_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        // Debug the venue selection
+        const selectedVenue = this.venues.find(venue => {
+            const venueId = venue.venueID || venue.venueId || venue.id;
+            return venueId && venueId.toString() === venueID.toString();
+        });
+        
+        console.log('🏪 Selected venue details:', selectedVenue);
+        console.log('📝 Form data venue ID:', venueID);
 
         return {
             eventID: eventID,
