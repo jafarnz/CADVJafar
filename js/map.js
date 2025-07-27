@@ -243,30 +243,58 @@ const MapService = {
         }
     },
 
-    // Location search using fallback method (simplified)
+    // Location search using your Lambda geocoding service (like Postman)
     searchLocation: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching location:", query);
+            console.log("🔍 Searching location via Lambda geocoding service:", query);
 
             if (!query || query.trim().length < 3) {
                 return [];
             }
 
-            // For now, return a simple fallback result
-            // This allows the user to continue with manual coordinate entry
-            console.log("🔄 Using simplified search fallback");
+            // Use your Lambda places search endpoint
+            const searchEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
             
-            return [{
-                label: query.trim() + ", Singapore",
-                coordinates: [103.8198, 1.3521], // Default Singapore coordinates
-                country: "Singapore",
-                region: "Singapore",
-                address: query.trim() + ", Singapore"
-            }];
+            const requestBody = {
+                Text: query.trim() + ", Singapore",
+                MaxResults: 10,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+            };
+
+            console.log("🔍 Lambda places search request:", { url: searchEndpoint, body: requestBody });
+
+            const response = await Utils.apiCall(searchEndpoint, {
+                method: 'POST',
+                headers: {
+                    ...CONFIG.getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("🎯 Lambda places search results:", response);
             
+            // Transform response to expected format (AWS Location Service format)
+            const results = response.Results || response.results || response.data || [];
+            return results.map(place => ({
+                label: place.Place?.Label || place.label || place.address,
+                coordinates: place.Place?.Geometry?.Point || place.coordinates,
+                country: place.Place?.Country || place.country || 'Singapore',
+                region: place.Place?.Region || place.region,
+                address: place.Place?.Label || place.label || place.address
+            }));
         } catch (error) {
-            console.error("❌ Location search failed:", error);
-            return [];
+            console.error("❌ Location search via Lambda failed:", error);
+            
+            // Use simplified fallback as last resort
+            console.warn("🔄 Using simplified search fallback");
+            return [{
+                label: query + ", Singapore",
+                coordinates: [103.8198, 1.3521],
+                country: "Singapore", 
+                region: "Singapore",
+                address: query + ", Singapore"
+            }];
         }
     },
 
@@ -601,12 +629,52 @@ const MapService = {
         }
     },
 
-    // Search for places using simplified approach
+    // Search for places using your Lambda places search service
     searchPlaces: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching for places (simplified):", query);
+            console.log("🔍 Searching for places via Lambda service:", query);
 
-            // Return a simple fallback result
+            // Use your Lambda places search endpoint
+            const placesEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.PLACES_SEARCH);
+            
+            const requestBody = {
+                Text: query + ", Singapore",
+                MaxResults: 10,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+            };
+
+            console.log("🔍 Lambda places search request:", { url: placesEndpoint, body: requestBody });
+
+            const response = await Utils.apiCall(placesEndpoint, {
+                method: 'POST',
+                headers: {
+                    ...CONFIG.getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("🎯 Lambda places search results:", response);
+            
+            // Transform response to expected format (AWS Location Service format)
+            const results = response.Results || response.results || response.data || [];
+            return results.map(place => ({
+                Place: {
+                    Label: place.Place?.Label || place.label || place.address,
+                    Geometry: {
+                        Point: place.Place?.Geometry?.Point || place.coordinates || [103.8198, 1.3521]
+                    },
+                    Country: place.Place?.Country || place.country || "Singapore",
+                    Region: place.Place?.Region || place.region || "Singapore",
+                    Municipality: place.Place?.Municipality || place.municipality || place.city
+                },
+                Relevance: place.Relevance || place.relevance || 0.8
+            }));
+        } catch (error) {
+            console.error("❌ Places search via Lambda failed:", error);
+            
+            // Fallback to simple result
+            console.warn("🔄 Using simplified places search fallback");
             return [{
                 Place: {
                     Label: query + ", Singapore",
@@ -619,23 +687,60 @@ const MapService = {
                 },
                 Relevance: 0.8
             }];
-        } catch (error) {
-            console.error("❌ Places search failed:", error);
-            throw error;
         }
     },
 
-    // Reverse geocoding using simplified fallback
+    // Reverse geocoding using your Lambda reverse geocoding service
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding (simplified):", { lng, lat });
+            console.log("🔄 Reverse geocoding via Lambda service:", { lng, lat });
 
-            // For now, return a simple address based on coordinates
-            const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}, Singapore`;
+            // Use your Lambda reverse geocoding endpoint
+            const reverseEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
             
+            const requestBody = {
+                Position: [lng, lat],
+                MaxResults: 1
+            };
+
+            console.log("🔄 Lambda reverse geocode request:", { url: reverseEndpoint, body: requestBody });
+
+            const response = await Utils.apiCall(reverseEndpoint, {
+                method: 'POST',
+                headers: {
+                    ...CONFIG.getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("📍 Lambda reverse geocoding result:", response);
+            
+            // Transform response to expected format (AWS Location Service format)
+            const results = response.Results || response.results || response.data || [];
+            if (results.length > 0) {
+                const place = results[0].Place || results[0];
+                return {
+                    Place: {
+                        Label: place.Label || place.label || place.address,
+                        Country: place.Country || place.country || "Singapore",
+                        Region: place.Region || place.region || "Singapore",
+                        Municipality: place.Municipality || place.municipality || place.city,
+                        PostalCode: place.PostalCode || place.postalCode || place.zip
+                    }
+                };
+            }
+            
+            // If no results, fall back to coordinate-based address
+            throw new Error("No reverse geocoding results");
+            
+        } catch (error) {
+            console.error("❌ Reverse geocoding via Lambda failed:", error);
+            
+            // Fallback to coordinate-based address
+            const address = `${lat.toFixed(4)}, ${lng.toFixed(4)}, Singapore`;
             console.log("📍 Reverse geocoding result (fallback):", address);
             
-            // Return a simple address format
             return {
                 Place: {
                     Label: address,
@@ -645,33 +750,65 @@ const MapService = {
                     PostalCode: null
                 }
             };
-        } catch (error) {
-            console.error("❌ Reverse geocoding failed:", error);
-            return {
-                Place: {
-                    Label: "Unknown location",
-                    Country: null,
-                    Region: null,
-                    Municipality: null,
-                    PostalCode: null
-                }
-            };
         }
     },
 
-    // Geocode address using simplified approach
+    // Geocode address using your Lambda geocoding service
     geocodeAddress: async function(address, biasPosition = null) {
         try {
-            console.log("🏠 Geocoding address (simplified):", address);
+            console.log("🏠 Geocoding address via Lambda service:", address);
 
-            // For now, return default Singapore coordinates
-            // The venue creation will handle proper geocoding via the Lambda service
+            // Use your Lambda geocoding endpoint
+            const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
+            
+            const requestBody = {
+                Text: address + ", Singapore",
+                MaxResults: 1,
+                BiasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
+            };
+
+            console.log("🏠 Lambda geocode request:", { url: geocodeEndpoint, body: requestBody });
+
+            const response = await Utils.apiCall(geocodeEndpoint, {
+                method: 'POST',
+                headers: {
+                    ...CONFIG.getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("📍 Lambda geocoding result:", response);
+            
+            // Transform response to expected format (AWS Location Service format)
+            const results = response.Results || response.results || response.data || [];
+            if (results.length > 0) {
+                const place = results[0].Place || results[0];
+                return {
+                    Place: {
+                        Label: place.Label || place.label || place.address || address + ", Singapore",
+                        Geometry: {
+                            Point: place.Geometry?.Point || place.coordinates || [103.8198, 1.3521]
+                        },
+                        Country: place.Country || place.country || "Singapore",
+                        Region: place.Region || place.region || "Singapore",
+                        Municipality: place.Municipality || place.municipality || place.city
+                    }
+                };
+            }
+            
+            // If no results, fall back to default coordinates
+            throw new Error("No geocoding results");
+            
+        } catch (error) {
+            console.error("❌ Geocoding via Lambda failed:", error);
+            
+            // Fallback to default Singapore coordinates
             const lat = 1.3521;
             const lng = 103.8198;
             
             console.log("📍 Geocoding result (fallback):", { lat, lng, address });
             
-            // Return expected format with fallback coordinates
             return {
                 Place: {
                     Label: address + ", Singapore",
@@ -683,9 +820,6 @@ const MapService = {
                     Municipality: "Singapore"
                 }
             };
-        } catch (error) {
-            console.error("❌ Geocoding failed:", error);
-            throw error;
         }
     },
 
