@@ -111,23 +111,8 @@ const VenuesPage = {
                 });
             }
 
-            // Create venue button and modal
-            const createVenueBtn = document.getElementById("create-venue-btn");
-            const venueModal = document.getElementById("venue-modal");
-            const closeVenueModal = document.getElementById("close-venue-modal");
-            const venueForm = document.getElementById("venue-form");
-
-            if (createVenueBtn && venueModal) {
-                createVenueBtn.addEventListener("click", () => {
-                    this.openCreateModal();
-                });
-            }
-
-            if (closeVenueModal && venueModal) {
-                closeVenueModal.addEventListener("click", () => {
-                    this.closeModal();
-                });
-            }
+            // The create venue button is now a link to create-venue.html
+            // No need for modal functionality since we have a dedicated page
 
             if (venueForm) {
                 venueForm.addEventListener("submit", (e) => {
@@ -619,41 +604,10 @@ const VenuesPage = {
     });
   },
 
-  // Open create venue modal
+  // Redirect to create venue page (replaces old modal functionality)
   openCreateModal: function () {
-    this.editingVenue = null;
-    const modal = document.getElementById("venue-modal");
-    const title = document.getElementById("venue-modal-title");
-    const submitBtn = document.getElementById("venue-submit-btn");
-    const form = document.getElementById("venue-form");
-
-    if (title) title.textContent = "Add New Venue";
-    if (submitBtn) submitBtn.textContent = "Add Venue";
-    if (form) form.reset();
-
-    // Clear any selected location info
-    this.clearSelectedLocationInfo();
-
-    // Clear map container and prepare for initialization
-    const mapContainer = document.getElementById("venue-location-map");
-    if (mapContainer) {
-      mapContainer.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
-          <div style="text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🗺️</div>
-            <p style="margin: 0; font-weight: 600;">AWS Location Service Map</p>
-            <p style="margin: 0; font-size: 0.9rem;">Initializing interactive map...</p>
-          </div>
-        </div>
-      `;
-    }
-
-    modal.style.display = "block";
-
-    // Initialize map for location selection after modal is visible
-    setTimeout(() => {
-      this.initializeVenueLocationMap();
-    }, 500); // Increased timeout to ensure modal is fully rendered
+    // Simply redirect to the new dedicated create venue page
+    window.location.href = 'create-venue.html';
   },
 
   // Open edit venue modal

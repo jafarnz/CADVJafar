@@ -18,6 +18,8 @@ const Router = {
       '/events': '/events.html',
       '/venues/': '/venues.html',
       '/venues': '/venues.html',
+      '/create-venue/': '/create-venue.html',
+      '/create-venue': '/create-venue.html',
       '/dashboard/': '/dashboard.html',
       '/dashboard': '/dashboard.html',
       '/login/': '/login.html',
@@ -44,7 +46,7 @@ const Router = {
     const segments = currentPath.split('/').filter(segment => segment.length > 0);
     if (segments.length === 1) {
       const pageName = segments[0];
-      const validPages = ['profile', 'events', 'venues', 'dashboard', 'login', 'signup', 'confirm', 'profile-setup', 'event-details'];
+      const validPages = ['profile', 'events', 'venues', 'create-venue', 'dashboard', 'login', 'signup', 'confirm', 'profile-setup', 'event-details'];
 
       if (validPages.includes(pageName)) {
         const newURL = `/${pageName}.html` + (currentHash || '');
