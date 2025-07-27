@@ -1364,51 +1364,59 @@ const VenuesPage = {
         searchBtn.disabled = true;
       }
 
-      // Use MapService search if available
-      let results = [];
-      if (window.MapService && window.MapService.searchPlaces) {
-        results = await window.MapService.searchPlaces(query);
-      } else {
-        throw new Error("Search service not available");
-      }
+      // Use direct geocoding API call (working endpoint)
+      const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
+      
+      const requestBody = {
+        address: query.trim() + ", Singapore",
+        maxResults: 1,
+        biasPosition: [103.8198, 1.3521]
+      };
 
-      if (results && results.length > 0) {
-        const result = results[0]; // Use first result
-        const place = result.Place;
-        
-        if (place && place.Geometry && place.Geometry.Point) {
-          const [lng, lat] = place.Geometry.Point;
-          const address = place.Label || query;
+      console.log("🔍 Direct geocoding request:", { url: geocodeEndpoint, body: requestBody });
 
-          // Remove previous marker
-          if (this.selectedLocationMarker) {
-            this.selectedLocationMarker.remove();
-          }
+      const response = await Utils.apiCall(geocodeEndpoint, {
+        method: 'POST',
+        headers: {
+          ...CONFIG.getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
 
-          // Add marker at search result
-          this.selectedLocationMarker = new maplibregl.Marker({ color: '#28a745' })
-            .setLngLat([lng, lat])
-            .addTo(this.venueLocationMap);
+      console.log("📍 Geocoding response:", response);
 
-          // Fly to search result
-          this.venueLocationMap.flyTo({
-            center: [lng, lat],
-            zoom: 15,
-            speed: 1.2
-          });
+      if (response && response.latitude && response.longitude) {
+        const lng = response.longitude;
+        const lat = response.latitude;
+        const address = response.formatted || response.address || query + ", Singapore";
 
-          // Update form fields
-          this.updateVenueLocationFields(lat, lng, address);
-
-          // Show selected location info
-          this.showSelectedLocationInfo(address, lat, lng);
-
-          console.log("✅ Location found and selected:", address);
-        } else {
-          throw new Error("Invalid search result format");
+        // Remove previous marker
+        if (this.selectedLocationMarker) {
+          this.selectedLocationMarker.remove();
         }
+
+        // Add marker at search result
+        this.selectedLocationMarker = new maplibregl.Marker({ color: '#28a745' })
+          .setLngLat([lng, lat])
+          .addTo(this.venueLocationMap);
+
+        // Fly to search result
+        this.venueLocationMap.flyTo({
+          center: [lng, lat],
+          zoom: 15,
+          speed: 1.2
+        });
+
+        // Update form fields
+        this.updateVenueLocationFields(lat, lng, address);
+
+        // Show selected location info
+        this.showSelectedLocationInfo(address, lat, lng);
+
+        console.log("✅ Location found and selected:", address);
       } else {
-        Utils.showError("No locations found for that search. Please try a different search term.");
+        Utils.showError("No location found for that search. Please try a different search term.");
       }
 
     } catch (error) {
