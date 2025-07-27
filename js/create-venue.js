@@ -187,20 +187,30 @@ const CreateVenuePage = {
             return;
         }
 
-        searchResults.innerHTML = results.map(result => `
-            <div class="search-result-item" onclick="CreateVenuePage.selectSearchResult('${JSON.stringify(result).replace(/'/g, "&#39;")}')">
+        searchResults.innerHTML = results.map((result, index) => `
+            <div class="search-result-item" data-result-index="${index}">
                 <div class="result-label">${result.label}</div>
                 <div class="result-country">${result.country || ''} ${result.region || ''}</div>
             </div>
         `).join('');
 
+        // Store results for later reference
+        this.currentSearchResults = results;
+
+        // Add click listeners to result items
+        searchResults.querySelectorAll('.search-result-item').forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.selectSearchResult(results[index]);
+            });
+        });
+
         searchResults.style.display = 'block';
     },
 
     // Handle search result selection
-    selectSearchResult: function(resultJson) {
+    selectSearchResult: function(result) {
         try {
-            const result = JSON.parse(resultJson.replace(/&#39;/g, "'"));
+            console.log("🎯 Selecting search result:", result);
             
             // Update search input
             const searchInput = document.getElementById('location-search');
@@ -239,7 +249,7 @@ const CreateVenuePage = {
 
     // Handle location selection from map or search
     handleLocationSelected: function(locationResult) {
-        console.log("📍 Location selected:", locationResult);
+        console.log("📍 Location selected for venue creation:", locationResult);
         
         // Remove previous marker
         if (this.selectedLocationMarker) {
@@ -254,34 +264,63 @@ const CreateVenuePage = {
             })
             .setLngLat(locationResult.coordinates)
             .addTo(this.venueLocationMap);
+            
+            console.log("✅ Marker added to map at:", locationResult.coordinates);
+        } else {
+            console.error("❌ Venue location map not available");
         }
         
         // Update form fields
+        console.log("🔧 About to update location fields...");
         this.updateLocationFields(locationResult);
         
         // Show confirmation
+        console.log("📋 About to show confirmation...");
         this.showLocationConfirmation(locationResult);
         
         // Disable location picker if it was enabled
         if (this.isLocationPickerEnabled) {
             this.toggleLocationPicker();
         }
+        
+        console.log("✅ Location selection completed successfully");
     },
 
     // Update form fields with location data
     updateLocationFields: function(locationResult) {
+        console.log("🔧 Updating form fields with location data:", locationResult);
+        
         const latInput = document.getElementById('venueLatitude');
         const lngInput = document.getElementById('venueLongitude');
         const addressInput = document.getElementById('venueAddress');
 
+        console.log("🔍 Found form elements:", {
+            latInput: !!latInput,
+            lngInput: !!lngInput,
+            addressInput: !!addressInput
+        });
+
         if (latInput) {
-            latInput.value = locationResult.lat || locationResult.coordinates[1];
+            const latValue = locationResult.lat || locationResult.coordinates[1];
+            latInput.value = latValue;
+            console.log("✅ Latitude updated:", latValue);
+        } else {
+            console.error("❌ Latitude input not found");
         }
+        
         if (lngInput) {
-            lngInput.value = locationResult.lng || locationResult.coordinates[0];
+            const lngValue = locationResult.lng || locationResult.coordinates[0];
+            lngInput.value = lngValue;
+            console.log("✅ Longitude updated:", lngValue);
+        } else {
+            console.error("❌ Longitude input not found");
         }
+        
         if (addressInput && locationResult.address) {
             addressInput.value = locationResult.address;
+            console.log("✅ Address updated:", locationResult.address);
+        } else {
+            console.error("❌ Address input not found or no address provided");
         }
     },
 
