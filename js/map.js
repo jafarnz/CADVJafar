@@ -274,25 +274,39 @@ const MapService = {
 
             console.log("🎯 Lambda geocode search results:", response);
             
-            // Transform response to expected format (Lambda returns different structure)
-            if (response.latitude && response.longitude) {
-                return [{
+            // Handle wrapped JSON response format
+            let searchResults = [];
+            
+            if (response.message) {
+                try {
+                    // Parse the wrapped JSON message
+                    const parsed = JSON.parse(response.message);
+                    if (parsed.latitude && parsed.longitude) {
+                        searchResults = [{
+                            label: parsed.formatted || parsed.address || query + ", Singapore",
+                            coordinates: [parsed.longitude, parsed.latitude],
+                            country: parsed.country || 'Singapore',
+                            region: parsed.region || 'Singapore',
+                            address: parsed.formatted || parsed.address || query + ", Singapore"
+                        }];
+                    }
+                } catch (parseError) {
+                    console.error("Failed to parse wrapped JSON response:", parseError);
+                }
+            } else if (response.latitude && response.longitude) {
+                // Direct response format
+                searchResults = [{
                     label: response.formatted || response.address,
                     coordinates: [response.longitude, response.latitude],
                     country: response.country || 'Singapore',
                     region: response.region,
                     address: response.formatted || response.address
                 }];
-            } else {
-                // Handle array results if any
-                const results = response.results || response.data || [];
-                return results.map(place => ({
-                    label: place.label || place.formatted || place.address,
-                    coordinates: [place.longitude, place.latitude],
-                    country: place.country || 'Singapore',
-                    region: place.region,
-                    address: place.label || place.formatted || place.address
-                }));
+            }
+            
+            if (searchResults.length > 0) {
+                console.log("📍 Parsed search results:", searchResults);
+                return searchResults;
             }
         } catch (error) {
             console.error("❌ Location search via Lambda failed:", error);
@@ -318,8 +332,16 @@ const MapService = {
 
         // Add click handler for location picking
         const pickLocationHandler = async (e) => {
+            // Get precise coordinates from the click event
             const { lng, lat } = e.lngLat;
-            console.log("📍 Venue location picked:", { lng, lat });
+            
+            // Log the exact click coordinates for debugging
+            console.log("📍 Raw click coordinates:", { lng, lat });
+            console.log("📍 Click event details:", {
+                originalEvent: e.originalEvent,
+                lngLat: e.lngLat,
+                point: e.point
+            });
 
             try {
                 // Reverse geocode to get address
@@ -334,7 +356,7 @@ const MapService = {
                     region: locationInfo ? locationInfo.Place?.Region : null
                 };
 
-                // Add venue marker
+                // Add venue marker at exact coordinates
                 const marker = new window.maplibregl.Marker({ 
                     color: '#ff6b6b',
                     scale: 1.2
@@ -342,11 +364,11 @@ const MapService = {
                 .setLngLat([lng, lat])
                 .addTo(map);
 
-                // Remove click handler
+                // Remove click handler and reset cursor
                 map.off('click', pickLocationHandler);
                 map.getCanvas().style.cursor = '';
 
-                console.log("✅ Venue location selected:", result);
+                console.log("✅ Venue location selected with precise coordinates:", result);
                 callback(result, marker);
 
             } catch (error) {
@@ -853,8 +875,16 @@ const MapService = {
 
         // Add click handler for location picking
         const pickLocationHandler = async (e) => {
+            // Get precise coordinates from the click event
             const { lng, lat } = e.lngLat;
-            console.log("📍 Location picked:", { lng, lat });
+            
+            // Log the exact click coordinates for debugging
+            console.log("📍 Raw click coordinates:", { lng, lat });
+            console.log("📍 Click event details:", {
+                originalEvent: e.originalEvent,
+                lngLat: e.lngLat,
+                point: e.point
+            });
 
             try {
                 // Reverse geocode to get address
@@ -862,21 +892,23 @@ const MapService = {
                 
                 const result = {
                     coordinates: [lng, lat],
+                    lat: lat,
+                    lng: lng,
                     address: locationInfo ? (locationInfo.Place?.Label || 'Unknown location') : 'Unknown location',
                     country: locationInfo ? locationInfo.Place?.Country : null,
                     region: locationInfo ? locationInfo.Place?.Region : null
                 };
 
-                // Add temporary marker
+                // Add temporary marker at exact coordinates
                 const marker = new maplibregl.Marker({ color: '#ff6b6b' })
                     .setLngLat([lng, lat])
                     .addTo(this.map);
 
-                // Remove click handler
+                // Remove click handler and reset cursor
                 this.map.off('click', pickLocationHandler);
                 this.map.getCanvas().style.cursor = '';
 
-                console.log("✅ Location picker result:", result);
+                console.log("✅ Location picker result with precise coordinates:", result);
                 callback(result, marker);
 
             } catch (error) {

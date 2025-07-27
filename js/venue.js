@@ -976,13 +976,16 @@ const VenuesPage = {
       const result = await MapService.geocodeAddress(addressInput.value.trim());
 
       if (result && result.lat && result.lng) {
-        if (latInput) latInput.value = result.lat;
-        if (lngInput) lngInput.value = result.lng;
+        // Use handleLocationSelected to update all form fields consistently
+        const locationResult = {
+          lat: result.lat,
+          lng: result.lng,
+          coordinates: [result.lng, result.lat],
+          address: result.formatted || addressInput.value.trim()
+        };
         
-        // Update address field with formatted address if available
-        if (result.formatted && addressInput) {
-          addressInput.value = result.formatted;
-        }
+        // Call the same function used by map clicks and search selections
+        this.handleLocationSelected(locationResult);
         
         Utils.showSuccess("Coordinates found successfully!");
       } else {
