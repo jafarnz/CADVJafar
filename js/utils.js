@@ -419,9 +419,60 @@ const Utils = {
     // Show/hide elements
     show: function(elementId) {
         const element = document.getElementById(elementId);
-        if (element) {
-            element.classList.remove("hidden");
+        if (element) element.style.display = 'block';
+    },
+
+    // Joined Events Management
+    getJoinedEvents: function() {
+        const userData = this.getCurrentUser();
+        if (!userData) return [];
+        
+        const joinedEvents = localStorage.getItem(`joined_events_${userData.user_id}`);
+        return joinedEvents ? JSON.parse(joinedEvents) : [];
+    },
+
+    addJoinedEvent: function(eventData) {
+        const userData = this.getCurrentUser();
+        if (!userData) return false;
+        
+        const joinedEvents = this.getJoinedEvents();
+        
+        // Check if already joined
+        const alreadyJoined = joinedEvents.find(e => e.eventID === eventData.eventID);
+        if (alreadyJoined) {
+            return false; // Already joined
         }
+        
+        // Add event with join timestamp
+        const joinedEvent = {
+            ...eventData,
+            joinedAt: new Date().toISOString()
+        };
+        
+        joinedEvents.push(joinedEvent);
+        localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(joinedEvents));
+        
+        return true;
+    },
+
+    removeJoinedEvent: function(eventID) {
+        const userData = this.getCurrentUser();
+        if (!userData) return false;
+        
+        const joinedEvents = this.getJoinedEvents();
+        const filteredEvents = joinedEvents.filter(e => e.eventID !== eventID);
+        
+        localStorage.setItem(`joined_events_${userData.user_id}`, JSON.stringify(filteredEvents));
+        return true;
+    },
+
+    isEventJoined: function(eventID) {
+        const joinedEvents = this.getJoinedEvents();
+        return joinedEvents.some(e => e.eventID === eventID);
+    },
+
+    getJoinedEventsCount: function() {
+        return this.getJoinedEvents().length;
     },
 
     hide: function(elementId) {

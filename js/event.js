@@ -548,13 +548,25 @@ const EventsPage = {
           <button class="event-btn maps" onclick="EventsPage.openEventInGoogleMaps('${event.eventID}')" title="Open in Google Maps">
             🗺️ Maps
           </button>` : ''}
-          ${isUpcoming ? 
-            `<button class="event-btn primary join-btn" data-event-id="${event.eventID}">🎟️ Join</button>` : 
-            `<button class="event-btn secondary" disabled>⏰ Past Event</button>`
-          }
+          ${this.renderJoinButton(event, isUpcoming)}
         </div>
       </div>
     `;
+  },
+
+  // Render join button based on event status and user join status
+  renderJoinButton: function(event, isUpcoming) {
+    if (!isUpcoming) {
+      return `<button class="event-btn secondary" disabled>⏰ Past Event</button>`;
+    }
+    
+    const isJoined = Utils.isEventJoined(event.eventID);
+    
+    if (isJoined) {
+      return `<button class="event-btn success joined-btn" data-event-id="${event.eventID}" disabled>✅ Joined</button>`;
+    } else {
+      return `<button class="event-btn primary join-btn" data-event-id="${event.eventID}">🎟️ Join</button>`;
+    }
   },
 
   // Add event listeners to event cards
@@ -593,6 +605,9 @@ const EventsPage = {
         this.showEventDetails(eventId);
       });
     });
+
+    // Update button states based on joined status
+    this.updateEventButtonStates();
   },
 
   // Show event details with venue map
@@ -771,17 +786,81 @@ const EventsPage = {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
     );
-    if (!event) return;
+    if (!event) {
+      Utils.showError('Event not found');
+      return;
+    }
 
-    // For now, just show a success message
-    // In a real app, this would make an API call to join the event
-    Utils.showSuccess(
-      `You've successfully joined "${event.name}"! You'll receive updates about this event.`,
+    // Check if already joined
+    if (Utils.isEventJoined(eventId)) {
+      Utils.showWarning(`You've already joined "${event.name}"`);
+      return;
+    }
+
+    // Check if event is in the past
+    const eventDateTime = new Date(`${event.eventDate}T${event.eventTime}`);
+    const now = new Date();
+    
+    if (eventDateTime <= now) {
+      Utils.showError('Cannot join events that have already passed');
+      return;
+    }
+
+    try {
+      // Add event to joined events
+      const success = Utils.addJoinedEvent(event);
+      
+      if (success) {
+        Utils.showSuccess(
+          `You've successfully joined "${event.name}"! You'll receive updates about this event.`,
+        );
+        
+        // Update the UI to reflect joined status
+        this.updateEventButtonStates();
+        
+        console.log('✅ Joined event:', event.name);
+      } else {
+        Utils.showWarning(`You've already joined "${event.name}"`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to join event:', error);
+      Utils.showError('Failed to join event. Please try again.');
+    }
+  },
+
+  // Update event button states based on joined status
+  updateEventButtonStates: function() {
+    document.querySelectorAll('.join-btn').forEach(btn => {
+      const eventId = btn.getAttribute('data-event-id');
+      if (Utils.isEventJoined(eventId)) {
+        btn.textContent = '✅ Joined';
+        btn.disabled = true;
+        btn.classList.remove('primary');
+        btn.classList.add('success');
+      }
+    });
+  },
+
+  // Leave an event
+  leaveEvent: function(eventId) {
+    const event = this.events.find(
+      (e) => e.eventID.toString() === eventId.toString(),
     );
+    if (!event) {
+      Utils.showError('Event not found');
+      return;
+    }
 
-    // TODO: Implement actual join event API call
-    // const joinUrl = CONFIG.buildApiUrl(`/events/${eventId}/join`);
-    // await Utils.apiCall(joinUrl, { method: 'POST', headers: CONFIG.getAuthHeaders() });
+    if (!Utils.isEventJoined(eventId)) {
+      Utils.showWarning('You have not joined this event');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to leave "${event.name}"?`)) {
+      Utils.removeJoinedEvent(eventId);
+      Utils.showSuccess(`You've left "${event.name}"`);
+      this.updateEventButtonStates();
+    }
   },
 
   // Edit an event
@@ -794,51 +873,8 @@ const EventsPage = {
       return;
     }
 
-    // Pre-populate the create event form with existing data
-    this.populateEditForm(event);
-    
-    // Show the create event modal (which will now be in edit mode)
-    const modal = document.getElementById("create-event-modal");
-    if (modal) {
-      const modalTitle = modal.querySelector("h2");
-      if (modalTitle) {
-        modalTitle.textContent = "Edit Event";
-      }
-      
-      // Add edit mode flag and event ID to form
-      const form = document.getElementById("create-event-form");
-      if (form) {
-        form.setAttribute("data-edit-mode", "true");
-        form.setAttribute("data-event-id", eventId);
-      }
-      
-      modal.style.display = "block";
-    }
-  },
-
-  // Populate form with event data for editing
-  populateEditForm: function(event) {
-    const form = document.getElementById("create-event-form");
-    if (!form) return;
-
-    // Populate form fields
-    const eventNameField = form.querySelector("#event-name");
-    if (eventNameField) eventNameField.value = event.name || '';
-
-    const eventDateField = form.querySelector("#event-date");
-    if (eventDateField) eventDateField.value = event.eventDate || '';
-
-    const eventTimeField = form.querySelector("#event-time");
-    if (eventTimeField) eventTimeField.value = event.eventTime || '';
-
-    const eventGenreField = form.querySelector("#event-genre");
-    if (eventGenreField) eventGenreField.value = event.genre || '';
-
-    const eventDescriptionField = form.querySelector("#event-description");
-    if (eventDescriptionField) eventDescriptionField.value = event.description || '';
-
-    const venueSelectField = form.querySelector("#venue-select");
-    if (venueSelectField) venueSelectField.value = event.venueID || '';
+    // Redirect to edit event page
+    window.location.href = `edit-event.html?id=${eventId}`;
   },
 
   // Open event location in Google Maps

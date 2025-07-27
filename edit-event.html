@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Venue - LocalGigs</title>
-    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+    <title>Edit Event - LocalGigs</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .edit-venue-container {
-            max-width: 1400px;
+        .edit-event-container {
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background: #fff;
@@ -35,14 +34,14 @@
             margin: 0;
         }
 
-        .edit-venue-layout {
+        .edit-event-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             align-items: start;
         }
 
-        .venue-form-section {
+        .event-form-section {
             background: #fff;
             border: 1px solid #e9ecef;
             border-radius: 12px;
@@ -50,7 +49,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .map-section {
+        .preview-section {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 12px;
@@ -107,29 +106,6 @@
         .form-textarea {
             resize: vertical;
             min-height: 100px;
-        }
-
-        .map-container {
-            height: 400px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-
-        .location-info {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            margin-bottom: 20px;
-        }
-
-        .location-coordinates {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 10px;
         }
 
         .image-upload-container {
@@ -243,25 +219,22 @@
             transform: translateY(-1px);
         }
 
-        .btn-select-location {
-            background: #17a2b8;
+        .btn-delete {
+            background: #dc3545;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: 600;
-            width: 100%;
-            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
         }
 
-        .btn-select-location:hover {
-            background: #138496;
-        }
-
-        .btn-select-location:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
+        .btn-delete:hover {
+            background: #c82333;
+            transform: translateY(-1px);
         }
 
         .back-button {
@@ -284,13 +257,39 @@
             color: white;
         }
 
+        .event-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .event-preview h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+
+        .event-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .event-info span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+        }
+
         @media (max-width: 968px) {
-            .edit-venue-layout {
+            .edit-event-layout {
                 grid-template-columns: 1fr;
                 gap: 30px;
             }
             
-            .map-section {
+            .preview-section {
                 position: static;
             }
             
@@ -321,122 +320,100 @@
         </div>
     </header>
 
-    <div class="edit-venue-container">
-        <a href="venues.html" class="back-button">
-            ← Back to Venues
+    <div class="edit-event-container">
+        <a href="events.html" class="back-button">
+            ← Back to Events
         </a>
 
         <div class="page-header">
-            <h1>🏢 Edit Venue</h1>
-            <p>Update your venue information and location</p>
+            <h1>🎵 Edit Event</h1>
+            <p>Update your event information and details</p>
         </div>
 
-        <div id="edit-venue-messages"></div>
+        <div id="edit-event-messages"></div>
 
-        <div class="edit-venue-layout">
-            <!-- Venue Form Section -->
-            <div class="venue-form-section">
+        <div class="edit-event-layout">
+            <!-- Event Form Section -->
+            <div class="event-form-section">
                 <h2 class="section-title">
-                    📝 Venue Details
+                    📝 Event Details
                 </h2>
 
-                <form id="edit-venue-form">
+                <form id="edit-event-form">
                     <div class="form-group">
-                        <label for="venueName" class="form-label">Venue Name *</label>
+                        <label for="eventName" class="form-label">Event Name *</label>
                         <input
                             type="text"
-                            id="venueName"
+                            id="eventName"
                             name="name"
                             class="form-input"
                             required
-                            placeholder="Enter venue name"
+                            placeholder="Enter event name"
                             maxlength="100"
                         />
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="venueType" class="form-label">Venue Type *</label>
-                            <select id="venueType" name="type" class="form-select" required>
-                                <option value="">Select venue type...</option>
-                                <option value="bar">Bar</option>
-                                <option value="club">Club</option>
-                                <option value="restaurant">Restaurant</option>
-                                <option value="concert_hall">Concert Hall</option>
-                                <option value="outdoor">Outdoor Space</option>
-                                <option value="theater">Theater</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="venueCapacity" class="form-label">Capacity</label>
-                            <input
-                                type="number"
-                                id="venueCapacity"
-                                name="capacity"
-                                class="form-input"
-                                placeholder="e.g. 100"
-                                min="1"
-                                max="10000"
-                            />
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label for="venueDescription" class="form-label">Description</label>
+                        <label for="eventDescription" class="form-label">Description</label>
                         <textarea
-                            id="venueDescription"
+                            id="eventDescription"
                             name="description"
                             class="form-textarea"
                             rows="4"
-                            placeholder="Describe your venue, its atmosphere, and what makes it special..."
+                            placeholder="Describe your event, what to expect, and what makes it special..."
                             maxlength="500"
                         ></textarea>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="venuePhone" class="form-label">Phone Number</label>
+                            <label for="eventDate" class="form-label">Event Date *</label>
                             <input
-                                type="tel"
-                                id="venuePhone"
-                                name="phone"
+                                type="date"
+                                id="eventDate"
+                                name="eventDate"
                                 class="form-input"
-                                placeholder="+65 1234 5678"
+                                required
                             />
                         </div>
 
                         <div class="form-group">
-                            <label for="venueWebsite" class="form-label">Website</label>
+                            <label for="eventTime" class="form-label">Event Time *</label>
                             <input
-                                type="url"
-                                id="venueWebsite"
-                                name="website"
+                                type="time"
+                                id="eventTime"
+                                name="eventTime"
                                 class="form-input"
-                                placeholder="https://www.example.com"
+                                required
                             />
                         </div>
                     </div>
 
-                    <!-- Venue Image Upload -->
                     <div class="form-group">
-                        <label class="form-label">Venue Image</label>
+                        <label for="eventVenue" class="form-label">Venue *</label>
+                        <select id="eventVenue" name="venueID" class="form-select" required>
+                            <option value="">Select a venue...</option>
+                        </select>
+                    </div>
+
+                    <!-- Event Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Event Image</label>
                         <div class="image-upload-container">
-                            <div class="image-preview-wrapper venue-image-preview">
-                                <img id="venueImagePreview" class="image-preview" style="display: none;" alt="Venue preview">
-                                <div class="upload-placeholder" id="venueUploadPlaceholder">
+                            <div class="image-preview-wrapper event-image-preview">
+                                <img id="eventImagePreview" class="image-preview" style="display: none;" alt="Event preview">
+                                <div class="upload-placeholder" id="eventUploadPlaceholder">
                                     <div class="upload-icon">🖼️</div>
-                                    <p>Add a venue photo</p>
+                                    <p>Add an event photo</p>
                                     <small>JPEG, PNG, or GIF (max 5MB)</small>
                                 </div>
                             </div>
-                            <input type="file" id="venueImageInput" name="venueImage" accept="image/*" style="display: none;">
+                            <input type="file" id="eventImageInput" name="eventImage" accept="image/*" style="display: none;">
                             <div class="upload-actions">
-                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('venueImageInput').click()">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('eventImageInput').click()">
                                     Choose Photo
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" id="removeVenuePhotoBtn" style="display: none;" onclick="removeVenuePhoto()">
+                                <button type="button" class="btn btn-secondary btn-sm" id="removeEventPhotoBtn" style="display: none;" onclick="removeEventPhoto()">
                                     Remove
                                 </button>
                             </div>
@@ -444,36 +421,33 @@
                     </div>
 
                     <div class="action-buttons">
-                        <button type="submit" class="btn-update" id="updateVenueBtn">
-                            Update Venue
+                        <button type="submit" class="btn-update" id="updateEventBtn">
+                            Update Event
                         </button>
-                        <button type="button" class="btn-cancel" onclick="window.location.href='venues.html'">
+                        <button type="button" class="btn-delete" id="deleteEventBtn">
+                            Delete Event
+                        </button>
+                        <button type="button" class="btn-cancel" onclick="window.location.href='events.html'">
                             Cancel
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Map Section -->
-            <div class="map-section">
+            <!-- Preview Section -->
+            <div class="preview-section">
                 <h2 class="section-title">
-                    🗺️ Location
+                    👁️ Preview
                 </h2>
                 
-                <div class="location-info" id="location-info">
-                    <h4>Current Location</h4>
-                    <p id="location-address">No location selected</p>
-                    <div class="location-coordinates" id="location-coordinates">
-                        Coordinates: Not set
+                <div class="event-preview" id="event-preview">
+                    <h3 id="preview-name">Event Name</h3>
+                    <div class="event-info">
+                        <span id="preview-date">📅 Select date</span>
+                        <span id="preview-time">🕐 Select time</span>
+                        <span id="preview-venue">📍 Select venue</span>
                     </div>
-                </div>
-
-                <button type="button" class="btn-select-location" id="select-location-btn">
-                    📍 Select New Location on Map
-                </button>
-
-                <div class="map-container">
-                    <div id="venue-map" style="height: 100%; width: 100%;"></div>
+                    <p id="preview-description">Event description will appear here...</p>
                 </div>
             </div>
         </div>
@@ -484,8 +458,7 @@
     <script src="js/utils.js"></script>
     <script src="js/router.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/map.js"></script>
-    <script src="js/edit-venue.js"></script>
+    <script src="js/edit-event.js"></script>
 
     <script>
         // Initialize navigation fix
@@ -495,41 +468,34 @@
         Auth.init();
 
         // Image upload variables
-        let selectedVenueImage = null;
+        let selectedEventImage = null;
 
-        // Venue image upload handling
+        // Event image upload handling
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Auth to complete initialization with longer timeout
+            // Wait for Auth to complete initialization
             let attempts = 0;
-            const maxAttempts = 15; // Increased attempts
+            const maxAttempts = 15;
             
             const checkAuthAndInit = () => {
                 attempts++;
                 console.log(`Authentication check attempt ${attempts}`);
-                console.log('Auth state:', {
-                    isAuthenticated: Utils.isAuthenticated(),
-                    hasTokens: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
-                    currentUser: Utils.getCurrentUser()
-                });
                 
                 if (Utils.isAuthenticated()) {
-                    console.log('✅ User authenticated, initializing edit venue');
-                    EditVenue.init();
+                    console.log('✅ User authenticated, initializing edit event');
+                    EditEvent.init();
                 } else if (attempts < maxAttempts) {
                     console.log('⏳ User not yet authenticated, retrying...');
-                    setTimeout(checkAuthAndInit, 500); // Increased timeout
+                    setTimeout(checkAuthAndInit, 500);
                 } else {
                     console.error('❌ Authentication timeout after', maxAttempts, 'attempts');
-                    // Instead of redirecting to login, check if we're actually logged in
                     const hasTokens = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN) && 
                                      localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
                     
                     if (hasTokens) {
                         console.log('🔄 Tokens exist but auth check failed, trying to refresh...');
-                        // Force a page refresh to re-initialize auth
                         window.location.reload();
                     } else {
-                        Utils.showError('Authentication required. Redirecting to login...', 'edit-venue-messages');
+                        Utils.showError('Authentication required. Redirecting to login...', 'edit-event-messages');
                         setTimeout(() => {
                             window.location.href = 'login.html';
                         }, 2000);
@@ -537,17 +503,16 @@
                 }
             };
             
-            // Start the authentication check after a longer delay
             setTimeout(checkAuthAndInit, 500);
 
-            // Venue image upload
-            const venueImageInput = document.getElementById('venueImageInput');
-            const venueImagePreview = document.getElementById('venueImagePreview');
-            const venuePlaceholder = document.getElementById('venueUploadPlaceholder');
-            const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
+            // Event image upload
+            const eventImageInput = document.getElementById('eventImageInput');
+            const eventImagePreview = document.getElementById('eventImagePreview');
+            const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+            const removeEventBtn = document.getElementById('removeEventPhotoBtn');
 
-            if (venueImageInput) {
-                venueImageInput.addEventListener('change', function(e) {
+            if (eventImageInput) {
+                eventImageInput.addEventListener('change', function(e) {
                     const file = e.target.files[0];
                     if (!file) return;
 
@@ -562,36 +527,59 @@
                             throw new Error("Invalid file type. Please select a JPEG, PNG, or GIF image.");
                         }
 
-                        selectedVenueImage = file;
+                        selectedEventImage = file;
 
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            venueImagePreview.src = e.target.result;
-                            venueImagePreview.style.display = 'block';
-                            venuePlaceholder.style.display = 'none';
-                            removeVenueBtn.style.display = 'inline-block';
+                            eventImagePreview.src = e.target.result;
+                            eventImagePreview.style.display = 'block';
+                            eventPlaceholder.style.display = 'none';
+                            removeEventBtn.style.display = 'inline-block';
                         };
                         reader.readAsDataURL(file);
                     } catch (error) {
                         alert(error.message);
-                        venueImageInput.value = '';
+                        eventImageInput.value = '';
                     }
                 });
             }
+
+            // Real-time preview updates
+            document.getElementById('eventName').addEventListener('input', updatePreview);
+            document.getElementById('eventDescription').addEventListener('input', updatePreview);
+            document.getElementById('eventDate').addEventListener('change', updatePreview);
+            document.getElementById('eventTime').addEventListener('change', updatePreview);
+            document.getElementById('eventVenue').addEventListener('change', updatePreview);
         });
 
         // Remove photo function
-        function removeVenuePhoto() {
-            const venueImagePreview = document.getElementById('venueImagePreview');
-            const venuePlaceholder = document.getElementById('venueUploadPlaceholder');
-            const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
-            const venueImageInput = document.getElementById('venueImageInput');
+        function removeEventPhoto() {
+            const eventImagePreview = document.getElementById('eventImagePreview');
+            const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+            const removeEventBtn = document.getElementById('removeEventPhotoBtn');
+            const eventImageInput = document.getElementById('eventImageInput');
 
-            selectedVenueImage = null;
-            venueImageInput.value = '';
-            venueImagePreview.style.display = 'none';
-            venuePlaceholder.style.display = 'block';
-            removeVenueBtn.style.display = 'none';
+            selectedEventImage = null;
+            eventImageInput.value = '';
+            eventImagePreview.style.display = 'none';
+            eventPlaceholder.style.display = 'block';
+            removeEventBtn.style.display = 'none';
+        }
+
+        // Update preview in real-time
+        function updatePreview() {
+            const name = document.getElementById('eventName').value || 'Event Name';
+            const description = document.getElementById('eventDescription').value || 'Event description will appear here...';
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const venueSelect = document.getElementById('eventVenue');
+            const venue = venueSelect.options[venueSelect.selectedIndex].text || 'Select venue';
+
+            document.getElementById('preview-name').textContent = name;
+            document.getElementById('preview-description').textContent = description;
+            document.getElementById('preview-date').textContent = `📅 ${date || 'Select date'}`;
+            document.getElementById('preview-time').textContent = `🕐 ${time || 'Select time'}`;
+            document.getElementById('preview-venue').textContent = `📍 ${venue}`;
         }
     </script>
 </body>

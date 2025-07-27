@@ -278,21 +278,23 @@ const ProfilePage = {
         }
     }, // Load activity data
     loadActivityData: async function() {
-        // For now, we'll use mock data since we don't have activity tracking in the backend
-        // In a real app, this would load from various endpoints
+        // Get real joined events count
+        const joinedEventsCount = Utils.getJoinedEventsCount();
+        const joinedEvents = Utils.getJoinedEvents();
+        
+        console.log('📊 Loaded activity data:', {
+            joinedEventsCount,
+            joinedEvents: joinedEvents.slice(0, 3) // Show first 3 for debugging
+        });
+        
         this.activityData = {
-            eventsCreated: 0,
-            eventsJoined: 0,
-            venuesAdded: 0,
+            eventsCreated: 0, // TODO: Track created events
+            eventsJoined: joinedEventsCount,
+            venuesAdded: 0, // TODO: Track added venues
             daysActive: Math.floor(
                 (new Date() - new Date(this.userProfile.createdAt)) / (1000 * 60 * 60 * 24)
             ),
-            recentActivity: [{
-                type: "joined",
-                title: "Joined Local Gigs",
-                time: this.userProfile.createdAt,
-                icon: "🎉",
-            }, ],
+            recentActivity: this.generateRecentActivity(joinedEvents)
         };
 
         // Try to get real activity data
@@ -317,6 +319,38 @@ const ProfilePage = {
         } catch (error) {
             console.log("Could not load activity data:", error);
         }
+    },
+
+    // Generate recent activity from joined events
+    generateRecentActivity: function(joinedEvents) {
+        const activities = [];
+        
+        // Add join events as activities (most recent first)
+        const sortedEvents = joinedEvents
+            .sort((a, b) => new Date(b.joinedAt) - new Date(a.joinedAt))
+            .slice(0, 5); // Show last 5 activities
+        
+        sortedEvents.forEach(event => {
+            activities.push({
+                type: "joined",
+                title: `Joined "${event.name}"`,
+                time: event.joinedAt,
+                icon: "🎟️",
+                eventId: event.eventID
+            });
+        });
+        
+        // Add account creation as activity if no other activities
+        if (activities.length === 0) {
+            activities.push({
+                type: "joined",
+                title: "Joined Local Gigs",
+                time: this.userProfile.createdAt,
+                icon: "🎉",
+            });
+        }
+        
+        return activities;
     },
 
     // Render profile display
@@ -444,6 +478,10 @@ const ProfilePage = {
         console.log("📈 Rendering recent activity...");
         this.renderRecentActivity();
 
+        // Update joined events
+        console.log("🎟️ Rendering joined events...");
+        this.renderJoinedEvents();
+
         console.log("🎉 Profile render completed successfully");
     },
 
@@ -512,6 +550,84 @@ const ProfilePage = {
         </div>
       `)
             .join("");
+    },
+
+    // Render joined events
+    renderJoinedEvents: function() {
+        const joinedEventsList = document.getElementById("joined-events-list");
+        if (!joinedEventsList) return;
+
+        const joinedEvents = Utils.getJoinedEvents();
+        
+        if (joinedEvents.length === 0) {
+            joinedEventsList.innerHTML = `
+                <div class="loading-placeholder" style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎪</div>
+                    <p style="color: #666; margin: 0;">You haven't joined any events yet</p>
+                    <p style="color: #999; font-size: 0.9rem; margin: 0.5rem 0 0 0;">
+                        <a href="events.html" style="color: #007bff; text-decoration: none;">Browse events</a> to find something interesting!
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort events by join date (most recent first)
+        const sortedEvents = joinedEvents
+            .sort((a, b) => new Date(b.joinedAt) - new Date(a.joinedAt));
+
+        joinedEventsList.innerHTML = `
+            <div style="margin-bottom: 1rem; color: #666; font-size: 0.9rem;">
+                ${joinedEvents.length} event${joinedEvents.length !== 1 ? 's' : ''} joined
+            </div>
+            ${sortedEvents.map(event => this.renderJoinedEventCard(event)).join('')}
+        `;
+    },
+
+    // Render a single joined event card
+    renderJoinedEventCard: function(event) {
+        const eventDate = new Date(`${event.eventDate}T${event.eventTime}`);
+        const isUpcoming = eventDate >= new Date();
+        const joinDate = new Date(event.joinedAt);
+        
+        return `
+            <div class="joined-event-card" style="
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                background: ${isUpcoming ? '#f8fff8' : '#f8f9fa'};
+                border-left: 4px solid ${isUpcoming ? '#28a745' : '#6c757d'};
+                cursor: pointer;
+                transition: all 0.3s ease;
+            " onclick="window.location.href='event-details.html?id=${event.eventID}'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                    <h4 style="margin: 0; color: #333; font-size: 1.1rem;">${Utils.sanitizeInput(event.name)}</h4>
+                    <span style="
+                        font-size: 0.8rem;
+                        color: ${isUpcoming ? '#28a745' : '#6c757d'};
+                        font-weight: 500;
+                        padding: 2px 8px;
+                        border-radius: 12px;
+                        background: ${isUpcoming ? '#d4edda' : '#e9ecef'};
+                    ">
+                        ${isUpcoming ? '🟢 Upcoming' : '⚪ Past'}
+                    </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem; color: #666;">
+                    <div>📅 ${Utils.formatDate(event.eventDate)}</div>
+                    <div>🕐 ${Utils.formatTime(event.eventTime)}</div>
+                </div>
+                <div style="font-size: 0.8rem; color: #999; margin-top: 0.5rem;">
+                    Joined ${Utils.formatDate(joinDate.toISOString().split('T')[0])}
+                </div>
+                ${event.description ? `
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666; line-height: 1.4;">
+                        ${Utils.sanitizeInput(event.description).substring(0, 100)}${event.description.length > 100 ? '...' : ''}
+                    </p>
+                ` : ''}
+            </div>
+        `;
     },
 
     // Open edit profile modal
