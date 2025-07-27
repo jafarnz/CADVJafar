@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event - LocalGigs</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .create-event-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .page-header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .create-event-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .event-form-section {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .preview-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 30px;
+            position: sticky;
+            top: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .image-upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .image-preview-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px dashed #d1d5db;
+            background: #f9fafb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-preview-wrapper:hover {
+            border-color: #007bff;
+            background: #f3f4f6;
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-placeholder {
+            text-align: center;
+            color: #6b7280;
+            padding: 1rem;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-placeholder p {
+            margin: 0.5rem 0;
+            font-weight: 500;
+        }
+
+        .upload-placeholder small {
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
+
+        .upload-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn-create {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .btn-create:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .btn-create:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .event-preview {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+
+        .event-preview h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .preview-field {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .preview-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 80px;
+            font-size: 0.9rem;
+        }
+
+        .preview-value {
+            color: #333;
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .back-button {
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .back-button:hover {
+            background: #0056b3;
+            text-decoration: none;
+            color: white;
+        }
+
+        @media (max-width: 968px) {
+            .create-event-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .preview-section {
+                position: static;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">Local Gigs</a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="events.html">Events</a></li>
+                    <li><a href="venues.html">Venues</a></li>
+                    <li><a href="profile.html">Profile</a></li>
+                    <li>
+                        <button class="btn logout-btn" id="logout-button">
+                            Logout
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="create-event-container">
+        <a href="dashboard.html" class="back-button">
+            ← Back to Dashboard
+        </a>
+
+        <div class="page-header">
+            <h1>🎵 Create New Event</h1>
+            <p>Share your musical event with the community</p>
+        </div>
+
+        <div id="create-event-messages"></div>
+
+        <div class="create-event-layout">
+            <!-- Event Form Section -->
+            <div class="event-form-section">
+                <h2 class="section-title">
+                    📝 Event Details
+                </h2>
+
+                <form id="create-event-form">
+                    <div class="form-group">
+                        <label for="eventName" class="form-label">Event Name *</label>
+                        <input
+                            type="text"
+                            id="eventName"
+                            name="name"
+                            class="form-input"
+                            required
+                            placeholder="Enter a catchy event name"
+                            maxlength="100"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventDescription" class="form-label">Description</label>
+                        <textarea
+                            id="eventDescription"
+                            name="description"
+                            class="form-textarea"
+                            rows="4"
+                            placeholder="Tell people what makes this event special..."
+                            maxlength="500"
+                        ></textarea>
+                    </div>
+
+                    <!-- Event Image Upload -->
+                    <div class="form-group">
+                        <label class="form-label">Event Image</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview-wrapper event-image-preview">
+                                <img id="eventImagePreview" class="image-preview" style="display: none;" alt="Event preview">
+                                <div class="upload-placeholder" id="eventUploadPlaceholder">
+                                    <div class="upload-icon">🖼️</div>
+                                    <p>Add an event photo</p>
+                                    <small>JPEG, PNG, or GIF (max 5MB)</small>
+                                </div>
+                            </div>
+                            <input type="file" id="eventImageInput" name="eventImage" accept="image/*" style="display: none;">
+                            <div class="upload-actions">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('eventImageInput').click()">
+                                    Choose Photo
+                                </button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="removeEventPhotoBtn" style="display: none;" onclick="removeEventPhoto()">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventDate" class="form-label">Event Date *</label>
+                            <input
+                                type="date"
+                                id="eventDate"
+                                name="eventDate"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="eventTime" class="form-label">Event Time *</label>
+                            <input
+                                type="time"
+                                id="eventTime"
+                                name="eventTime"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventVenue" class="form-label">Venue *</label>
+                        <select
+                            id="eventVenue"
+                            name="venueID"
+                            class="form-select"
+                            required
+                        >
+                            <option value="">Select a venue...</option>
+                        </select>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button type="submit" class="btn-create" id="createEventBtn">
+                            Create Event
+                        </button>
+                        <button type="button" class="btn-cancel" onclick="window.location.href='dashboard.html'">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <h2 class="section-title">
+                    👁️ Event Preview
+                </h2>
+                <div class="event-preview" id="eventPreview">
+                    <h3 id="previewName">Your Event Name</h3>
+                    <div class="preview-field">
+                        <span class="preview-label">Description:</span>
+                        <span class="preview-value" id="previewDescription">Event description will appear here...</span>
+                    </div>
+                    <div class="preview-field">
+                        <span class="preview-label">Date:</span>
+                        <span class="preview-value" id="previewDate">Select date</span>
+                    </div>
+                    <div class="preview-field">
+                        <span class="preview-label">Time:</span>
+                        <span class="preview-value" id="previewTime">Select time</span>
+                    </div>
+                    <div class="preview-field">
+                        <span class="preview-label">Venue:</span>
+                        <span class="preview-value" id="previewVenue">Select venue</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/create-event.js"></script>
+
+    <script>
+        // Initialize navigation fix
+        Utils.initializeNavigation();
+
+        // Initialize Auth module first
+        Auth.init();
+
+        // Image upload variables
+        let selectedEventImage = null;
+
+        // Event image upload handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Auth to complete initialization
+            setTimeout(() => {
+                // Only initialize if user is authenticated
+                if (Utils.isAuthenticated()) {
+                    CreateEvent.init();
+                }
+            }, 200);
+
+            // Event image upload
+            const eventImageInput = document.getElementById('eventImageInput');
+            const eventImagePreview = document.getElementById('eventImagePreview');
+            const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+            const removeEventBtn = document.getElementById('removeEventPhotoBtn');
+
+            if (eventImageInput) {
+                eventImageInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        Utils.s3.validateImageFile(file);
+                        selectedEventImage = file;
+
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            eventImagePreview.src = e.target.result;
+                            eventImagePreview.style.display = 'block';
+                            eventPlaceholder.style.display = 'none';
+                            removeEventBtn.style.display = 'inline-block';
+                        };
+                        reader.readAsDataURL(file);
+                    } catch (error) {
+                        alert(error.message);
+                        eventImageInput.value = '';
+                    }
+                });
+            }
+
+            // Real-time preview updates
+            document.getElementById('eventName').addEventListener('input', function() {
+                document.getElementById('previewName').textContent = this.value || 'Your Event Name';
+            });
+
+            document.getElementById('eventDescription').addEventListener('input', function() {
+                document.getElementById('previewDescription').textContent = this.value || 'Event description will appear here...';
+            });
+
+            document.getElementById('eventDate').addEventListener('change', function() {
+                document.getElementById('previewDate').textContent = this.value || 'Select date';
+            });
+
+            document.getElementById('eventTime').addEventListener('change', function() {
+                document.getElementById('previewTime').textContent = this.value || 'Select time';
+            });
+
+            document.getElementById('eventVenue').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('previewVenue').textContent = selectedOption.text || 'Select venue';
+            });
+        });
+
+        // Remove photo function
+        function removeEventPhoto() {
+            const eventImagePreview = document.getElementById('eventImagePreview');
+            const eventPlaceholder = document.getElementById('eventUploadPlaceholder');
+            const removeEventBtn = document.getElementById('removeEventPhotoBtn');
+            const eventImageInput = document.getElementById('eventImageInput');
+
+            selectedEventImage = null;
+            eventImageInput.value = '';
+            eventImagePreview.style.display = 'none';
+            eventPlaceholder.style.display = 'block';
+            removeEventBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
