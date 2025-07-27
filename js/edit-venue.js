@@ -398,7 +398,7 @@ const EditVenue = {
             // Handle image upload if new image selected
             if (window.selectedVenueImage) {
                 console.log('Uploading new venue image...');
-                imageUrl = await Utils.s3.uploadImage(window.selectedVenueImage, 'venue');
+                imageUrl = await Utils.uploadImage(window.selectedVenueImage, 'venues');
                 console.log('Image uploaded successfully:', imageUrl);
             }
 

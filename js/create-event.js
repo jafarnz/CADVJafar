@@ -228,17 +228,23 @@ const CreateEvent = {
                 throw new Error("No image selected");
             }
 
-            Utils.s3.validateImageFile(selectedEventImage);
+            // Validate image file using Utils function
+            if (selectedEventImage.size > 5 * 1024 * 1024) {
+                throw new Error("Image file too large. Maximum size is 5MB.");
+            }
 
-            // Generate unique filename
-            const fileExtension = selectedEventImage.name.split('.').pop().toLowerCase();
-            const fileName = `events/${eventID}/main.${fileExtension}`;
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(selectedEventImage.type)) {
+                throw new Error("Invalid file type. Please select a JPEG, PNG, or GIF image.");
+            }
 
-            // Upload to S3
-            const uploadResult = await Utils.s3.uploadFile(selectedEventImage, fileName);
-            console.log("✅ S3 upload successful:", uploadResult);
+            console.log("📤 Uploading image to S3...");
+            
+            // Upload to S3 using correct Utils function
+            const imageUrl = await Utils.uploadImage(selectedEventImage, "events");
+            console.log("✅ S3 upload successful:", imageUrl);
 
-            return uploadResult.url;
+            return imageUrl;
 
         } catch (error) {
             console.error("❌ S3 upload failed:", error);

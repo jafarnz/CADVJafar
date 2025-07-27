@@ -519,7 +519,16 @@
                     if (!file) return;
 
                     try {
-                        Utils.s3.validateImageFile(file);
+                        // Validate image file
+                        if (file.size > 5 * 1024 * 1024) {
+                            throw new Error("Image file too large. Maximum size is 5MB.");
+                        }
+
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            throw new Error("Invalid file type. Please select a JPEG, PNG, or GIF image.");
+                        }
+
                         selectedVenueImage = file;
 
                         const reader = new FileReader();
