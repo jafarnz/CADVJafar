@@ -5,6 +5,178 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Venues - Local Gigs</title>
         <link rel="stylesheet" href="css/style.css" />
+        
+        <!-- MapLibre GL CSS -->
+        <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+        
+        <!-- AWS SDK for Location Service -->
+        <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+        
+        <!-- MapLibre GL JS -->
+        <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+        
+        <!-- Modern form styling -->
+        <style>
+            /* Modern form improvements */
+            .form-control {
+                background: #f8fafc;
+                border: 2px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 14px 18px;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            }
+            
+            .form-control:focus {
+                outline: none;
+                border-color: #667eea;
+                background: white;
+                box-shadow: 0 4px 20px rgba(102,126,234,0.15);
+                transform: translateY(-1px);
+            }
+            
+            .form-control:hover {
+                border-color: #cbd5e0;
+                background: white;
+            }
+            
+            /* Improved select styling */
+            select.form-control {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+                background-position: right 12px center;
+                background-repeat: no-repeat;
+                background-size: 16px;
+                padding-right: 40px;
+                appearance: none;
+            }
+            
+            /* Search results styling */
+            .search-result-item {
+                padding: 12px 16px;
+                border-bottom: 1px solid #f1f5f9;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .search-result-item:hover {
+                background: #f1f5f9;
+                padding-left: 20px;
+            }
+            
+            .search-result-item:last-child {
+                border-bottom: none;
+                border-radius: 0 0 12px 12px;
+            }
+            
+            .result-label {
+                font-weight: 600;
+                color: #1e293b;
+                margin-bottom: 4px;
+            }
+            
+            .result-country {
+                font-size: 0.85rem;
+                color: #64748b;
+            }
+            
+            /* Modern button styling */
+            .btn {
+                background: #667eea;
+                border: none;
+                border-radius: 12px;
+                padding: 14px 24px;
+                font-weight: 600;
+                color: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(102,126,234,0.2);
+                font-size: 16px;
+            }
+            
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(102,126,234,0.3);
+            }
+            
+            .btn-secondary {
+                background: #6b7280;
+                box-shadow: 0 4px 15px rgba(107,114,128,0.2);
+            }
+            
+            .btn-secondary:hover {
+                box-shadow: 0 8px 25px rgba(107,114,128,0.3);
+            }
+            
+            /* Form group styling */
+            .form-group {
+                margin-bottom: 24px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            /* Venue card improvements */
+            .venue-card {
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                transition: all 0.3s ease;
+                border: 1px solid #f1f5f9;
+            }
+            
+            .venue-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+            }
+            
+            /* Search bar styling */
+            .search-container {
+                position: relative;
+                margin-bottom: 32px;
+            }
+            
+            .search-container input {
+                background: white;
+                padding-left: 50px;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+                border: 2px solid #f1f5f9;
+            }
+            
+            .search-container::before {
+                content: "🔍";
+                position: absolute;
+                left: 18px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 18px;
+                z-index: 10;
+            }
+            
+            /* Modal improvements */
+            .modal-content {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+                border: 1px solid #f1f5f9;
+            }
+            
+            /* Map container styling */
+            .map-container {
+                border-radius: 16px;
+                overflow: hidden;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+                border: 3px solid #f1f5f9;
+            }
+        </style>
     </head>
     <body>
         <header class="header">
@@ -88,9 +260,9 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 1rem">
-                            <button id="create-venue-btn" class="btn">
-                                Add Venue
-                            </button>
+                            <a href="create-venue.html" id="create-venue-btn" class="btn">
+                                🏢 Add New Venue
+                            </a>
                             <button
                                 id="toggle-view-btn"
                                 class="btn btn-secondary"
@@ -238,17 +410,88 @@
                         />
                     </div>
 
+                    <!-- Interactive Map for Location Selection -->
                     <div class="form-group">
-                        <label for="venueAddress">Address *</label>
+                        <label>📍 Location Selection *</label>
+                        <div style="margin-bottom: 1rem;">
+                            <div style="position: relative; margin-bottom: 1rem;">
+                                <input
+                                    type="text"
+                                    id="location-search"
+                                    class="form-control"
+                                    placeholder="🔍 Search for a location or address..."
+                                    style="padding-right: 50px;"
+                                />
+                                <div 
+                                    id="search-results" 
+                                    style="
+                                        position: absolute;
+                                        top: 100%;
+                                        left: 0;
+                                        right: 0;
+                                        background: white;
+                                        border: 2px solid #e2e8f0;
+                                        border-top: none;
+                                        border-radius: 0 0 12px 12px;
+                                        max-height: 200px;
+                                        overflow-y: auto;
+                                        z-index: 1000;
+                                        display: none;
+                                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                                    "
+                                >
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                                <button
+                                    type="button"
+                                    id="enable-location-picker-btn"
+                                    class="btn btn-primary"
+                                    style="flex: 1; min-width: 150px;"
+                                    onclick="VenuesPage.enableVenueLocationPicker()"
+                                >
+                                    📍 Click on Map to Select
+                                </button>
+                                <button
+                                    type="button"
+                                    id="get-current-location-btn"
+                                    class="btn btn-secondary"
+                                    style="flex: 1; min-width: 150px;"
+                                    onclick="VenuesPage.useCurrentLocationForVenue()"
+                                >
+                                    📱 Use My Location
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Map Container -->
+                        <div id="venue-location-map" style="height: 300px; width: 100%; border: 2px solid #e9ecef; border-radius: 8px; margin-bottom: 1rem; background: #f8f9fa;">
+                            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🗺️</div>
+                                    <p style="margin: 0; font-weight: 600;">AWS Location Service Map</p>
+                                    <p style="margin: 0; font-size: 0.9rem;">Loading interactive map...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="location-confirmation" style="display: none;"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venue-address">Address *</label>
                         <input
                             type="text"
-                            id="venueAddress"
+                            id="venue-address"
                             name="address"
                             class="form-control"
                             required
-                            placeholder="Enter venue address"
+                            placeholder="Address will be auto-filled from map selection or enter manually"
                             maxlength="200"
                         />
+                        <div class="form-text" style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">
+                            💡 Tip: Use the map above to automatically fill this field
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -312,38 +555,29 @@
                         "
                     >
                         <div class="form-group">
-                            <label for="venueLatitude">Latitude</label>
+                            <label for="venue-latitude">Latitude</label>
                             <input
                                 type="number"
-                                id="venueLatitude"
+                                id="venue-latitude"
                                 name="latitude"
                                 class="form-control"
                                 step="0.000001"
                                 placeholder="1.3521"
+                                readonly
                             />
                         </div>
                         <div class="form-group">
-                            <label for="venueLongitude">Longitude</label>
+                            <label for="venue-longitude">Longitude</label>
                             <input
                                 type="number"
-                                id="venueLongitude"
+                                id="venue-longitude"
                                 name="longitude"
                                 class="form-control"
                                 step="0.000001"
                                 placeholder="103.8198"
+                                readonly
                             />
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <button
-                            type="button"
-                            id="get-location-btn"
-                            class="btn btn-secondary"
-                            style="width: 100%; margin-bottom: 1rem"
-                        >
-                            Get My Current Location
-                        </button>
                     </div>
 
                     <div class="form-group">
@@ -400,6 +634,7 @@
         <script src="js/router.js"></script>
         <script src="js/auth.js"></script>
         <script src="js/map.js"></script>
+        <script src="js/event-pins.js"></script>
         <script src="js/venue.js"></script>
 
         <style>

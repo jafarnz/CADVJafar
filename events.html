@@ -5,6 +5,258 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Events - Local Gigs</title>
         <link rel="stylesheet" href="css/style.css" />
+        
+        <!-- MapLibre GL CSS -->
+        <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+        
+        <!-- AWS SDK for Location Service -->
+        <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1691.0.min.js"></script>
+        
+        <!-- MapLibre GL JS -->
+        <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+        
+        <style>
+            .events-page {
+                background: #f8fafc;
+                min-height: 100vh;
+                padding: 2rem 0;
+            }
+            
+            .events-header {
+                text-align: center;
+                margin-bottom: 3rem;
+                padding: 0 1rem;
+            }
+            
+            .events-header h1 {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 1rem;
+            }
+            
+            .events-header p {
+                font-size: 1.2rem;
+                color: #6b7280;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            
+            .action-card {
+                background: #f1f5f9;
+                border-radius: 16px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            .action-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+            
+            .filters-group {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            
+            .actions-group {
+                display: flex;
+                gap: 1rem;
+            }
+            
+            .modern-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .modern-btn:hover {
+                background: #5a67d8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            
+            .modern-btn.secondary {
+                background: #6b7280;
+            }
+            
+            .modern-btn.secondary:hover {
+                background: #4b5563;
+            }
+            
+            .modern-input {
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+                min-width: 200px;
+            }
+            
+            .modern-input:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            
+            .events-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 2rem;
+                margin-bottom: 3rem;
+            }
+            
+            .event-card {
+                background: white;
+                border-radius: 16px;
+                padding: 1.5rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                transition: all 0.2s ease;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .event-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .event-image {
+                width: 100%;
+                height: 200px;
+                background: #f3f4f6;
+                border-radius: 12px;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 3rem;
+                color: #9ca3af;
+            }
+            
+            .event-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 0.5rem;
+            }
+            
+            .event-venue {
+                color: #6b7280;
+                margin-bottom: 0.5rem;
+            }
+            
+            .event-date {
+                color: #ef4444;
+                font-weight: 600;
+                margin-bottom: 1rem;
+            }
+            
+            .event-genre {
+                background: #ddd6fe;
+                color: #5b21b6;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                display: inline-block;
+                margin-bottom: 1rem;
+            }
+            
+            .event-actions {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+            }
+            
+            .event-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 6px;
+                font-size: 0.875rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+            
+            .event-btn.primary {
+                background: #3b82f6;
+                color: white;
+            }
+            
+            .event-btn.secondary {
+                background: #f3f4f6;
+                color: #374151;
+            }
+            
+            .event-btn.maps {
+                background: #10b981;
+                color: white;
+            }
+            
+            .event-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+            
+            .map-toggle-section {
+                background: white;
+                border-radius: 16px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            .map-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+            
+            .loading-placeholder {
+                text-align: center;
+                padding: 3rem;
+                color: #6b7280;
+            }
+            
+            @media (max-width: 768px) {
+                .events-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .action-row {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                
+                .filters-group {
+                    justify-content: center;
+                }
+                
+                .actions-group {
+                    justify-content: center;
+                }
+            }
+        </style>
     </head>
     <body>
         <header class="header">
@@ -28,53 +280,34 @@
             </div>
         </header>
 
-        <main class="dashboard">
+        <main class="events-page">
             <div class="container">
-                <div class="dashboard-header">
-                    <h1>Local Events</h1>
+                <div class="events-header">
+                    <h1>🎵 Local Events</h1>
                     <p>
-                        Discover and join amazing music events with our modern
-                        interface
+                        Discover and join amazing music events in your area with our modern platform
                     </p>
                 </div>
 
                 <!-- Action Bar -->
-                <div class="card">
-                    <div
-                        style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            flex-wrap: wrap;
-                            gap: 1rem;
-                        "
-                    >
-                        <div
-                            style="
-                                display: flex;
-                                gap: 1rem;
-                                flex-wrap: wrap;
-                                align-items: center;
-                            "
-                        >
+                <div class="action-card">
+                    <div class="action-row">
+                        <div class="filters-group">
                             <div class="form-group" style="margin: 0">
                                 <input
                                     type="text"
                                     id="search-input"
-                                    class="form-control"
-                                    placeholder="Search events..."
-                                    style="min-width: 200px"
+                                    class="modern-input"
+                                    placeholder="🔍 Search events..."
                                 />
                             </div>
                             <div class="form-group" style="margin: 0">
-                                <select id="genre-filter" class="form-control">
+                                <select id="genre-filter" class="modern-input">
                                     <option value="">All Genres</option>
                                     <option value="rock">Rock</option>
                                     <option value="pop">Pop</option>
                                     <option value="jazz">Jazz</option>
-                                    <option value="electronic">
-                                        Electronic
-                                    </option>
+                                    <option value="electronic">Electronic</option>
                                     <option value="hiphop">Hip-Hop</option>
                                     <option value="indie">Indie</option>
                                     <option value="metal">Metal</option>
@@ -87,54 +320,32 @@
                                 <input
                                     type="date"
                                     id="date-filter"
-                                    class="form-control"
+                                    class="modern-input"
                                 />
                             </div>
                         </div>
-                        <div style="display: flex; gap: 1rem">
-                            <button id="create-event-btn" class="btn">
-                                Create Event
+                        <div class="actions-group">
+                            <button id="create-event-btn" class="modern-btn">
+                                ➕ Create Event
                             </button>
-                            <button
-                                id="toggle-view-btn"
-                                class="btn btn-secondary"
-                            >
-                                Map View
+                            <button id="toggle-view-btn" class="modern-btn secondary">
+                                🗺️ Map View
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Map Container (hidden by default) -->
-                <div
-                    id="map-container-wrapper"
-                    class="card"
-                    style="display: none"
-                >
-                    <div
-                        style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 1rem;
-                        "
-                    >
-                        <h2>Events Map</h2>
-                        <button id="list-view-btn" class="btn btn-secondary">
-                            List View
+                <div id="map-container-wrapper" class="map-toggle-section" style="display: none">
+                    <div class="map-header">
+                        <h2>🗺️ Events Map</h2>
+                        <button id="list-view-btn" class="modern-btn secondary">
+                            📋 List View
                         </button>
                     </div>
                     <div class="map-container">
                         <div id="events-map">
-                            <div
-                                style="
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    height: 100%;
-                                    color: #666;
-                                "
-                            >
+                            <div class="loading-placeholder">
                                 <p>Loading map...</p>
                             </div>
                         </div>
@@ -142,78 +353,36 @@
                 </div>
 
                 <!-- Events List -->
-                <div id="events-list-wrapper" class="card">
-                    <div
-                        style="
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 1rem;
-                        "
-                    >
+                <div id="events-list-wrapper" class="map-toggle-section">
+                    <div class="map-header">
                         <h2>
                             <span id="events-count">Loading...</span> Events
                         </h2>
-                        <div
-                            style="
-                                display: flex;
-                                gap: 0.5rem;
-                                align-items: center;
-                            "
-                        >
-                            <label
-                                for="sort-select"
-                                style="font-size: 0.9rem; color: #666"
-                                >Sort by:</label
-                            >
-                            <select
-                                id="sort-select"
-                                class="form-control"
-                                style="width: auto"
-                            >
-                                <option value="date-asc">
-                                    Date (Upcoming First)
-                                </option>
-                                <option value="date-desc">
-                                    Date (Latest First)
-                                </option>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <label for="sort-select" style="font-size: 0.9rem; color: #666;">Sort by:</label>
+                            <select id="sort-select" class="modern-input" style="width: auto">
+                                <option value="date-asc">Date (Upcoming First)</option>
+                                <option value="date-desc">Date (Latest First)</option>
                                 <option value="name-asc">Name (A-Z)</option>
                                 <option value="name-desc">Name (Z-A)</option>
                             </select>
                         </div>
                     </div>
 
-                    <div id="events-grid">
+                    <div id="events-grid" class="events-grid">
                         <div class="loading-placeholder">
                             <p>Loading events...</p>
                         </div>
                     </div>
 
                     <!-- Pagination -->
-                    <div
-                        id="pagination"
-                        style="
-                            margin-top: 2rem;
-                            text-align: center;
-                            display: none;
-                        "
-                    >
-                        <button
-                            id="prev-page"
-                            class="btn btn-secondary"
-                            disabled
-                        >
-                            Previous
+                    <div id="pagination" style="margin-top: 2rem; text-align: center; display: none;">
+                        <button id="prev-page" class="modern-btn secondary" disabled>
+                            ← Previous
                         </button>
-                        <span id="page-info" style="margin: 0 1rem; color: #666"
-                            >Page 1 of 1</span
-                        >
-                        <button
-                            id="next-page"
-                            class="btn btn-secondary"
-                            disabled
-                        >
-                            Next
+                        <span id="page-info" style="margin: 0 1rem; color: #666;">Page 1 of 1</span>
+                        <button id="next-page" class="modern-btn secondary" disabled>
+                            Next →
                         </button>
                     </div>
                 </div>
@@ -304,7 +473,7 @@
 
                     <div class="form-group">
                         <label for="eventVenue">Venue *</label>
-                        <div style="display: flex; gap: 0.5rem">
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <select
                                 id="eventVenue"
                                 name="venueID"
@@ -312,15 +481,31 @@
                                 required
                                 style="flex: 1"
                             >
-                                <option value="">Select a venue...</option>
+                                <option value="">Loading venues...</option>
                             </select>
                             <button
                                 type="button"
-                                id="create-venue-btn"
+                                id="create-custom-venue-btn"
                                 class="btn btn-secondary"
+                                title="Create a new venue"
                             >
-                                Add New
+                                📍 Add New Venue
                             </button>
+                        </div>
+                        <div class="form-text">
+                            Select an existing venue or create a new one if your venue isn't listed
+                        </div>
+                    </div>
+
+                    <!-- Selected Venue Preview -->
+                    <div id="selected-venue-preview" style="display: none; margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="font-size: 1.5rem;">🏛️</div>
+                            <div style="flex: 1;">
+                                <div id="venue-preview-name" style="font-weight: 600; margin-bottom: 0.25rem;"></div>
+                                <div id="venue-preview-address" style="color: #6c757d; font-size: 0.9rem;"></div>
+                                <div id="venue-preview-details" style="color: #6c757d; font-size: 0.8rem; margin-top: 0.25rem;"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -357,11 +542,507 @@
             </div>
         </div>
 
+        <!-- Create Venue Modal (with AWS Location Service) -->
+        <div id="create-venue-modal" class="modal">
+            <div class="modal-content" style="max-width: 900px;">
+                <span class="close" id="close-create-venue-modal">&times;</span>
+                <h2 style="margin-bottom: 0.5rem; color: #1976d2; display: flex; align-items: center; gap: 0.5rem;">
+                    🏢 Add New Venue
+                </h2>
+                <p style="color: #666; margin-bottom: 2rem; font-size: 0.95rem;">
+                    Create a new venue with interactive location selection using AWS maps
+                </p>
+                <div id="create-venue-modal-messages"></div>
+                <form id="create-venue-form">
+                    <input type="hidden" id="createVenueID" name="venueID" />
+
+                    <!-- Venue Name -->
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="createVenueName" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                            Venue Name *
+                        </label>
+                        <input
+                            type="text"
+                            id="createVenueName"
+                            name="name"
+                            class="form-control"
+                            required
+                            placeholder="Enter venue name (e.g., Marina Bay Sands, The Coliseum)"
+                            maxlength="100"
+                            style="
+                                padding: 12px 16px;
+                                border: 2px solid #e1e5e9;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                transition: all 0.2s ease;
+                                width: 100%;
+                                box-sizing: border-box;
+                            "
+                            onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                            onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                        />
+                    </div>
+
+                    <!-- Interactive Map Section -->
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 1rem; font-weight: 600; color: #333; font-size: 1.1rem;">
+                            📍 Location Selection *
+                        </label>
+                        
+                        <!-- Search and Action Buttons -->
+                        <div style="margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                                <input
+                                    type="text"
+                                    id="create-location-search"
+                                    class="form-control"
+                                    placeholder="🔍 Search for a location or address..."
+                                    style="
+                                        flex: 1;
+                                        min-width: 250px;
+                                        padding: 12px 16px;
+                                        border: 2px solid #e1e5e9;
+                                        border-radius: 8px;
+                                        font-size: 16px;
+                                        transition: all 0.2s ease;
+                                    "
+                                    onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                                    onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                                />
+                                <button
+                                    type="button"
+                                    id="create-search-location-btn"
+                                    class="btn btn-secondary"
+                                    style="
+                                        padding: 12px 20px;
+                                        background: #1976d2;
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        white-space: nowrap;
+                                    "
+                                    onmouseover="this.style.background='#1565c0'"
+                                    onmouseout="this.style.background='#1976d2'"
+                                >
+                                    🔍 Search
+                                </button>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                                <button
+                                    type="button"
+                                    id="create-enable-location-picker-btn"
+                                    class="btn btn-primary"
+                                    style="
+                                        padding: 12px 16px;
+                                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        gap: 0.5rem;
+                                    "
+                                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                                >
+                                    📍 Click Map to Select
+                                </button>
+                                <button
+                                    type="button"
+                                    id="create-get-current-location-btn"
+                                    class="btn btn-secondary"
+                                    style="
+                                        padding: 12px 16px;
+                                        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        gap: 0.5rem;
+                                    "
+                                    onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(240,147,251,0.4)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                                >
+                                    📱 Use My Location
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- AWS Map Container -->
+                        <div 
+                            id="create-venue-location-map" 
+                            style="
+                                height: 350px; 
+                                width: 100%; 
+                                border: 3px solid #e1e5e9; 
+                                border-radius: 12px; 
+                                margin-bottom: 1rem; 
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                                overflow: hidden;
+                                position: relative;
+                            "
+                        >
+                            <div style="
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center; 
+                                height: 100%; 
+                                color: white;
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            ">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.9;">🗺️</div>
+                                    <p style="margin: 0; font-weight: 600; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">AWS Location Service Map</p>
+                                    <p style="margin: 0.5rem 0 0 0; font-size: 1rem; opacity: 0.9;">Loading interactive map...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Location Info -->
+                        <div id="create-selected-location-info" style="
+                            padding: 1rem 1.25rem; 
+                            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); 
+                            border-radius: 12px; 
+                            border-left: 4px solid #1976d2; 
+                            display: none;
+                            box-shadow: 0 2px 8px rgba(25,118,210,0.1);
+                        ">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                                <span style="font-size: 1.5rem;">📍</span>
+                                <strong style="color: #1976d2; font-size: 1.1rem;">Selected Location:</strong>
+                            </div>
+                            <div id="create-selected-location-text" style="
+                                font-family: 'Courier New', monospace; 
+                                font-size: 0.95rem; 
+                                color: #424242;
+                                background: rgba(255,255,255,0.8);
+                                padding: 0.5rem;
+                                border-radius: 6px;
+                                margin-top: 0.5rem;
+                            "></div>
+                        </div>
+                    </div>
+
+                    <!-- Address Field -->
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="createVenueAddress" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                            Address *
+                        </label>
+                        <input
+                            type="text"
+                            id="createVenueAddress"
+                            name="address"
+                            class="form-control"
+                            required
+                            placeholder="Address will be auto-filled from map selection or enter manually"
+                            maxlength="200"
+                            style="
+                                padding: 12px 16px;
+                                border: 2px solid #e1e5e9;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                transition: all 0.2s ease;
+                                width: 100%;
+                                box-sizing: border-box;
+                            "
+                            onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                            onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                        />
+                        <div style="color: #666; font-size: 0.85rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            💡 <span>Tip: Use the map above to automatically fill this field</span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="createVenueDescription" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                            Description
+                        </label>
+                        <textarea
+                            id="createVenueDescription"
+                            name="description"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Describe the venue, its features, ambiance, etc..."
+                            maxlength="500"
+                            style="
+                                padding: 12px 16px;
+                                border: 2px solid #e1e5e9;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                transition: all 0.2s ease;
+                                width: 100%;
+                                box-sizing: border-box;
+                                resize: vertical;
+                                min-height: 80px;
+                            "
+                            onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                            onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                        ></textarea>
+                    </div>
+
+                    <!-- Capacity and Type Row -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label for="createVenueCapacity" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                                Capacity
+                            </label>
+                            <input
+                                type="number"
+                                id="createVenueCapacity"
+                                name="capacity"
+                                class="form-control"
+                                min="1"
+                                max="100000"
+                                placeholder="Max capacity"
+                                style="
+                                    padding: 12px 16px;
+                                    border: 2px solid #e1e5e9;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    transition: all 0.2s ease;
+                                    width: 100%;
+                                    box-sizing: border-box;
+                                "
+                                onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                                onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="createVenueType" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                                Venue Type
+                            </label>
+                            <select 
+                                id="createVenueType" 
+                                name="type" 
+                                class="form-control"
+                                style="
+                                    padding: 12px 16px;
+                                    border: 2px solid #e1e5e9;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    transition: all 0.2s ease;
+                                    width: 100%;
+                                    box-sizing: border-box;
+                                    background: white;
+                                "
+                                onfocus="this.style.borderColor='#1976d2'; this.style.boxShadow='0 0 0 3px rgba(25,118,210,0.1)'"
+                                onblur="this.style.borderColor='#e1e5e9'; this.style.boxShadow='none'"
+                            >
+                                <option value="">Select type...</option>
+                                <option value="concert-hall">🎭 Concert Hall</option>
+                                <option value="club">🕺 Club</option>
+                                <option value="bar">🍺 Bar</option>
+                                <option value="outdoor">🌳 Outdoor</option>
+                                <option value="theater">🎪 Theater</option>
+                                <option value="stadium">🏟️ Stadium</option>
+                                <option value="arena">🏛️ Arena</option>
+                                <option value="other">📍 Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Coordinates (Read-only) -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label for="createVenueLatitude" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                                Latitude
+                            </label>
+                            <input
+                                type="text"
+                                id="createVenueLatitude"
+                                name="latitude"
+                                class="form-control"
+                                placeholder="Auto-filled from map"
+                                readonly
+                                style="
+                                    padding: 12px 16px;
+                                    border: 2px solid #e1e5e9;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    width: 100%;
+                                    box-sizing: border-box;
+                                    background: #f8f9fa;
+                                    color: #495057;
+                                    font-family: 'Courier New', monospace;
+                                "
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="createVenueLongitude" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                                Longitude
+                            </label>
+                            <input
+                                type="text"
+                                id="createVenueLongitude"
+                                name="longitude"
+                                class="form-control"
+                                placeholder="Auto-filled from map"
+                                readonly
+                                style="
+                                    padding: 12px 16px;
+                                    border: 2px solid #e1e5e9;
+                                    border-radius: 8px;
+                                    font-size: 16px;
+                                    width: 100%;
+                                    box-sizing: border-box;
+                                    background: #f8f9fa;
+                                    color: #495057;
+                                    font-family: 'Courier New', monospace;
+                                "
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Modern Image Upload -->
+                    <div class="form-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #333;">
+                            Venue Image
+                        </label>
+                        <div style="
+                            border: 2px dashed #d1d5db;
+                            border-radius: 12px;
+                            padding: 2rem;
+                            text-align: center;
+                            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                            transition: all 0.2s ease;
+                            cursor: pointer;
+                            position: relative;
+                        " 
+                        onclick="document.getElementById('createVenueImage').click()"
+                        onmouseover="this.style.borderColor='#1976d2'; this.style.background='linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'"
+                        onmouseout="this.style.borderColor='#d1d5db'; this.style.background='linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)'"
+                        >
+                            <input
+                                type="file"
+                                id="createVenueImage"
+                                name="image"
+                                accept="image/*"
+                                style="display: none;"
+                                onchange="handleImagePreview(this, 'createVenueImagePreview', 'createVenueUploadText')"
+                            />
+                            <div id="createVenueUploadText">
+                                <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.7;">🏢</div>
+                                <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: #374151; font-size: 1.1rem;">Upload a venue photo</p>
+                                <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">JPEG, PNG, or GIF (max 5MB)</p>
+                                <div style="
+                                    display: inline-block;
+                                    margin-top: 1rem;
+                                    padding: 8px 16px;
+                                    background: #1976d2;
+                                    color: white;
+                                    border-radius: 6px;
+                                    font-size: 0.9rem;
+                                    font-weight: 600;
+                                    transition: all 0.2s ease;
+                                ">
+                                    📁 Choose Photo
+                                </div>
+                            </div>
+                            <img id="createVenueImagePreview" style="display: none; max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 1rem;" />
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #f1f5f9;">
+                        <button 
+                            type="submit" 
+                            class="btn btn-primary" 
+                            style="
+                                flex: 1;
+                                padding: 16px 24px;
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 12px;
+                                font-weight: 700;
+                                font-size: 1.1rem;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 0.5rem;
+                            "
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(102,126,234,0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                        >
+                            ✅ Create Venue & Return to Event
+                        </button>
+                        <button 
+                            type="button" 
+                            id="cancel-create-venue-btn" 
+                            class="btn btn-secondary" 
+                            style="
+                                flex: 1;
+                                padding: 16px 24px;
+                                background: #6b7280;
+                                color: white;
+                                border: none;
+                                border-radius: 12px;
+                                font-weight: 600;
+                                font-size: 1.1rem;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                gap: 0.5rem;
+                            "
+                            onmouseover="this.style.background='#4b5563'"
+                            onmouseout="this.style.background='#6b7280'"
+                        >
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            // Image preview handler
+            function handleImagePreview(input, previewId, textId) {
+                const file = input.files[0];
+                const preview = document.getElementById(previewId);
+                const text = document.getElementById(textId);
+                
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        text.innerHTML = `
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.7;">✅</div>
+                            <p style="margin: 0; font-weight: 600; color: #059669;">${file.name}</p>
+                            <p style="margin: 0.25rem 0 0 0; color: #6b7280; font-size: 0.85rem;">Click to change photo</p>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        </script>
+
         <script src="js/config.js"></script>
         <script src="js/utils.js"></script>
         <script src="js/router.js"></script>
         <script src="js/auth.js"></script>
         <script src="js/map.js"></script>
+        <script src="js/event-pins.js"></script>
+        <script src="js/venue.js"></script>
         <script src="js/event.js"></script>
 
         <style>

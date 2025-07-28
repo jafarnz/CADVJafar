@@ -1,322 +1,320 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign Up - Local Gigs</title>
-        <link rel="stylesheet" href="css/style.css" />
-        <style>
-            /* Enhanced form styling for signup */
-            .auth-container {
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 2rem 1rem;
-                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            }
 
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up - Local Gigs</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        /* Enhanced form styling for signup */
+        
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .signup-card {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .auth-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+        /* Large modern inputs */
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            font-size: 1rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+        /* Password requirements */
+        
+        .password-requirements {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .requirement-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .requirement-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .requirement-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #6c757d;
+            text-align: center;
+            line-height: 20px;
+            margin-right: 0.75rem;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        
+        .requirement-item.valid .requirement-icon {
+            background: #10b981;
+            color: white;
+        }
+        
+        .requirement-item.valid {
+            color: #065f46;
+        }
+        /* Terms and conditions checkbox */
+        
+        .terms-container {
+            margin: 2rem 0;
+            padding: 1.25rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .custom-checkbox {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .custom-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            cursor: pointer;
+            opacity: 0;
+            position: absolute;
+        }
+        
+        .checkbox-visual {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-visual {
+            background: var(--primary-black);
+            border-color: var(--primary-black);
+        }
+        
+        .custom-checkbox input[type="checkbox"]:checked+.checkbox-visual::after {
+            content: "✓";
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .terms-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        
+        .terms-text a {
+            color: var(--primary-black);
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        /* Submit button */
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1.25rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: var(--primary-black);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            background: var(--secondary-black);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        /* Loading state */
+        
+        .loading .submit-btn {
+            position: relative;
+            color: transparent;
+        }
+        
+        .loading .submit-btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        /* Auth links */
+        
+        .auth-links {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .auth-links p {
+            margin-bottom: 0;
+            color: var(--text-muted);
+        }
+        
+        .auth-links a {
+            color: var(--primary-black);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        /* Messages */
+        
+        .message {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .message.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .message.success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        /* Responsive */
+        
+        @media (max-width: 640px) {
             .signup-card {
-                width: 100%;
-                max-width: 500px;
-                background: white;
-                padding: 3rem;
-                border-radius: 16px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                padding: 2rem 1.5rem;
+                margin: 1rem;
             }
-
-            .auth-header {
-                text-align: center;
-                margin-bottom: 2.5rem;
-            }
-
             .auth-header h1 {
-                font-size: 2rem;
-                font-weight: 700;
-                margin-bottom: 0.5rem;
-                color: var(--text-primary);
+                font-size: 1.75rem;
             }
+        }
+    </style>
+</head>
 
-            .auth-header p {
-                color: var(--text-muted);
-                font-size: 1rem;
-            }
+<body>
+    <div class="auth-container">
+        <div class="signup-card">
+            <div class="auth-header">
+                <h1>Join Local Gigs</h1>
+                <p>
+                    Create your account to discover amazing local music events
+                </p>
+            </div>
 
-            /* Large modern inputs */
-            .form-group {
-                margin-bottom: 1.5rem;
-            }
+            <div id="signupMessages"></div>
 
-            .form-label {
-                display: block;
-                font-weight: 600;
-                font-size: 0.95rem;
-                color: var(--text-primary);
-                margin-bottom: 0.5rem;
-            }
-
-            .form-input {
-                width: 100%;
-                padding: 1rem 1.25rem;
-                font-size: 1rem;
-                border: 2px solid #e1e5e9;
-                border-radius: 12px;
-                background: white;
-                transition: all 0.2s ease;
-                font-family: inherit;
-            }
-
-            .form-input:focus {
-                outline: none;
-                border-color: var(--primary-black);
-                box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
-            }
-
-            .form-input::placeholder {
-                color: #9ca3af;
-            }
-
-            /* Password requirements */
-            .password-requirements {
-                margin-top: 0.75rem;
-                padding: 1rem;
-                background: #f8f9fa;
-                border-radius: 8px;
-                border: 1px solid #e9ecef;
-            }
-
-            .requirement-item {
-                display: flex;
-                align-items: center;
-                margin-bottom: 0.5rem;
-                font-size: 0.875rem;
-            }
-
-            .requirement-item:last-child {
-                margin-bottom: 0;
-            }
-
-            .requirement-icon {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background: #e9ecef;
-                color: #6c757d;
-                text-align: center;
-                line-height: 20px;
-                margin-right: 0.75rem;
-                font-size: 0.75rem;
-                transition: all 0.2s ease;
-            }
-
-            .requirement-item.valid .requirement-icon {
-                background: #10b981;
-                color: white;
-            }
-
-            .requirement-item.valid {
-                color: #065f46;
-            }
-
-            /* Terms and conditions checkbox */
-            .terms-container {
-                margin: 2rem 0;
-                padding: 1.25rem;
-                background: #f8f9fa;
-                border-radius: 12px;
-                border: 2px solid #e9ecef;
-            }
-
-            .checkbox-group {
-                display: flex;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .custom-checkbox {
-                position: relative;
-                display: flex;
-                align-items: center;
-            }
-
-            .custom-checkbox input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                margin: 0;
-                cursor: pointer;
-                opacity: 0;
-                position: absolute;
-            }
-
-            .checkbox-visual {
-                width: 20px;
-                height: 20px;
-                border: 2px solid #d1d5db;
-                border-radius: 4px;
-                background: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-            }
-
-            .custom-checkbox input[type="checkbox"]:checked + .checkbox-visual {
-                background: var(--primary-black);
-                border-color: var(--primary-black);
-            }
-
-            .custom-checkbox
-                input[type="checkbox"]:checked
-                + .checkbox-visual::after {
-                content: "✓";
-                color: white;
-                font-size: 14px;
-                font-weight: bold;
-            }
-
-            .terms-text {
-                font-size: 0.95rem;
-                line-height: 1.5;
-                color: var(--text-secondary);
-            }
-
-            .terms-text a {
-                color: var(--primary-black);
-                text-decoration: underline;
-                font-weight: 500;
-            }
-
-            /* Submit button */
-            .submit-btn {
-                width: 100%;
-                padding: 1.25rem;
-                font-size: 1.1rem;
-                font-weight: 600;
-                background: var(--primary-black);
-                color: white;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                margin-top: 1rem;
-            }
-
-            .submit-btn:hover:not(:disabled) {
-                background: var(--secondary-black);
-                transform: translateY(-1px);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            }
-
-            .submit-btn:disabled {
-                background: #9ca3af;
-                cursor: not-allowed;
-                transform: none;
-            }
-
-            /* Loading state */
-            .loading .submit-btn {
-                position: relative;
-                color: transparent;
-            }
-
-            .loading .submit-btn::after {
-                content: "";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 20px;
-                height: 20px;
-                margin: -10px 0 0 -10px;
-                border: 2px solid transparent;
-                border-top: 2px solid white;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg);
-                }
-                100% {
-                    transform: rotate(360deg);
-                }
-            }
-
-            /* Auth links */
-            .auth-links {
-                text-align: center;
-                margin-top: 2rem;
-                padding-top: 2rem;
-                border-top: 1px solid #e9ecef;
-            }
-
-            .auth-links p {
-                margin-bottom: 0;
-                color: var(--text-muted);
-            }
-
-            .auth-links a {
-                color: var(--primary-black);
-                font-weight: 600;
-                text-decoration: none;
-            }
-
-            .auth-links a:hover {
-                text-decoration: underline;
-            }
-
-            /* Messages */
-            .message {
-                padding: 1rem 1.25rem;
-                border-radius: 8px;
-                margin-bottom: 1.5rem;
-                font-weight: 500;
-            }
-
-            .message.error {
-                background: #fef2f2;
-                color: #991b1b;
-                border: 1px solid #fecaca;
-            }
-
-            .message.success {
-                background: #f0fdf4;
-                color: #166534;
-                border: 1px solid #bbf7d0;
-            }
-
-            /* Responsive */
-            @media (max-width: 640px) {
-                .signup-card {
-                    padding: 2rem 1.5rem;
-                    margin: 1rem;
-                }
-
-                .auth-header h1 {
-                    font-size: 1.75rem;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="auth-container">
-            <div class="signup-card">
-                <div class="auth-header">
-                    <h1>Join Local Gigs</h1>
-                    <p>
-                        Create your account to discover amazing local music
-                        events
-                    </p>
-                </div>
-
-                <div id="signupMessages"></div>
-
-                <form id="signupForm" novalidate>
-                    <div class="form-group">
-                        <label for="username" class="form-label"
-                            >Username *</label
+            <form id="signupForm" novalidate>
+                <div class="form-group">
+                    <label for="username" class="form-label">Username *</label
                         >
                         <input
                             type="text"
@@ -329,6 +327,23 @@
                             maxlength="20"
                             autocomplete="username"
                         />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="preferredUsername" class="form-label"
+                            >Preferred Display Name</label
+                        >
+                        <input
+                            type="text"
+                            id="preferredUsername"
+                            name="preferredUsername"
+                            class="form-input"
+                            placeholder="How you'd like to be displayed (optional)"
+                            maxlength="30"
+                        />
+                        <small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem; display: block;">
+                            This is how your name will appear to other users. If left blank, your username will be used.
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -539,6 +554,7 @@
 
                 const formData = new FormData(signupForm);
                 const username = formData.get("username");
+                const preferredUsername = formData.get("preferredUsername");
                 const email = formData.get("email");
                 const password = formData.get("password");
 
@@ -552,6 +568,10 @@
                         username: username,
                         email: email,
                         password: password,
+                        // Cognito requires preferred_username, use the display name or fallback to username
+                        preferred_username: (preferredUsername && preferredUsername.trim() !== '') 
+                            ? preferredUsername.trim() 
+                            : username
                     };
 
                     const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.SIGNUP);

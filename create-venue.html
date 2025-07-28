@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Venue - LocalGigs</title>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .create-venue-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .page-header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .create-venue-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .venue-form-section {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .venue-map-section {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: fit-content;
+            min-height: 600px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .form-input[type="file"] {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 2px dashed #28a745;
+            cursor: pointer;
+        }
+
+        .form-input[type="file"]:hover {
+            background: #e9ecef;
+            border-color: #20c997;
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .image-preview {
+            margin-top: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .preview-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .remove-image-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .remove-image-btn:hover {
+            background: #c82333;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 0 auto 10px auto;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #666;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .coordinates-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .location-tools {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #007bff;
+            color: #007bff;
+        }
+
+        .btn-outline:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        .result-country {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .venue-map {
+            width: 100%;
+            height: 500px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .map-instructions {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #1565c0;
+        }
+
+        .location-confirmation {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f8f9fa;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1024px) {
+            .create-venue-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .venue-map-section {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .create-venue-container {
+                padding: 15px;
+            }
+            
+            .location-tools {
+                grid-template-columns: 1fr;
+            }
+            
+            .coordinates-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>🎵 LocalGigs</h2>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-item">Dashboard</a>
+                <a href="events.html" class="nav-item">Events</a>
+                <a href="venues.html" class="nav-item">Venues</a>
+                <a href="profile.html" class="nav-item">Profile</a>
+                <button id="logout-btn" class="nav-item logout-btn">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="create-venue-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>🏢 Create New Venue</h1>
+            <p>Add a new venue to host events and expand your network</p>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="create-venue-layout">
+            <!-- Form Section -->
+            <div class="venue-form-section">
+                <h2 class="section-title">📝 Venue Information</h2>
+                
+                <form id="create-venue-form">
+                    <!-- Basic Info -->
+                    <div class="form-group">
+                        <label class="form-label" for="venueName">Venue Name *</label>
+                        <input type="text" id="venueName" name="name" class="form-input" required 
+                               placeholder="Enter venue name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="venueType">Venue Type *</label>
+                        <select id="venueType" name="type" class="form-select" required>
+                            <option value="">Select venue type</option>
+                            <option value="Concert Hall">Concert Hall</option>
+                            <option value="Club">Club</option>
+                            <option value="Bar">Bar</option>
+                            <option value="Restaurant">Restaurant</option>
+                            <option value="Outdoor Space">Outdoor Space</option>
+                            <option value="Theater">Theater</option>
+                            <option value="Community Center">Community Center</option>
+                            <option value="Private Venue">Private Venue</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="venueDescription">Description</label>
+                        <textarea id="venueDescription" name="description" class="form-input form-textarea"
+                                  placeholder="Describe your venue, its atmosphere, facilities, etc."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="venueImage">Venue Image</label>
+                        <input type="file" id="venueImage" name="image" class="form-input" 
+                               accept="image/*" placeholder="Choose an image file">
+                        <small class="form-help">Upload an image of your venue (JPG, PNG, etc.)</small>
+                        
+                        <!-- Image Preview -->
+                        <div id="imagePreview" class="image-preview" style="display: none;">
+                            <div class="preview-header">
+                                <span class="preview-label">📸 Image Preview</span>
+                                <button type="button" id="removeImage" class="remove-image-btn">❌ Remove</button>
+                            </div>
+                            <img id="previewImg" src="" alt="Venue preview" class="preview-image">
+                            <div class="preview-info">
+                                <span id="fileName"></span>
+                                <span id="fileSize"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Capacity -->
+                    <div class="form-group">
+                        <label class="form-label" for="venueCapacity">Capacity</label>
+                        <input type="number" id="venueCapacity" name="capacity" class="form-input" 
+                               placeholder="Maximum number of people" min="1">
+                    </div>
+
+                    <!-- Location Info -->
+                    <div class="form-group">
+                        <label class="form-label" for="venueAddress">Address *</label>
+                        <input type="text" id="venueAddress" name="address" class="form-input" required
+                               placeholder="Enter venue address">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Coordinates</label>
+                        <div class="coordinates-group">
+                            <input type="number" id="venueLatitude" name="latitude" class="form-input" 
+                                   placeholder="Latitude" step="any" readonly>
+                            <input type="number" id="venueLongitude" name="longitude" class="form-input" 
+                                   placeholder="Longitude" step="any" readonly>
+                        </div>
+                        <div class="location-tools">
+                            <button type="button" id="geocode-btn" class="btn btn-outline">
+                                📍 Get Coordinates
+                            </button>
+                            <button type="button" id="current-location-btn" class="btn btn-outline">
+                                📱 Use My Location
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button type="button" id="cancel-btn" class="btn btn-secondary">
+                            ❌ Cancel
+                        </button>
+                        <button type="submit" id="submit-btn" class="btn btn-success">
+                            ✅ Create Venue
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Map Section -->
+            <div class="venue-map-section">
+                <h2 class="section-title">🗺️ Location & Map</h2>
+                
+                <!-- Search Box -->
+                <div class="search-container">
+                    <input type="text" id="location-search" class="search-input" 
+                           placeholder="🔍 Search for a location...">
+                    <div id="search-results" class="search-results"></div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="map-instructions">
+                    <strong>💡 How to set location:</strong><br>
+                    • Use the search box above to find your venue<br>
+                    • Click on the map to select a precise location<br>
+                    • Use "Get Coordinates" to geocode the address<br>
+                    • Use "My Location" for your current position
+                </div>
+
+                <!-- Map -->
+                <div id="venue-location-map" class="venue-map"></div>
+
+                <!-- Location Confirmation -->
+                <div id="location-confirmation" class="location-confirmation">
+                    <strong>📍 Location Selected:</strong>
+                    <div id="selected-location-info">Click on the map to select a location</div>
+                </div>
+
+                <!-- Map Tools -->
+                <div class="location-tools" style="margin-top: 20px;">
+                    <button type="button" id="enable-picker-btn" class="btn btn-primary">
+                        🎯 Pick Location on Map
+                    </button>
+                    <button type="button" id="clear-location-btn" class="btn btn-secondary">
+                        🗑️ Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 15px;">⏳</div>
+            <h3>Creating Venue...</h3>
+            <p>Please wait while we save your venue information.</p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; max-width: 500px; margin: 20px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+            <h2 style="color: #28a745; margin-bottom: 15px;">Venue Created Successfully!</h2>
+            <p style="margin-bottom: 30px;">Your venue has been added to the system and is now available for event bookings.</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <button id="view-venues-btn" class="btn btn-primary">View All Venues</button>
+                <button id="create-another-btn" class="btn btn-outline">Create Another</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/create-venue.js"></script>
+</body>
+</html>

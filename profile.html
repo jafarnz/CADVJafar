@@ -1,159 +1,124 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Profile - Local Gigs</title>
-        <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-        <header class="header">
-            <div class="header-content">
-                <a href="dashboard.html" class="logo">Local Gigs</a>
-                <nav>
-                    <ul class="nav-menu">
-                        <li><a href="dashboard.html">Dashboard</a></li>
-                        <li><a href="events.html">Events</a></li>
-                        <li><a href="venues.html">Venues</a></li>
-                        <li>
-                            <a href="profile.html">Profile</a>
-                        </li>
-                        <li>
-                            <button class="btn logout-btn" id="logout-button">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile - Local Gigs</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="dashboard.html" class="logo">Local Gigs</a>
+            <nav>
+                <ul class="nav-menu">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="events.html">Events</a></li>
+                    <li><a href="venues.html">Venues</a></li>
+                    <li>
+                        <a href="profile.html">Profile</a>
+                    </li>
+                    <li>
+                        <button class="btn logout-btn" id="logout-button">
                                 Logout
                             </button>
-                        </li>
-                    </ul>
-                </nav>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>My Profile</h1>
+                <p>Manage your account and preferences</p>
             </div>
-        </header>
 
-        <main class="dashboard">
-            <div class="container">
-                <div class="dashboard-header">
-                    <h1>My Profile</h1>
-                    <p>Manage your account and preferences</p>
-                </div>
-
-                <!-- Profile Header with Picture -->
-                <div class="profile-header">
-                    <div class="profile-picture-container">
-                        <img
-                            id="currentProfilePicture"
-                            class="profile-avatar"
-                            style="display: none"
-                            alt="Profile picture"
-                        />
-                        <div
-                            id="profilePicturePlaceholder"
-                            class="profile-picture-placeholder profile-avatar"
-                        >
-                            <span id="profileInitials">👤</span>
-                        </div>
-                        <button
-                            class="btn btn-outline btn-sm edit-picture-btn"
-                            id="editPictureBtn"
-                        >
+            <!-- Profile Header with Picture -->
+            <div class="profile-header">
+                <div class="profile-picture-container">
+                    <img id="currentProfilePicture" class="profile-avatar" style="display: none" alt="Profile picture" />
+                    <div id="profilePicturePlaceholder" class="profile-picture-placeholder profile-avatar">
+                        <span id="profileInitials">👤</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm edit-picture-btn" id="editPictureBtn">
                             📷 Change Photo
                         </button>
-                    </div>
-                    <div class="profile-info">
-                        <h1 id="profileDisplayName">Loading...</h1>
-                        <p id="profileEmail">Loading...</p>
-                        <div class="profile-stats">
-                            <div class="profile-stat">
-                                <div
-                                    class="profile-stat-number"
-                                    id="profileEventsCount"
-                                >
-                                    0
-                                </div>
-                                <div class="profile-stat-label">
-                                    Events Created
-                                </div>
+                </div>
+                <div class="profile-info">
+                    <h1 id="profileDisplayName">Loading...</h1>
+                    <p id="profileEmail">Loading...</p>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <div class="profile-stat-number" id="profileEventsCount">
+                                0
                             </div>
-                            <div class="profile-stat">
-                                <div
-                                    class="profile-stat-number"
-                                    id="profileGenre"
-                                >
-                                    -
-                                </div>
-                                <div class="profile-stat-label">
-                                    Favorite Genre
-                                </div>
+                            <div class="profile-stat-label">
+                                Events Created
+                            </div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-number" id="profileGenre">
+                                -
+                            </div>
+                            <div class="profile-stat-label">
+                                Favorite Genre
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="dashboard-grid">
-                    <!-- Profile Information -->
-                    <div class="card">
-                        <div
-                            style="
+            <div class="dashboard-grid">
+                <!-- Profile Information -->
+                <div class="card">
+                    <div style="
                                 display: flex;
                                 justify-content: space-between;
                                 align-items: center;
                                 margin-bottom: 1rem;
-                            "
-                        >
-                            <h2>Profile Information</h2>
-                            <button
-                                id="edit-profile-btn"
-                                class="btn btn-secondary"
-                            >
+                            ">
+                        <h2>Profile Information</h2>
+                        <button id="edit-profile-btn" class="btn btn-secondary">
                                 Edit
                             </button>
-                        </div>
+                    </div>
 
-                        <div
-                            id="profile-display"
-                            style="
+                    <div id="profile-display" style="
                                 display: flex;
                                 gap: 2rem;
                                 align-items: flex-start;
-                            "
-                        >
-                            <div style="text-align: center">
-                                <img
-                                    id="profile-picture"
-                                    src="/api/placeholder/120/120"
-                                    alt="Profile Picture"
-                                    style="
+                            ">
+                        <div style="text-align: center">
+                            <img id="profile-picture" src="https://via.placeholder.com/120/120/cccccc/ffffff?text=👤" alt="Profile Picture" style="
                                         width: 120px;
                                         height: 120px;
                                         border-radius: 50%;
                                         object-fit: cover;
                                         border: 3px solid #dee2e6;
-                                    "
-                                />
-                                <button
-                                    id="change-picture-btn"
-                                    class="btn btn-secondary"
-                                    style="
+                                    " />
+                            <button id="change-picture-btn" class="btn btn-secondary" style="
                                         margin-top: 0.5rem;
                                         font-size: 0.8rem;
-                                    "
-                                >
+                                    ">
                                     Change Photo
                                 </button>
+                        </div>
+                        <div style="flex: 1">
+                            <div style="margin-bottom: 1rem">
+                                <strong>Name:</strong>
+                                <span id="display-name">Loading...</span>
                             </div>
-                            <div style="flex: 1">
-                                <div style="margin-bottom: 1rem">
-                                    <strong>Name:</strong>
-                                    <span id="display-name">Loading...</span>
-                                </div>
-                                <div style="margin-bottom: 1rem">
-                                    <strong>Email:</strong>
-                                    <span id="display-email">Loading...</span>
-                                </div>
-                                <div style="margin-bottom: 1rem">
-                                    <strong>Bio:</strong>
-                                    <span
-                                        id="display-bio"
-                                        style="color: #666; font-style: italic"
-                                        >No bio added yet</span
+                            <div style="margin-bottom: 1rem">
+                                <strong>Email:</strong>
+                                <span id="display-email">Loading...</span>
+                            </div>
+                            <div style="margin-bottom: 1rem">
+                                <strong>Bio:</strong>
+                                <span id="display-bio" style="color: #666; font-style: italic">No bio added yet</span
                                     >
                                 </div>
                                 <div style="margin-bottom: 1rem">
@@ -193,27 +158,24 @@
                                     style="margin-top: 0.5rem"
                                 >
                                     <span class="genre-tag">Loading...</span>
-                                </div>
                             </div>
-                            <div style="margin-bottom: 1rem">
-                                <strong>Notifications:</strong>
-                                <span id="notifications-status"
-                                    >Loading...</span
+                        </div>
+                        <div style="margin-bottom: 1rem">
+                            <strong>Notifications:</strong>
+                            <span id="notifications-status">Loading...</span
                                 >
                             </div>
                             <div style="margin-bottom: 1rem">
                                 <strong>Event Reminders:</strong>
                                 <span id="reminders-status">Loading...</span>
-                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Activity Summary -->
-                    <div class="card">
-                        <h2>Activity Summary</h2>
-                        <div
-                            class="stats-grid"
-                            style="
+                <!-- Activity Summary -->
+                <div class="card">
+                    <h2>Activity Summary</h2>
+                    <div class="stats-grid" style="
                                 display: grid;
                                 grid-template-columns: repeat(
                                     auto-fit,
@@ -221,181 +183,127 @@
                                 );
                                 gap: 1rem;
                                 margin-top: 1rem;
-                            "
-                        >
-                            <div class="stat-item text-center">
-                                <div
-                                    class="stat-number"
-                                    id="events-created-count"
-                                >
-                                    0
-                                </div>
-                                <div class="stat-label">Events Created</div>
+                            ">
+                        <div class="stat-item text-center">
+                            <div class="stat-number" id="events-created-count">
+                                0
                             </div>
-                            <div class="stat-item text-center">
-                                <div
-                                    class="stat-number"
-                                    id="events-joined-count"
-                                >
-                                    0
-                                </div>
-                                <div class="stat-label">Events Joined</div>
-                            </div>
-                            <div class="stat-item text-center">
-                                <div
-                                    class="stat-number"
-                                    id="venues-added-count"
-                                >
-                                    0
-                                </div>
-                                <div class="stat-label">Venues Added</div>
-                            </div>
-                            <div class="stat-item text-center">
-                                <div class="stat-number" id="days-active">
-                                    0
-                                </div>
-                                <div class="stat-label">Days Active</div>
-                            </div>
+                            <div class="stat-label">Events Created</div>
                         </div>
-                    </div>
-
-                    <!-- Recent Activity -->
-                    <div class="card">
-                        <h2>Recent Activity</h2>
-                        <div id="recent-activity">
-                            <div class="loading-placeholder">
-                                <p>Loading recent activity...</p>
+                        <div class="stat-item text-center">
+                            <div class="stat-number" id="events-joined-count">
+                                0
                             </div>
+                            <div class="stat-label">Events Joined</div>
                         </div>
-                    </div>
-
-                    <!-- Account Settings -->
-                    <div class="card">
-                        <h2>Account Settings</h2>
-                        <div
-                            style="
-                                display: flex;
-                                flex-direction: column;
-                                gap: 1rem;
-                            "
-                        >
-                            <button
-                                id="change-password-btn"
-                                class="btn btn-secondary"
-                            >
-                                Change Password
-                            </button>
-                            <button
-                                id="privacy-settings-btn"
-                                class="btn btn-secondary"
-                            >
-                                Privacy Settings
-                            </button>
-                            <button
-                                id="export-data-btn"
-                                class="btn btn-secondary"
-                            >
-                                Export My Data
-                            </button>
-                            <button
-                                id="delete-account-btn"
-                                class="btn"
-                                style="background: #dc3545; color: white"
-                            >
-                                Delete Account
-                            </button>
+                        <div class="stat-item text-center">
+                            <div class="stat-number" id="venues-added-count">
+                                0
+                            </div>
+                            <div class="stat-label">Venues Added</div>
+                        </div>
+                        <div class="stat-item text-center">
+                            <div class="stat-number" id="days-active">
+                                0
+                            </div>
+                            <div class="stat-label">Days Active</div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </main>
 
-        <!-- Edit Profile Modal -->
-        <div id="edit-profile-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" id="close-profile-modal">&times;</span>
-                <h2>Edit Profile</h2>
-                <div id="profile-modal-messages"></div>
-                <form id="edit-profile-form">
-                    <div class="form-group">
-                        <label for="profileName">Full Name *</label>
-                        <input
-                            type="text"
-                            id="profileName"
-                            name="name"
-                            class="form-control"
-                            required
-                            placeholder="Enter your full name"
-                            maxlength="100"
-                        />
+                <!-- Recent Activity -->
+                <div class="card">
+                    <h2>Recent Activity</h2>
+                    <div id="recent-activity">
+                        <div class="loading-placeholder">
+                            <p>Loading recent activity...</p>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="profileBio">Bio</label>
-                        <textarea
-                            id="profileBio"
-                            name="bio"
-                            class="form-control"
-                            rows="4"
-                            placeholder="Tell us about yourself..."
-                            maxlength="500"
-                        ></textarea>
+                <!-- My Joined Events -->
+                <div class="card">
+                    <h2>🎟️ My Joined Events</h2>
+                    <div id="joined-events-list">
+                        <div class="loading-placeholder">
+                            <p>Loading joined events...</p>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="profileLocation">Location</label>
-                        <input
-                            type="text"
-                            id="profileLocation"
-                            name="location"
-                            class="form-control"
-                            placeholder="City, Country"
-                            maxlength="100"
-                        />
+                <!-- Account Settings -->
+                <div class="card">
+                    <h2>Account Settings</h2>
+                    <div style="
+                                display: flex;
+                                flex-direction: column;
+                                gap: 1rem;
+                            ">
+                        <button id="change-password-btn" class="btn btn-secondary">
+                                Change Password
+                            </button>
+                        <button id="privacy-settings-btn" class="btn btn-secondary">
+                                Privacy Settings
+                            </button>
+                        <button id="export-data-btn" class="btn btn-secondary">
+                                Export My Data
+                            </button>
+                        <button id="delete-account-btn" class="btn" style="background: #dc3545; color: white">
+                                Delete Account
+                            </button>
                     </div>
-
-                    <div class="form-group">
-                        <label for="profileWebsite">Website</label>
-                        <input
-                            type="url"
-                            id="profileWebsite"
-                            name="website"
-                            class="form-control"
-                            placeholder="https://your-website.com"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Save Changes
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
+    </main>
 
-        <!-- Edit Preferences Modal -->
-        <div id="edit-preferences-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" id="close-preferences-modal">&times;</span>
-                <h2>Music Preferences</h2>
-                <div id="preferences-modal-messages"></div>
-                <form id="edit-preferences-form">
-                    <div class="form-group">
-                        <label>Favorite Genres (select up to 3)</label>
-                        <div
-                            class="genre-grid"
-                            style="
-                                display: grid;
-                                grid-template-columns: repeat(
-                                    auto-fit,
-                                    minmax(150px, 1fr)
-                                );
-                                gap: 0.5rem;
-                                margin-top: 0.5rem;
-                            "
-                        >
-                            <label class="genre-option">
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-profile-modal">&times;</span>
+            <h2>Edit Profile</h2>
+            <div id="profile-modal-messages"></div>
+            <form id="edit-profile-form">
+                <div class="form-group">
+                    <label for="profileName">Full Name *</label>
+                    <input type="text" id="profileName" name="name" class="form-control" required placeholder="Enter your full name" maxlength="100" />
+                </div>
+
+                <div class="form-group">
+                    <label for="profileBio">Bio</label>
+                    <textarea id="profileBio" name="bio" class="form-control" rows="4" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="profileLocation">Location</label>
+                    <input type="text" id="profileLocation" name="location" class="form-control" placeholder="City, Country" maxlength="100" />
+                </div>
+
+                <div class="form-group">
+                    <label for="profileWebsite">Website</label>
+                    <input type="url" id="profileWebsite" name="website" class="form-control" placeholder="https://your-website.com" />
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn" style="width: 100%">
+                            Save Changes
+                        </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Preferences Modal -->
+    <div id="edit-preferences-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-preferences-modal">&times;</span>
+            <h2>Music Preferences</h2>
+            <div id="preferences-modal-messages"></div>
+            <form id="edit-preferences-form">
+                <div class="form-group">
+                    <label>Favorite Genres (select up to 3)</label>
+                    <div class="genre-grid">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -403,7 +311,7 @@
                                 />
                                 <span>Rock</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -411,7 +319,7 @@
                                 />
                                 <span>Pop</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -419,7 +327,7 @@
                                 />
                                 <span>Jazz</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -427,7 +335,7 @@
                                 />
                                 <span>Electronic</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -435,7 +343,7 @@
                                 />
                                 <span>Hip-Hop</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -443,7 +351,7 @@
                                 />
                                 <span>Indie</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -451,7 +359,7 @@
                                 />
                                 <span>Metal</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -459,7 +367,7 @@
                                 />
                                 <span>Country</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -467,7 +375,7 @@
                                 />
                                 <span>Reggae</span>
                             </label>
-                            <label class="genre-option">
+                        <label class="genre-option">
                                 <input
                                     type="checkbox"
                                     name="genres"
@@ -475,20 +383,20 @@
                                 />
                                 <span>Classical</span>
                             </label>
-                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <div class="toggle-group">
-                            <div class="toggle-content">
-                                <div class="toggle-title">
-                                    Email Notifications
-                                </div>
-                                <div class="toggle-description">
-                                    Receive email updates about new events
-                                </div>
+                <div class="form-group">
+                    <div class="toggle-group">
+                        <div class="toggle-content">
+                            <div class="toggle-title">
+                                Email Notifications
                             </div>
-                            <label class="toggle-switch">
+                            <div class="toggle-description">
+                                Receive email updates about new events
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
                                 <input
                                     type="checkbox"
                                     id="emailNotifications"
@@ -496,18 +404,18 @@
                                 />
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <div class="toggle-group">
-                            <div class="toggle-content">
-                                <div class="toggle-title">Event Reminders</div>
-                                <div class="toggle-description">
-                                    Get reminders before events you've joined
-                                </div>
+                <div class="form-group">
+                    <div class="toggle-group">
+                        <div class="toggle-content">
+                            <div class="toggle-title">Event Reminders</div>
+                            <div class="toggle-description">
+                                Get reminders before events you've joined
                             </div>
-                            <label class="toggle-switch">
+                        </div>
+                        <label class="toggle-switch">
                                 <input
                                     type="checkbox"
                                     id="eventReminders"
@@ -515,20 +423,20 @@
                                 />
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <div class="toggle-group">
-                            <div class="toggle-content">
-                                <div class="toggle-title">
-                                    Location-based Suggestions
-                                </div>
-                                <div class="toggle-description">
-                                    Show events near your location
-                                </div>
+                <div class="form-group">
+                    <div class="toggle-group">
+                        <div class="toggle-content">
+                            <div class="toggle-title">
+                                Location-based Suggestions
                             </div>
-                            <label class="toggle-switch">
+                            <div class="toggle-description">
+                                Show events near your location
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
                                 <input
                                     type="checkbox"
                                     id="locationSuggestions"
@@ -536,54 +444,40 @@
                                 />
                                 <span class="toggle-slider"></span>
                             </label>
-                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
+                <div class="form-group">
+                    <button type="submit" class="btn" style="width: 100%">
                             Save Preferences
                         </button>
-                    </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Change Password Modal -->
-        <div id="change-password-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" id="close-password-modal">&times;</span>
-                <h2>Change Password</h2>
-                <div id="password-modal-messages"></div>
-                <form id="change-password-form">
-                    <div class="form-group">
-                        <label for="currentPassword">Current Password *</label>
-                        <input
-                            type="password"
-                            id="currentPassword"
-                            name="currentPassword"
-                            class="form-control"
-                            required
-                        />
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-password-modal">&times;</span>
+            <h2>Change Password</h2>
+            <div id="password-modal-messages"></div>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password *</label>
+                    <input type="password" id="currentPassword" name="currentPassword" class="form-control" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password *</label>
+                    <input type="password" id="newPassword" name="newPassword" class="form-control" required minlength="8" />
+                    <div class="form-text">
+                        Password must be at least 8 characters long
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="newPassword">New Password *</label>
-                        <input
-                            type="password"
-                            id="newPassword"
-                            name="newPassword"
-                            class="form-control"
-                            required
-                            minlength="8"
-                        />
-                        <div class="form-text">
-                            Password must be at least 8 characters long
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirmPassword"
-                            >Confirm New Password *</label
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password *</label
                         >
                         <input
                             type="password"
@@ -605,57 +499,82 @@
 
         <!-- Profile Picture Upload Modal -->
         <div id="profile-picture-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" id="close-picture-modal">&times;</span>
-                <h2>Change Profile Picture</h2>
-                <div id="picture-modal-messages"></div>
-                <form id="profile-picture-form">
-                    <div class="form-group">
-                        <label for="profilePictureFile"
-                            >Choose Profile Picture</label
-                        >
-                        <input
-                            type="file"
-                            id="profilePictureFile"
-                            name="profilePicture"
-                            class="form-control"
-                            accept="image/*"
-                            required
-                        />
-                        <div class="form-text">
-                            Recommended: Square image, max 5MB
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div
-                            id="image-preview"
-                            style="
-                                text-align: center;
-                                margin: 1rem 0;
-                                display: none;
-                            "
-                        >
-                            <img
-                                id="preview-image"
-                                src=""
-                                alt="Preview"
-                                style="
-                                    max-width: 200px;
-                                    max-height: 200px;
+            <div class="modal-content" style="max-width: 500px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; text-align: center; position: relative;">
+                    <span class="close" id="close-picture-modal" style="position: absolute; top: 16px; right: 20px; font-size: 24px; cursor: pointer; opacity: 0.8; transition: opacity 0.3s;">&times;</span>
+                    <h2 style="margin: 0; font-size: 1.5rem; font-weight: 600;">📸 Update Profile Picture</h2>
+                    <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 0.9rem;">Choose a new photo to represent yourself</p>
+                </div>
+                
+                <div style="padding: 32px;">
+                    <div id="picture-modal-messages"></div>
+                    
+                    <form id="profile-picture-form">
+                        <!-- Image Preview Area -->
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div id="image-preview" style="display: none;">
+                                <img id="preview-image" src="" alt="Preview" style="
+                                    width: 150px;
+                                    height: 150px;
                                     border-radius: 50%;
-                                    border: 2px solid #dee2e6;
-                                "
-                            />
+                                    border: 4px solid #e9ecef;
+                                    object-fit: cover;
+                                    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                                    transition: all 0.3s ease;
+                                " />
+                                <p style="margin: 12px 0 0 0; color: #666; font-size: 0.9rem;">Looking good! 👍</p>
+                            </div>
+                            <div id="upload-placeholder" style="
+                                width: 150px;
+                                height: 150px;
+                                border: 3px dashed #d1d5db;
+                                border-radius: 50%;
+                                margin: 0 auto;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                background: #f9fafb;
+                                transition: all 0.3s ease;
+                                cursor: pointer;
+                            " onclick="document.getElementById('profilePictureFile').click()">
+                                <div style="text-align: center; color: #6b7280;">
+                                    <div style="font-size: 2rem; margin-bottom: 8px;">📷</div>
+                                    <div style="font-size: 0.85rem; font-weight: 500;">Click to choose</div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <button type="submit" class="btn" style="width: 100%">
-                            Upload Picture
+                        <!-- Hidden File Input -->
+                        <input type="file" id="profilePictureFile" name="profilePicture" accept="image/*" required style="display: none;" />
+                        
+                        <!-- Upload Info -->
+                        <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+                            <div style="color: #666; font-size: 0.85rem; line-height: 1.4;">
+                                📋 <strong>Guidelines:</strong><br>
+                                • Square images work best<br>
+                                • Maximum size: 5MB<br>
+                                • Formats: JPEG, PNG, GIF
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button type="submit" class="btn" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            padding: 14px 24px;
+                            border-radius: 12px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(102, 126, 234, 0.3)'">
+                            ✨ Upload & Save Picture
                         </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -726,9 +645,17 @@
                     if (email)
                         email.textContent =
                             profile.email || this.currentUser.email;
-                    if (genre)
-                        genre.textContent =
-                            profile.preferences?.genre || "Unknown";
+                    if (genre) {
+                        // Pick one random genre from favoriteGenres array, or use default
+                        let displayGenre = "Music Fan";
+                        if (profile.preferences?.favoriteGenres && Array.isArray(profile.preferences.favoriteGenres) && profile.preferences.favoriteGenres.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * profile.preferences.favoriteGenres.length);
+                            displayGenre = profile.preferences.favoriteGenres[randomIndex];
+                            // Capitalize first letter
+                            displayGenre = displayGenre.charAt(0).toUpperCase() + displayGenre.slice(1);
+                        }
+                        genre.textContent = displayGenre;
+                    }
 
                     // Set profile initials
                     if (initials && profile.name) {
@@ -774,6 +701,8 @@
                     // Edit picture button
                     const editPictureBtn =
                         document.getElementById("editPictureBtn");
+                    const uploadPictureBtn =
+                        document.getElementById("uploadPictureBtn");
                     const pictureModal = document.getElementById(
                         "profile-picture-modal",
                     );
@@ -787,8 +716,17 @@
                         document.getElementById("profilePictureFile");
 
                     if (editPictureBtn && pictureModal) {
-                        editPictureBtn.addEventListener("click", () => {
+                        editPictureBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
                             pictureModal.style.display = "block";
+                        });
+                    }
+                    
+                    // Direct file upload button
+                    if (uploadPictureBtn && pictureFileInput) {
+                        uploadPictureBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            pictureFileInput.click();
                         });
                     }
 
@@ -998,26 +936,50 @@
             .genre-option {
                 display: flex;
                 align-items: center;
-                padding: 0.75rem;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: all 0.3s ease;
+                background: #fff;
+                position: relative;
+                overflow: hidden;
             }
 
             .genre-option:hover {
-                border-color: #333;
-                background: #f8f9fa;
+                border-color: #007bff;
+                background: #f8f9ff;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,123,255,0.15);
             }
 
             .genre-option.selected {
-                border-color: #333;
-                background: #333;
+                border-color: #007bff;
+                background: #007bff;
                 color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,123,255,0.3);
             }
 
             .genre-option input[type="checkbox"] {
-                margin-right: 0.5rem;
+                margin-right: 0.75rem;
+                width: 18px;
+                height: 18px;
+                accent-color: #007bff;
+                cursor: pointer;
+            }
+
+            .genre-option span {
+                font-weight: 500;
+                font-size: 0.95rem;
+                user-select: none;
+            }
+
+            .genre-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 0.75rem;
+                margin-top: 1rem;
             }
 
             @media (max-width: 768px) {

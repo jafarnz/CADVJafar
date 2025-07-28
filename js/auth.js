@@ -1,29 +1,23 @@
-// Authentication module for Local Gigs App
 const Auth = {
-  // Initialize authentication
   init: function () {
-    // Set up event listeners immediately
     this.setupEventListeners();
 
-    // Delay auth state check to avoid race conditions
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
         this.checkAuthState();
       });
     } else {
-      // Document is already loaded
       setTimeout(() => {
         this.checkAuthState();
       }, 100);
     }
   },
 
-  // Check current authentication state
   checkAuthState: function () {
     const isAuth = Utils.isAuthenticated();
     const currentPage = window.location.pathname.split("/").pop();
 
-    console.log("🔐 Auth.checkAuthState:", {
+    console.log("Auth.checkAuthState:", {
       isAuthenticated: isAuth,
       currentPage: currentPage,
       accessToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
@@ -40,17 +34,16 @@ const Auth = {
       },
     });
 
-    // Redirect logic based on auth state and current page
     if (isAuth) {
-      console.log("✅ User is authenticated");
+      console.log("User is authenticated");
       if (currentPage === "login.html" || currentPage === "signup.html") {
-        console.log("📍 On login/signup page, checking profile setup...");
-        // Check if user has completed profile setup
+        console.log(" On login/signup page, checking profile setup...");
+
         this.checkProfileSetup();
       }
     } else {
-      console.log("❌ User is NOT authenticated");
-      // Not authenticated - redirect to login if on protected pages
+      console.log(" User is NOT authenticated");
+
       const protectedPages = [
         "dashboard.html",
         "profile.html",
@@ -59,16 +52,15 @@ const Auth = {
         "profile-setup.html",
       ];
       if (protectedPages.includes(currentPage)) {
-        console.log("🚫 On protected page, redirecting to login...");
+        console.log(" On protected page, redirecting to login...");
         window.location.href = "login.html";
       }
     }
   },
 
-  // Check if user has completed profile setup
   checkProfileSetup: async function () {
-    console.log("🏁 checkProfileSetup() called");
-    console.log("🔍 Current authentication state:", {
+    console.log(" checkProfileSetup() called");
+    console.log(" Current authentication state:", {
       isAuthenticated: Utils.isAuthenticated(),
       hasAccessToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN),
       hasIdToken: !!localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN),
@@ -76,75 +68,122 @@ const Auth = {
 
     try {
       const user = Utils.getUserFromToken();
-      console.log("👤 checkProfileSetup - User from token:", user);
+      console.log("checkProfileSetup - User from token:", user);
 
-      if (!user) {
-        console.log("❌ No user found in token, redirecting to login");
-        console.log("🔍 Token details:", {
+      if (!user || !user.email) {
+        console.log("No user email found in token, redirecting to login");
+        console.log(" Token details:", {
           idToken: localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)
             ? "EXISTS"
             : "MISSING",
-          tokenLength:
-            localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)?.length || 0,
+          tokenLength: localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN)
+            ? localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN).length
+            : 0,
         });
         window.location.href = "login.html";
         return;
       }
 
-      console.log("🔍 Checking user profile in backend...");
-      console.log(
-        "📡 Making API call to:",
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
+      const userID = user.sub;
+      console.log(" Checking profile for user ID:", userID);
+
+      const userApiUrl = CONFIG.buildApiUrl(
+        `${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userID)}`,
       );
+      console.log("Making API call to:", userApiUrl);
 
-      // Check if user profile exists in backend
-      const response = await Utils.apiCall(
-        CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USER_BY_ID, user.sub),
-        { method: "GET" },
-      );
+      const response = await Utils.apiCall(userApiUrl, {
+        method: "GET",
+        headers: CONFIG.getAuthHeaders(),
+      });
 
-      console.log("📡 Profile check response:", response);
+      console.log("Profile check response:", response);
 
-      if (response && response.preferences) {
-        // Profile exists, redirect to dashboard
-        console.log("✅ Profile exists, redirecting to dashboard");
-        console.log("🚀 Redirecting to dashboard.html...");
+      let userData = null;
+      if (response && response.message) {
+        try {
+          userData = JSON.parse(response.message);
+          console.log("Parsed user data:", userData);
+        } catch (parseError) {
+          console.error("❌ Failed to parse user data:", parseError);
+          userData = response;
+        }
+      } else {
+        userData = response;
+      }
+
+      if (userData && userData.email && userData.name && userData.preferences) {
+        console.log("Profile setup complete, redirecting to dashboard");
+
+        localStorage.setItem(
+          CONFIG.STORAGE_KEYS.USER_DATA,
+          JSON.stringify(userData),
+        );
+        if (userData.preferences) {
+          localStorage.setItem(
+            CONFIG.STORAGE_KEYS.PREFERENCES,
+            JSON.stringify(userData.preferences),
+          );
+        }
+
+        console.log(" Redirecting to dashboard.html...");
         window.location.href = "dashboard.html";
       } else {
-        // Profile doesn't exist, redirect to profile setup
-        console.log("📝 Profile missing, redirecting to profile setup");
-        console.log("🚀 Redirecting to profile-setup.html...");
+        console.log("Profile setup incomplete, redirecting to profile setup");
+        console.log("Missing fields:", {
+          hasEmail: !!(userData && userData.email),
+          hasName: !!(userData && userData.name),
+          hasPreferences: !!(userData && userData.preferences),
+          userData: userData,
+        });
+        console.log("Redirecting to profile-setup.html...");
         window.location.href = "profile-setup.html";
       }
     } catch (error) {
-      console.error("❌ Error checking profile setup:", error);
-      console.error("❌ Error details:", {
+      console.error(" Error checking profile setup:", error);
+      console.error(" Error details:", {
         message: error.message,
         stack: error.stack,
         status: error.status,
       });
-      // If error (like 404), assume profile needs to be set up
-      console.log("📝 Error occurred, redirecting to profile setup");
-      console.log("🚀 Redirecting to profile-setup.html due to error...");
-      window.location.href = "profile-setup.html";
+
+      if (error.message && error.message.includes("404")) {
+        console.log(
+          " User profile not found (404), redirecting to profile setup",
+        );
+        console.log(" Redirecting to profile-setup.html...");
+        window.location.href = "profile-setup.html";
+      } else {
+        console.log(
+          " Error occurred, redirecting to profile setup as fallback",
+        );
+        console.log(" Redirecting to profile-setup.html due to error...");
+        window.location.href = "profile-setup.html";
+      }
     }
   },
 
-  // Setup event listeners for auth forms
+  getCurrentUserEmail: function () {
+    try {
+      const user = Utils.getUserFromToken();
+      return user && user.email ? user.email : null;
+    } catch (error) {
+      console.error("Error getting user email:", error);
+      return null;
+    }
+  },
+
   setupEventListeners: function () {
-    // Login form
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
       loginForm.addEventListener("submit", this.handleLogin.bind(this));
     }
 
-    // Signup form
     const signupForm = document.getElementById("signupForm");
     if (signupForm) {
       signupForm.addEventListener("submit", this.handleSignup.bind(this));
     }
 
-    // Profile setup form
     const profileForm = document.getElementById("profileSetupForm");
     if (profileForm) {
       profileForm.addEventListener(
@@ -153,13 +192,11 @@ const Auth = {
       );
     }
 
-    // Logout buttons
     const logoutButtons = document.querySelectorAll(".logout-btn");
     logoutButtons.forEach((btn) => {
       btn.addEventListener("click", this.handleLogout.bind(this));
     });
 
-    // Email confirmation form
     const confirmForm = document.getElementById("confirmForm");
     if (confirmForm) {
       confirmForm.addEventListener(
@@ -169,7 +206,6 @@ const Auth = {
     }
   },
 
-  // Handle user login
   handleLogin: async function (event) {
     event.preventDefault();
 
@@ -178,7 +214,6 @@ const Auth = {
     const password = formData.get("password");
     const submitBtn = event.target.querySelector('button[type="submit"]');
 
-    // Validation
     if (!username || !password) {
       Utils.showError(
         "Please enter both username and password",
@@ -205,7 +240,7 @@ const Auth = {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("❌ Login API failed:", {
+        console.error(" Login API failed:", {
           status: response.status,
           statusText: response.statusText,
           data: data,
@@ -213,8 +248,8 @@ const Auth = {
         throw new Error(data.error || "Login failed");
       }
 
-      console.log("🔑 Login successful! Full API response:", data);
-      console.log("🔑 Response data structure:", {
+      console.log(" Login successful! Full API response:", data);
+      console.log("Response data structure:", {
         hasAccessToken: !!data.accessToken,
         hasIdToken: !!data.idToken,
         hasAccessTokenCaps: !!data.AccessToken,
@@ -225,7 +260,6 @@ const Auth = {
         idTokenLength: data.idToken ? data.idToken.length : 0,
       });
 
-      // Store tokens - handle multiple possible response formats
       const accessToken =
         data.accessToken ||
         data.AccessToken ||
@@ -235,7 +269,7 @@ const Auth = {
         data.IdToken ||
         (data.AuthenticationResult && data.AuthenticationResult.IdToken);
 
-      console.log("🔍 Token extraction results:", {
+      console.log("Token extraction results:", {
         accessToken: accessToken
           ? `${accessToken.substring(0, 20)}...`
           : "MISSING",
@@ -250,7 +284,7 @@ const Auth = {
       }
 
       // Store tokens
-      console.log("💾 Storing tokens in localStorage...");
+      console.log("Storing tokens in localStorage...");
       localStorage.setItem(CONFIG.STORAGE_KEYS.ACCESS_TOKEN, accessToken);
       localStorage.setItem(CONFIG.STORAGE_KEYS.ID_TOKEN, idToken);
 
@@ -260,7 +294,7 @@ const Auth = {
       );
       const storedIdToken = localStorage.getItem(CONFIG.STORAGE_KEYS.ID_TOKEN);
 
-      console.log("💾 Token storage verification:", {
+      console.log("Token storage verification:", {
         accessTokenStored: !!storedAccessToken,
         idTokenStored: !!storedIdToken,
         accessTokenMatches: storedAccessToken === accessToken,
@@ -273,7 +307,7 @@ const Auth = {
 
       // Test authentication immediately after storage
       const isAuthNow = Utils.isAuthenticated();
-      console.log("🔐 Authentication test after token storage:", {
+      console.log("Authentication test after token storage:", {
         isAuthenticated: isAuthNow,
         userFromToken: Utils.getUserFromToken(),
       });
@@ -281,10 +315,10 @@ const Auth = {
       Utils.showSuccess("Login successful! Redirecting...", "loginMessages");
 
       // Check profile setup after successful login
-      console.log("⏱️ Starting profile setup check in 1 second...");
+      console.log(" Starting profile setup check in 1 second...");
       setTimeout(() => {
-        console.log("🔄 About to call checkProfileSetup()...");
-        console.log("🔄 Current auth state before profile check:", {
+        console.log("About to call checkProfileSetup()...");
+        console.log("Current auth state before profile check:", {
           isAuthenticated: Utils.isAuthenticated(),
           hasAccessToken: !!localStorage.getItem(
             CONFIG.STORAGE_KEYS.ACCESS_TOKEN,
@@ -487,12 +521,16 @@ const Auth = {
     console.log("User from token:", user);
 
     const formData = new FormData(event.target);
-    const name = formData.get("name")?.trim();
-    const selectedGenre = document.querySelector(
+    const nameField = formData.get("name");
+    const name = nameField && nameField.trim();
+    const selectedGenreEl = document.querySelector(
       'input[name="genre"]:checked',
-    )?.value;
-    const notifications = document.getElementById("notifications")?.checked;
-    const shareLocation = document.getElementById("shareLocation")?.checked;
+    );
+    const selectedGenre = selectedGenreEl && selectedGenreEl.value;
+    const notificationsEl = document.getElementById("notifications");
+    const notifications = notificationsEl && notificationsEl.checked;
+    const shareLocationEl = document.getElementById("shareLocation");
+    const shareLocation = shareLocationEl && shareLocationEl.checked;
 
     console.log("Form data:", {
       name,
@@ -550,11 +588,25 @@ const Auth = {
       console.log("Starting API call...");
       Utils.showLoading(submitBtn, "Setting up profile...");
 
+      // Check if there's an existing profile to preserve data
+      let existingProfile = null;
+      try {
+        const checkUrl = CONFIG.buildApiUrl(
+          CONFIG.API.ENDPOINTS.USER_BY_ID,
+          user.sub,
+        );
+        existingProfile = await Utils.apiCall(checkUrl, { method: "GET" });
+        console.log("Existing profile found:", existingProfile);
+      } catch (error) {
+        console.log("No existing profile found, creating new one");
+      }
+
       // Create user profile
       const profileData = {
         userID: user.sub,
         email: user.email,
         name: name,
+        profileSetupComplete: true,
         preferences: {
           genre: selectedGenre,
           notifications: notifications,
@@ -562,13 +614,47 @@ const Auth = {
         },
       };
 
+      // Preserve any existing data not covered in setup
+      if (existingProfile) {
+        // Preserve any additional fields that might exist
+        Object.keys(existingProfile).forEach((key) => {
+          if (!profileData.hasOwnProperty(key) && key !== "preferences") {
+            profileData[key] = existingProfile[key];
+          }
+        });
+
+        // Merge preferences, preserving any existing ones not in setup
+        if (existingProfile.preferences) {
+          Object.keys(existingProfile.preferences).forEach((key) => {
+            if (!profileData.preferences.hasOwnProperty(key)) {
+              profileData.preferences[key] = existingProfile.preferences[key];
+            }
+          });
+        }
+      }
+
       console.log("Profile data to send:", profileData);
 
-      const apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+      // Use the correct endpoint based on whether profile exists
+      let apiUrl, method;
+      if (existingProfile) {
+        // Update existing profile using PUT /users/{userID}
+        apiUrl = CONFIG.buildApiUrl(
+          `${CONFIG.API.ENDPOINTS.USER_BY_ID}/${encodeURIComponent(userEmail)}`,
+        );
+        method = "PUT";
+      } else {
+        // Create new profile using POST /users
+        apiUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.USERS);
+        method = "POST";
+      }
+
       console.log("API URL:", apiUrl);
+      console.log("Using HTTP method:", method);
 
       const response = await Utils.apiCall(apiUrl, {
-        method: "POST",
+        method: method,
+        headers: CONFIG.getAuthHeaders(),
         body: JSON.stringify(profileData),
       });
 

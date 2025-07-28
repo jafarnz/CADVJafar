@@ -1,26 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('jwt_token');
-    const username = localStorage.getItem('username');
+    
+    const isAuthenticated = Utils && Utils.isAuthenticated ? Utils.isAuthenticated() : false;
+    const userData = Utils && Utils.getUserFromToken ? Utils.getUserFromToken() : null;
 
     const authLinks = document.getElementById('auth-links');
     const userInfo = document.getElementById('user-info');
     const usernameDisplay = document.getElementById('username-display');
     const logoutBtn = document.getElementById('logout-btn');
 
-    if (token && username) {
-        // User is logged in
-        authLinks.style.display = 'none';
-        userInfo.style.display = 'block';
-        usernameDisplay.textContent = username;
+    if (isAuthenticated && userData) {
+        
+        if (authLinks) authLinks.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'block';
+        if (usernameDisplay) usernameDisplay.textContent = userData.preferredUsername || userData.username || 'User';
 
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('jwt_token');
-            localStorage.removeItem('username');
-            window.location.reload();
-        });
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (Utils && Utils.logout) {
+                    Utils.logout();
+                } else {
+                    
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('id_token');
+                    localStorage.removeItem('user_data');
+                    window.location.href = 'index.html';
+                }
+            });
+        }
     } else {
-        // User is not logged in
-        authLinks.style.display = 'block';
-        userInfo.style.display = 'none';
+        
+        if (authLinks) authLinks.style.display = 'block';
+        if (userInfo) userInfo.style.display = 'none';
     }
 });

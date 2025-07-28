@@ -1,50 +1,38 @@
-// Dashboard functionality for Local Gigs App
 const Dashboard = {
   currentUser: null,
   events: [],
   venues: [],
   mapInitialized: false,
 
-  // Initialize the dashboard
   init: async function () {
     console.log("Initializing dashboard...");
 
-    // Check authentication
     if (!Utils.requireAuth()) {
       return;
     }
 
-    // Get current user
     this.currentUser = Utils.getUserFromToken();
     if (!this.currentUser) {
       Utils.logout();
       return;
     }
 
-    // Set up event listeners
     this.setupEventListeners();
 
-    // Load user data and update UI
     await this.loadUserData();
 
-    // Load events and venues data
     await this.loadAllData();
 
-    // Update map status
-    this.updateMapStatus("🔑 AWS credentials ready", false);
+    this.updateMapStatus("AWS credentials ready", false);
 
-    // Initialize map
     await this.initializeMap();
 
-    // Render content
     this.render();
 
-    console.log("✅ Dashboard initialized successfully");
+    console.log("Dashboard initialized successfully");
   },
 
-  // Set up all event listeners
   setupEventListeners: function () {
-    // Logout button
     const logoutBtn = document.getElementById("logout-button");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", (e) => {
@@ -53,7 +41,6 @@ const Dashboard = {
       });
     }
 
-    // Create Event button and modal
     const newEventBtn = document.getElementById("new-event-button");
     const createEventModal = document.getElementById("create-event-modal");
     const closeEventModal = document.getElementById("close-event-modal");
@@ -79,7 +66,6 @@ const Dashboard = {
       });
     }
 
-    // Create Venue button and modal
     const newVenueBtn = document.getElementById("new-venue-button");
     const addVenueModal = document.getElementById("add-venue-modal");
     const closeVenueModal = document.getElementById("close-venue-modal");
@@ -149,7 +135,7 @@ const Dashboard = {
   // Simplified AWS status check
   testAWSCredentials: async function () {
     try {
-      console.log("✅ AWS credentials test successful");
+      console.log(" AWS credentials test successful");
       return true;
     } catch (error) {
       console.error("❌ AWS credentials test error:", error);
@@ -241,28 +227,64 @@ const Dashboard = {
         console.log("New user detected - creating profile automatically...");
         try {
           await createUserProfileIfMissing(this.currentUser);
-          console.log("✅ User profile created successfully");
+          console.log(" User profile created successfully");
+
+          // Try to reload the user profile after a short delay
+          setTimeout(async () => {
+            try {
+              const url = CONFIG.buildApiUrl(
+                CONFIG.API.ENDPOINTS.USERS,
+                this.currentUser.sub,
+              );
+              const userProfile = await Utils.apiCall(url, {
+                method: "GET",
+                headers: CONFIG.getAuthHeaders(),
+              });
+
+              if (userProfile) {
+                localStorage.setItem(
+                  CONFIG.STORAGE_KEYS.USER_DATA,
+                  JSON.stringify(userProfile),
+                );
+
+                if (userDisplayName && userProfile.name) {
+                  userDisplayName.textContent = userProfile.name;
+                }
+
+                if (
+                  userGenre &&
+                  userProfile.preferences &&
+                  userProfile.preferences.genre
+                ) {
+                  userGenre.textContent = Utils.capitalize(
+                    userProfile.preferences.genre,
+                  );
+                  userGenre.style.display = "inline-block";
+                }
+              }
+            } catch (retryError) {
+              console.log(
+                "Could not reload user profile after creation:",
+                retryError,
+              );
+            }
+          }, 2000); // Wait 2 seconds before retry
         } catch (createError) {
           console.error("Failed to create user profile:", createError);
         }
       } else {
         console.log("Using token data for user info");
       }
-      // Dashboard can work with basic token info from JWT
     }
   },
 
-  // Load all events and venues data
-  // Load all data (events, venues)
   loadAllData: async function () {
     try {
       console.log("Loading events and venues...");
 
-      // Initialize as empty arrays
       this.events = [];
       this.venues = [];
 
-      // Load events
       try {
         const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
         const eventsResponse = await Utils.apiCall(eventsUrl, {
@@ -270,7 +292,6 @@ const Dashboard = {
           headers: CONFIG.getAuthHeaders(),
         });
 
-        // Ensure we have an array
         if (Array.isArray(eventsResponse)) {
           this.events = eventsResponse;
         } else if (
@@ -291,7 +312,7 @@ const Dashboard = {
             if (Array.isArray(parsedEvents)) {
               this.events = parsedEvents;
               console.log(
-                "✅ Events parsed from message field:",
+                " Events parsed from message field:",
                 this.events.length,
               );
             } else {
@@ -314,7 +335,6 @@ const Dashboard = {
         this.events = [];
       }
 
-      // Load venues
       try {
         const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
         const venuesResponse = await Utils.apiCall(venuesUrl, {
@@ -322,7 +342,6 @@ const Dashboard = {
           headers: CONFIG.getAuthHeaders(),
         });
 
-        // Ensure we have an array
         if (Array.isArray(venuesResponse)) {
           this.venues = venuesResponse;
         } else if (
@@ -685,16 +704,13 @@ const Dashboard = {
         removeEventPhoto();
       }
 
-      // Reload data and re-render
       await this.loadAllData();
       this.render();
 
-      // Update map
       if (this.mapInitialized) {
         MapService.addEventMarkers(this.events, this.venues);
       }
 
-      // Close modal after a delay
       setTimeout(() => {
         document.getElementById("create-event-modal").style.display = "none";
       }, 2000);
@@ -723,7 +739,6 @@ const Dashboard = {
 
       let imageUrl = null;
 
-      // Upload venue image if selected
       const imageFile = formData.get("venueImage");
       if (imageFile && imageFile.size > 0) {
         try {
@@ -732,7 +747,7 @@ const Dashboard = {
           console.log("Venue image uploaded:", imageUrl);
         } catch (uploadError) {
           console.error("Venue image upload failed:", uploadError);
-          // Continue without image, but log the error
+
           Utils.showError(
             "Image upload failed, but venue will be created without image",
             messagesDiv.id,
@@ -740,7 +755,6 @@ const Dashboard = {
         }
       }
 
-      // Geocode address if lat/lng not provided
       let latitude = parseFloat(formData.get("latitude"));
       let longitude = parseFloat(formData.get("longitude"));
 
@@ -843,7 +857,6 @@ const Dashboard = {
     );
   },
 
-  // Find events near user's location
   findEventsNearMe: function () {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by this browser.");
@@ -857,8 +870,6 @@ const Dashboard = {
 
         console.log("Finding events near:", userLat, userLng);
 
-        // For now, just show all events
-        // In a real app, you'd filter by distance
         window.location.href = "events.html";
       },
       (error) => {
@@ -867,87 +878,6 @@ const Dashboard = {
         window.location.href = "events.html";
       },
     );
-  },
-
-  // Run comprehensive AWS tests
-  runAWSTests: async function () {
-    const resultsCard = document.getElementById("aws-test-results");
-    const testOutput = document.getElementById("test-output");
-
-    if (resultsCard) resultsCard.style.display = "block";
-    if (testOutput) testOutput.innerHTML = "🔄 Running AWS tests...<br>";
-
-    const results = [];
-
-    try {
-      // Test 1: Configuration Validation
-      results.push("📋 Testing Configuration...");
-      const configValid = CONFIG.validateAWSConfig();
-      results.push(
-        configValid ? "✅ Configuration: VALID" : "❌ Configuration: INVALID",
-      );
-
-      // Test 2: AWS Credentials
-      results.push("<br>🔑 Testing AWS Credentials...");
-      const credentials = await this.testAWSCredentials();
-      results.push(
-        credentials ? "✅ Credentials: OBTAINED" : "❌ Credentials: FAILED",
-      );
-
-      if (credentials) {
-        results.push(
-          `   - Access Key: ${credentials.accessKeyId ? credentials.accessKeyId.substring(0, 8) + "..." : "None"}`,
-        );
-        results.push(`   - Region: ${CONFIG.LOCATION.REGION}`);
-      }
-
-      // Test 3: Identity Pool
-      results.push("<br>🏛️ Testing Identity Pool...");
-      results.push(`   - Pool ID: ${CONFIG.COGNITO.IDENTITY_POOL_ID}`);
-      results.push(
-        credentials
-          ? "✅ Identity Pool: ACCESSIBLE"
-          : "❌ Identity Pool: NOT ACCESSIBLE",
-      );
-
-      // Test 4: Location Service Resources
-      results.push("<br>🗺️ Testing Location Service Resources...");
-      results.push(`   - Map Name: ${CONFIG.LOCATION.MAP_NAME}`);
-      results.push(`   - Place Index: ${CONFIG.LOCATION.PLACE_INDEX_NAME}`);
-
-      if (credentials) {
-        try {
-          // Try to make a simple Location Service request
-          results.push("✅ Location Service: CONFIGURED");
-        } catch (error) {
-          results.push("⚠️ Location Service: NEEDS VERIFICATION");
-          results.push(`   - Error: ${error.message}`);
-        }
-      }
-
-      // Test 5: Map Initialization
-      results.push("<br>🌍 Map Service Status...");
-      if (this.mapInitialized) {
-        results.push("✅ Map: INITIALIZED");
-      } else {
-        results.push("🔄 Map: INITIALIZING...");
-      }
-
-      results.push("<br>🎯 Overall Status:");
-      if (configValid && credentials) {
-        results.push("✅ AWS Services: READY");
-        results.push("💡 All systems operational!");
-      } else {
-        results.push("⚠️ AWS Services: NEEDS ATTENTION");
-        results.push("💡 Check configuration and try again");
-      }
-    } catch (error) {
-      results.push(`<br>❌ Test Error: ${error.message}`);
-    }
-
-    if (testOutput) {
-      testOutput.innerHTML = results.join("<br>");
-    }
   },
 
   // Update map status display
@@ -962,7 +892,6 @@ const Dashboard = {
   },
 };
 
-// Initialize dashboard when page loads
 document.addEventListener("DOMContentLoaded", function () {
   Dashboard.init().catch((error) => {
     console.error("Dashboard initialization failed:", error);
@@ -970,7 +899,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Helper function to create user profile in backend if missing
 async function createUserProfileIfMissing(currentUser) {
   try {
     console.log("Attempting to create user profile in backend...");
@@ -993,7 +921,7 @@ async function createUserProfileIfMissing(currentUser) {
       body: JSON.stringify(userData),
     });
 
-    console.log("✅ User profile created successfully:", response);
+    console.log(" User profile created successfully:", response);
     return response;
   } catch (error) {
     console.error("Failed to create user profile:", error);

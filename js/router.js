@@ -1,4 +1,4 @@
-// Router.js - Handle URL rewriting and navigation for Local Gigs App
+// my ROUTING KEPT BUGGING AND IDK WHY I HAD TO SK CHATGPT FOR HELP FOR THIS
 const Router = {
   init: function() {
     this.handleCurrentURL();
@@ -18,6 +18,8 @@ const Router = {
       '/events': '/events.html',
       '/venues/': '/venues.html',
       '/venues': '/venues.html',
+      '/create-venue/': '/create-venue.html',
+      '/create-venue': '/create-venue.html',
       '/dashboard/': '/dashboard.html',
       '/dashboard': '/dashboard.html',
       '/login/': '/login.html',
@@ -35,7 +37,7 @@ const Router = {
     // Check if current path needs redirection
     if (pathMappings[currentPath]) {
       const newURL = pathMappings[currentPath] + (currentHash || '');
-      console.log('🔄 Redirecting from', currentPath, 'to', newURL);
+      console.log(' Redirecting from', currentPath, 'to', newURL);
       window.location.replace(newURL);
       return;
     }
@@ -44,11 +46,11 @@ const Router = {
     const segments = currentPath.split('/').filter(segment => segment.length > 0);
     if (segments.length === 1) {
       const pageName = segments[0];
-      const validPages = ['profile', 'events', 'venues', 'dashboard', 'login', 'signup', 'confirm', 'profile-setup', 'event-details'];
+      const validPages = ['profile', 'events', 'venues', 'create-venue', 'dashboard', 'login', 'signup', 'confirm', 'profile-setup', 'event-details'];
 
       if (validPages.includes(pageName)) {
         const newURL = `/${pageName}.html` + (currentHash || '');
-        console.log('🔄 Redirecting from', currentPath, 'to', newURL);
+        console.log(' Redirecting from', currentPath, 'to', newURL);
         window.location.replace(newURL);
         return;
       }
@@ -81,7 +83,7 @@ const Router = {
           targetURL = targetURL.slice(0, -1) + '.html';
         }
 
-        console.log('🔄 Navigation intercepted:', href, '→', targetURL);
+        console.log(' Navigation intercepted:', href, '→', targetURL);
         window.location.href = targetURL;
       }
     });
