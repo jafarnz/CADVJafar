@@ -1,37 +1,37 @@
-// Event Pins Service for displaying events on maps
+
 const EventPinsService = {
     eventMarkers: [],
     map: null,
 
-    // Initialize event pins on a map
+    
     initEventPins: async function(mapInstance) {
         this.map = mapInstance;
         this.clearEventMarkers();
         
         try {
-            console.log("🎯 Loading event pins...");
+            console.log("Loading event pins...");
             
-            // Load events and venues data
+            
             const [events, venues] = await Promise.all([
                 this.loadEvents(),
                 this.loadVenues()
             ]);
 
-            // Create venue lookup for faster access
+            
             const venueMap = new Map();
             venues.forEach(venue => {
                 venueMap.set(venue.venueID, venue);
             });
 
-            // Filter events that have venues with coordinates
+            
             const eventsWithLocation = events.filter(event => {
                 const venue = venueMap.get(event.venueID);
                 return venue && venue.latitude && venue.longitude;
             });
 
-            console.log(`📍 Found ${eventsWithLocation.length} events with location data`);
+            console.log(` Found ${eventsWithLocation.length} events with location data`);
 
-            // Create markers for each event
+           
             eventsWithLocation.forEach(event => {
                 const venue = venueMap.get(event.venueID);
                 this.createEventMarker(event, venue);
@@ -39,12 +39,12 @@ const EventPinsService = {
 
             return this.eventMarkers.length;
         } catch (error) {
-            console.error("❌ Failed to load event pins:", error);
+            console.error(" Failed to load event pins:", error);
             return 0;
         }
     },
 
-    // Load events from API
+ 
     loadEvents: async function() {
         try {
             const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
@@ -53,7 +53,7 @@ const EventPinsService = {
                 headers: CONFIG.getAuthHeaders(),
             });
 
-            // Handle different response formats
+
             if (Array.isArray(response)) {
                 return response;
             } else if (response && response.events && Array.isArray(response.events)) {
@@ -76,7 +76,8 @@ const EventPinsService = {
         }
     },
 
-    // Load venues from API
+
+
     loadVenues: async function() {
         try {
             const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
@@ -85,7 +86,7 @@ const EventPinsService = {
                 headers: CONFIG.getAuthHeaders(),
             });
 
-            // Handle different response formats
+            
             if (Array.isArray(response)) {
                 return response;
             } else if (response && response.venues && Array.isArray(response.venues)) {
@@ -108,14 +109,14 @@ const EventPinsService = {
         }
     },
 
-    // Create a marker for an event
+    
     createEventMarker: function(event, venue) {
         if (!this.map || !venue.latitude || !venue.longitude) return;
 
         const lng = parseFloat(venue.longitude);
         const lat = parseFloat(venue.latitude);
 
-        // Create marker with event-specific styling
+        
         const markerElement = document.createElement('div');
         markerElement.className = 'event-marker';
         markerElement.innerHTML = `
@@ -124,7 +125,7 @@ const EventPinsService = {
             </div>
         `;
 
-        // Style the marker
+        
         markerElement.style.cssText = `
             width: 40px;
             height: 40px;
@@ -148,7 +149,7 @@ const EventPinsService = {
             transition: transform 0.2s ease;
         `;
 
-        // Create the marker
+        
         const marker = new window.maplibregl.Marker({
             element: markerElement,
             anchor: 'bottom'
@@ -156,36 +157,36 @@ const EventPinsService = {
         .setLngLat([lng, lat])
         .addTo(this.map);
 
-        // Create popup for event details
+        
         const popup = new window.maplibregl.Popup({
             closeButton: false,
             closeOnClick: false,
             offset: [0, -10]
         }).setHTML(this.createEventPopupContent(event, venue));
 
-        // Add hover interactions
+        
         markerElement.addEventListener('mouseenter', () => {
-            // Scale up marker
+            
             markerElement.querySelector('.event-marker-icon').style.transform = 'scale(1.1)';
             
-            // Show popup
+            
             popup.addTo(this.map).setLngLat([lng, lat]);
         });
 
         markerElement.addEventListener('mouseleave', () => {
-            // Scale down marker
+            
             markerElement.querySelector('.event-marker-icon').style.transform = 'scale(1)';
             
-            // Hide popup
+            
             popup.remove();
         });
 
-        // Add click handler to view event details
+
         markerElement.addEventListener('click', () => {
             this.showEventDetails(event, venue);
         });
 
-        // Store marker reference
+        
         this.eventMarkers.push({
             marker: marker,
             popup: popup,
@@ -193,10 +194,10 @@ const EventPinsService = {
             venue: venue
         });
 
-        console.log(`📍 Created marker for event: ${event.name} at ${venue.name}`);
+        console.log(`Created marker for event: ${event.name} at ${venue.name}`);
     },
 
-    // Create popup content for event
+    
     createEventPopupContent: function(event, venue) {
         const eventDate = new Date(event.eventDate + 'T' + event.eventTime);
         const formattedDate = eventDate.toLocaleDateString('en-SG', {
@@ -281,20 +282,20 @@ const EventPinsService = {
         `;
     },
 
-    // Show event details (redirect to event details page or modal)
+    
     showEventDetails: function(event, venue) {
-        console.log("🎯 Opening event details:", event.name);
+        console.log("Opening event details:", event.name);
         
-        // Check if we're on the events page and can show details directly
+        
         if (typeof EventsPage !== 'undefined' && EventsPage.showEventDetails) {
             EventsPage.showEventDetails(event.eventID);
         } else {
-            // Navigate to event details page
+            
             window.location.href = `event-details.html?id=${event.eventID}`;
         }
     },
 
-    // Clear all event markers
+    
     clearEventMarkers: function() {
         this.eventMarkers.forEach(({ marker }) => {
             marker.remove();
@@ -302,7 +303,7 @@ const EventPinsService = {
         this.eventMarkers = [];
     },
 
-    // Filter event markers by criteria
+    
     filterEventMarkers: function(filterFn) {
         this.eventMarkers.forEach(({ marker, event, venue }) => {
             const shouldShow = filterFn(event, venue);
@@ -316,26 +317,26 @@ const EventPinsService = {
         });
     },
 
-    // Show all event markers
+    
     showAllEventMarkers: function() {
         this.eventMarkers.forEach(({ marker }) => {
             marker.getElement().style.display = 'flex';
         });
     },
 
-    // Get events count
+    
     getEventMarkersCount: function() {
         return this.eventMarkers.length;
     },
 
-    // Get visible events count
+    
     getVisibleEventMarkersCount: function() {
         return this.eventMarkers.filter(({ marker }) => {
             return marker.getElement().style.display !== 'none';
         }).length;
     },
 
-    // Update marker styles based on event status
+            
     updateMarkerStyles: function() {
         const now = new Date();
         

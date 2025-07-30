@@ -482,7 +482,7 @@
                 return;
             }
             
-            console.log('✅ User authenticated, initializing edit venue');
+            console.log(' User authenticated, initializing edit venue');
             EditVenue.init();
 
             // Venue image upload
@@ -511,9 +511,9 @@
                         venuePlaceholder.innerHTML = '<div style="text-align: center; padding: 2rem;"><div class="spinner" style="margin: 0 auto;"></div><p>Uploading image...</p></div>';
                         
                         // Immediately upload to S3
-                        console.log('📤 Uploading venue image to S3...');
+                        console.log(' Uploading venue image to S3...');
                         const uploadedImageUrl = await Utils.uploadImage(file, 'venues');
-                        console.log('✅ Image uploaded successfully:', uploadedImageUrl);
+                        console.log(' Image uploaded successfully:', uploadedImageUrl);
                         
                         // Store the uploaded URL for later use
                         selectedVenueImage = null; // Clear file reference

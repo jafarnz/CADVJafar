@@ -1,4 +1,4 @@
-// Venues page functionality for Local Gigs App
+
 const VenuesPage = {
         venues: [],
         filteredVenues: [],
@@ -8,30 +8,30 @@ const VenuesPage = {
         mapInitialized: false,
         editingVenue: null,
 
-        // Initialize the venues page
+        
         init: async function() {
             console.log("Initializing venues page...");
 
-            // Check authentication
+            
             if (!Utils.requireAuth()) {
                 return;
             }
 
-            // Check if we should open create modal (from URL parameter)
+            
             const urlParams = new URLSearchParams(window.location.search);
             const action = urlParams.get('action');
 
-            // Set up event listeners
+            
             this.setupEventListeners();
 
-            // Load venues data
+            
             await this.loadAllData();
 
-            // Apply filters and render
+            
             this.applyFilters();
             this.render();
 
-            // Open create modal if requested
+            
             if (action === 'create') {
                 this.openCreateModal();
             }
@@ -39,9 +39,9 @@ const VenuesPage = {
             console.log("Venues page initialized successfully");
         },
 
-        // Set up all event listeners
+        
         setupEventListeners: function() {
-            // Logout button
+            
             const logoutBtn = document.getElementById("logout-button");
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", (e) => {
@@ -50,7 +50,7 @@ const VenuesPage = {
                 });
             }
 
-            // Search input
+            
             const searchInput = document.getElementById("search-input");
             if (searchInput) {
                 searchInput.addEventListener(
@@ -63,7 +63,7 @@ const VenuesPage = {
                 );
             }
 
-            // Capacity filter
+            
             const capacityFilter = document.getElementById("capacity-filter");
             if (capacityFilter) {
                 capacityFilter.addEventListener("change", () => {
@@ -73,7 +73,7 @@ const VenuesPage = {
                 });
             }
 
-            // Location filter
+            
             const locationFilter = document.getElementById("location-filter");
             if (locationFilter) {
                 locationFilter.addEventListener(
@@ -86,7 +86,7 @@ const VenuesPage = {
                 );
             }
 
-            // Sort select
+
             const sortSelect = document.getElementById("sort-select");
             if (sortSelect) {
                 sortSelect.addEventListener("change", () => {
@@ -95,7 +95,7 @@ const VenuesPage = {
                 });
             }
 
-            // View toggle buttons
+            
             const toggleViewBtn = document.getElementById("toggle-view-btn");
             const listViewBtn = document.getElementById("list-view-btn");
 
@@ -111,10 +111,10 @@ const VenuesPage = {
                 });
             }
 
-            // The create venue button is now a link to create-venue.html
-            // No need for modal functionality since we have a dedicated page
+            
+            
 
-            // Venue details modal
+            
             const venueDetailsModal = document.getElementById("venue-details-modal");
             const closeDetailsModal = document.getElementById("close-details-modal");
 
@@ -124,7 +124,7 @@ const VenuesPage = {
                 });
             }
 
-            // Location and geocoding buttons
+            
             const getLocationBtn = document.getElementById("get-location-btn");
             const geocodeBtn = document.getElementById("geocode-btn");
 
@@ -140,7 +140,7 @@ const VenuesPage = {
                 });
             }
 
-            // Interactive map controls for venue creation
+            
             const enableLocationPickerBtn = document.getElementById("enable-location-picker-btn");
             const getCurrentLocationBtn = document.getElementById("get-current-location-btn");
             const searchLocationBtn = document.getElementById("search-location-btn");
@@ -173,7 +173,7 @@ const VenuesPage = {
                 });
             }
 
-            // Pagination
+            
             const prevPageBtn = document.getElementById("prev-page");
             const nextPageBtn = document.getElementById("next-page");
 
@@ -196,7 +196,7 @@ const VenuesPage = {
                 });
             }
 
-            // Close modals when clicking outside
+            
             window.addEventListener("click", (e) => {
                 if (e.target === venueDetailsModal) {
                     venueDetailsModal.style.display = "none";
@@ -204,7 +204,7 @@ const VenuesPage = {
             });
         },
 
-        // Load all venues data
+        
         loadAllData: async function() {
             try {
                 console.log("Loading venues...");
@@ -215,7 +215,7 @@ const VenuesPage = {
                     headers: CONFIG.getAuthHeaders(),
                 });
 
-                // Handle different response formats
+                
                 if (Array.isArray(venuesResponse)) {
                     this.venues = venuesResponse;
                 } else if (venuesResponse && venuesResponse.venues && Array.isArray(venuesResponse.venues)) {
@@ -227,7 +227,7 @@ const VenuesPage = {
                         const parsedVenues = JSON.parse(venuesResponse.message);
                         if (Array.isArray(parsedVenues)) {
                             this.venues = parsedVenues;
-                            console.log("✅ Venues parsed from message field:", this.venues.length);
+                            console.log("Venues parsed from message field:", this.venues.length);
                         } else {
                             console.log("Parsed venues message is not an array:", parsedVenues);
                             this.venues = [];
@@ -249,7 +249,7 @@ const VenuesPage = {
             }
         },
 
-        // Apply search and filter criteria
+        
         applyFilters: function() {
             const searchInput = document.getElementById("search-input");
             const capacityFilter = document.getElementById("capacity-filter");
@@ -263,7 +263,7 @@ const VenuesPage = {
 
             let filtered = [...this.venues];
 
-            // Apply search filter
+
             if (searchTerm) {
                 filtered = filtered.filter(
                     (venue) =>
@@ -273,7 +273,7 @@ const VenuesPage = {
                 );
             }
 
-            // Apply capacity filter
+            
             if (capacityFilterValue) {
                 filtered = filtered.filter((venue) => {
                     if (!venue.capacity) return capacityFilterValue === "small"; // Assume small if no capacity
@@ -291,14 +291,14 @@ const VenuesPage = {
                 });
             }
 
-            // Apply location filter
+            
             if (locationFilterValue) {
                 filtered = filtered.filter((venue) =>
                     venue.address.toLowerCase().includes(locationFilterValue)
                 );
             }
 
-            // Apply sorting
+            
             filtered.sort((a, b) => {
                 switch (sortBy) {
                     case "name-asc":
@@ -317,7 +317,7 @@ const VenuesPage = {
             this.filteredVenues = filtered;
         },
 
-        // Render the venues list or map
+        
         render: function() {
             if (this.isMapView) {
                 this.renderMapView();
@@ -328,7 +328,7 @@ const VenuesPage = {
             this.updatePagination();
         },
 
-        // Render list view
+        
         renderListView: function() {
             const venuesGrid = document.getElementById("venues-grid");
             if (!venuesGrid) return;
@@ -346,23 +346,23 @@ const VenuesPage = {
                 return;
             }
 
-            // Calculate pagination
+            
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
             const endIndex = startIndex + this.itemsPerPage;
             const venuesToShow = this.filteredVenues.slice(startIndex, endIndex);
 
-            // Render venues grid
+            
             venuesGrid.innerHTML = `
       <div class="venues-grid">
         ${venuesToShow.map((venue) => this.createVenueCard(venue)).join("")}
       </div>
     `;
 
-            // Add click listeners to venue cards
+            
             this.addVenueCardListeners();
         },
 
-        // Render map view
+        
         renderMapView: async function() {
             if (!this.mapInitialized) {
                 try {
@@ -393,12 +393,12 @@ const VenuesPage = {
             }
         },
 
-        // Render venues on map with proper data and hover functionality
+        
         renderVenuesOnMap: async function() {
             try {
-                console.log("🗺️ Loading venue markers...");
+                console.log("Loading venue markers...");
                 
-                // Clear any existing markers
+
                 if (MapService.venueMarkers) {
                     MapService.venueMarkers.forEach(marker => marker.remove());
                     MapService.venueMarkers = [];
@@ -409,11 +409,11 @@ const VenuesPage = {
                     venue.latitude && venue.longitude
                 );
 
-                console.log(`📍 Adding ${validVenues.length} venue markers to map...`);
+                console.log(`Adding ${validVenues.length} venue markers to map...`);
 
                 for (const venue of validVenues) {
                     if (venue.latitude && venue.longitude) {
-                        // Create venue marker with custom styling
+                        
                         const marker = new window.maplibregl.Marker({
                             color: '#10b981',
                             scale: 1.3
@@ -448,7 +448,7 @@ const VenuesPage = {
                         `))
                         .addTo(MapService.map);
                         
-                        // Store marker reference
+                        
                         if (!MapService.venueMarkers) {
                             MapService.venueMarkers = [];
                         }
@@ -458,9 +458,9 @@ const VenuesPage = {
                     }
                 }
                 
-                console.log(`✅ Venues map loaded with ${venueMarkersCount} venue markers`);
+                console.log(`Venues map loaded with ${venueMarkersCount} venue markers`);
                 
-                // Update map info display if it exists
+                
                 const mapInfo = document.getElementById("venues-map-info");
                 if (mapInfo) {
                     mapInfo.textContent = `Showing ${venueMarkersCount} venues`;
@@ -473,19 +473,19 @@ const VenuesPage = {
             }
         },
 
-        // Create event at specific venue (helper function for map popup)
+        
         createEventAtVenue: function(venueId) {
-            // Pre-select the venue in create event form
+            
             const createEventBtn = document.getElementById("create-event-btn");
             if (createEventBtn) {
-                // Store venue ID for pre-selection
+                
                 sessionStorage.setItem('preselectedVenueId', venueId);
-                // Redirect to events page to create event
+                
                 window.location.href = 'events.html';
             }
         },
 
-        // Open venue in Google Maps
+        
         openVenueInGoogleMaps: function(venueId) {
             const venue = this.venues.find(v => (v.venueID || v.venueId) === venueId);
             if (!venue) {
@@ -499,11 +499,11 @@ const VenuesPage = {
             const address = venue.address || '';
             
             if (lat && lng) {
-                // Use coordinates for precise location
+                
                 const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(name)}`;
                 window.open(googleMapsUrl, '_blank');
             } else if (address) {
-                // Fallback to address search
+                
                 const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', Singapore')}`;
                 window.open(googleMapsUrl, '_blank');
             } else {
@@ -511,13 +511,13 @@ const VenuesPage = {
             }
         },
 
-        // Create HTML for venue card
+        
         createVenueCard: function(venue) {
                 const capacity = venue.capacity || 0;
                 const capacityClass = capacity <= 500 ? "small" : capacity <= 2000 ? "medium" : "large";
                 const capacityText = capacity > 0 ? capacity.toLocaleString() : "Not specified";
                 
-                // Use the enhanced image URL resolver
+                
                 const imageUrl = Utils.resolveImageUrl(venue.imageUrl, 'venues', venue.venueID);
 
                 return `
@@ -556,9 +556,9 @@ const VenuesPage = {
     `;
   },
 
-  // Add event listeners to venue cards
+
   addVenueCardListeners: function () {
-    // View details buttons
+    
     document.querySelectorAll(".view-details-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -567,7 +567,7 @@ const VenuesPage = {
       });
     });
 
-    // Edit buttons - now handled by direct onclick navigation
+    
     // document.querySelectorAll(".edit-btn").forEach((btn) => {
     //   btn.addEventListener("click", (e) => {
     //     e.stopPropagation();
@@ -576,7 +576,7 @@ const VenuesPage = {
     //   });
     // });
 
-    // Delete buttons
+    
     document.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -585,7 +585,7 @@ const VenuesPage = {
       });
     });
 
-    // Venue card click for details
+    
     document.querySelectorAll(".venue-card").forEach((card) => {
       card.addEventListener("click", () => {
         const venueId = card.getAttribute("data-venue-id");
@@ -594,13 +594,13 @@ const VenuesPage = {
     });
   },
 
-  // Redirect to create venue page (replaces old modal functionality)
+  
   openCreateModal: function () {
-    // Simply redirect to the new dedicated create venue page
+    
     window.location.href = 'create-venue.html';
   },
 
-  // Open edit venue modal
+  
   openEditModal: function (venueId) {
     const venue = this.venues.find(v => v.venueID.toString() === venueId.toString());
     if (!venue) return;
@@ -613,7 +613,7 @@ const VenuesPage = {
     if (title) title.textContent = "Edit Venue";
     if (submitBtn) submitBtn.textContent = "Update Venue";
 
-    // Populate form with venue data - using correct field IDs
+    
     const venueIdField = document.getElementById("venueID");
     const venueNameField = document.getElementById("venueName");
     const venueAddressField = document.getElementById("venue-address");
@@ -635,14 +635,14 @@ const VenuesPage = {
     modal.style.display = "block";
   },
 
-  // Close venue modal
+  
   closeModal: function () {
     const modal = document.getElementById("venue-modal");
     modal.style.display = "none";
     this.editingVenue = null;
   },
 
-  // Handle venue form submission
+  
   handleVenueSubmit: async function (e) {
     const form = e.target;
     const submitBtn = document.getElementById("venue-submit-btn");
@@ -654,13 +654,13 @@ const VenuesPage = {
       const formData = new FormData(form);
       let imageUrl = this.editingVenue && this.editingVenue.imageUrl || null;
 
-      // Handle image upload if present
+      
       const imageFile = formData.get("image");
       let venueID = this.editingVenue ? this.editingVenue.venueID : CONFIG.generateVenueID();
       
       if (imageFile && imageFile.size > 0) {
         try {
-          // Upload with venue ID correlation
+          
           imageUrl = await Utils.uploadImageWithId(imageFile, "venues", venueID);
         } catch (error) {
           console.error("Image upload failed:", error);
@@ -671,7 +671,7 @@ const VenuesPage = {
         }
       }
 
-      // Geocode address if lat/lng not provided
+
       let latitude = parseFloat(formData.get("latitude"));
       let longitude = parseFloat(formData.get("longitude"));
 
@@ -702,7 +702,7 @@ const VenuesPage = {
         imageUrl: imageUrl,
       };
 
-      console.log("�️ CRITICAL: Venue data being saved with imageUrl field:", {
+      console.log("� CRITICAL: Venue data being saved with imageUrl field:", {
         venueID: venueData.venueID,
         name: venueData.name,
         imageUrl: venueData.imageUrl,
@@ -710,13 +710,12 @@ const VenuesPage = {
         NOTE: "Database MUST have imageUrl column in Venues table!"
       });
 
-      // Ensure imageUrl is properly formatted for database storage
       if (venueData.imageUrl && !venueData.imageUrl.startsWith('http')) {
-        // Store the S3 key pattern that matches uploaded files
+        
         if (venueData.imageUrl.includes('venues_')) {
-          console.log("✅ Using correlated S3 filename pattern:", venueData.imageUrl);
+          console.log(" Using correlated S3 filename pattern:", venueData.imageUrl);
         } else {
-          console.log("⚠️ ImageUrl doesn't follow correlation pattern:", venueData.imageUrl);
+          console.log(" ImageUrl doesn't follow correlation pattern:", venueData.imageUrl);
         }
       }
 
@@ -737,22 +736,22 @@ const VenuesPage = {
         messagesDiv.id
       );
 
-      // Reload data and re-render
+      
       await this.loadAllData();
       this.applyFilters();
       this.render();
 
-      // Check if we need to return to events page
+      
       const urlParams = new URLSearchParams(window.location.search);
       const returnTo = urlParams.get('returnTo');
       
       if (returnTo === 'events' && !this.editingVenue) {
-        // Return to events page with the new venue ID
+        
         setTimeout(() => {
           window.location.href = `events.html?returnFrom=venues&venueId=${venueData.venueID}`;
         }, 2000);
       } else {
-        // Close modal after a delay
+        
         setTimeout(() => {
           this.closeModal();
         }, 2000);
@@ -771,7 +770,7 @@ const VenuesPage = {
     }
   },
 
-  // Delete venue
+  
   deleteVenue: async function (venueId) {
     const venue = this.venues.find(v => v.venueID.toString() === venueId.toString());
     if (!venue) return;
@@ -789,7 +788,7 @@ const VenuesPage = {
 
       Utils.showSuccess("Venue deleted successfully!");
 
-      // Reload data and re-render
+      
       await this.loadAllData();
       this.applyFilters();
       this.render();
@@ -799,7 +798,7 @@ const VenuesPage = {
     }
   },
 
-  // Show venue details in modal
+  
   showVenueDetails: function (venueId) {
     const venue = this.venues.find(v => v.venueID.toString() === venueId.toString());
     if (!venue) return;
@@ -809,26 +808,26 @@ const VenuesPage = {
 
     if (!modal || !content) return;
 
-    // Enhanced image URL handling for venue details
+    
     let imageUrl = "/api/placeholder/600/300";
     if (venue.imageUrl) {
-      console.log("🖼️ Processing venue details image URL:", venue.imageUrl, "for venue:", venue.venueID);
+      console.log(" Processing venue details image URL:", venue.imageUrl, "for venue:", venue.venueID);
       
       if (venue.imageUrl.startsWith('http')) {
-        // Already a full URL from database
+        
         imageUrl = venue.imageUrl;
       } else if (venue.imageUrl.includes('venues_')) {
-        // Handle correlated filename pattern: venues_VENUEID_timestamp.ext
+        
         if (venue.imageUrl.startsWith('venues/')) {
-          // S3 path format
+
           imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/${venue.imageUrl}`;
         } else {
-          // Just filename, add full S3 path
+          
           imageUrl = `https://local-gigs-static.s3.us-east-1.amazonaws.com/venues/${venue.imageUrl}`;
         }
       }
       
-      console.log("✅ Final image URL for venue details:", imageUrl);
+              console.log("Final image URL for venue details:", imageUrl);
     }
 
     const capacity = venue.capacity || 0;
@@ -879,7 +878,7 @@ const VenuesPage = {
     modal.style.display = "block";
   },
 
-  // Get current location for venue
+  
   getCurrentLocationForVenue: async function () {
     const latInput = document.getElementById("venueLatitude");
     const lngInput = document.getElementById("venueLongitude");
@@ -902,7 +901,7 @@ const VenuesPage = {
     }
   },
 
-  // Geocode venue address to get coordinates
+  
   geocodeVenueAddress: async function () {
     const addressInput = document.getElementById("venueAddress");
     const latInput = document.getElementById("venueLatitude");
@@ -920,7 +919,7 @@ const VenuesPage = {
       const result = await MapService.geocodeAddress(addressInput.value.trim());
 
       if (result && result.lat && result.lng) {
-        // Use handleLocationSelected to update all form fields consistently
+        
         const locationResult = {
           lat: result.lat,
           lng: result.lng,
@@ -928,7 +927,7 @@ const VenuesPage = {
           address: result.formatted || addressInput.value.trim()
         };
         
-        // Call the same function used by map clicks and search selections
+        
         this.handleLocationSelected(locationResult);
         
         Utils.showSuccess("Coordinates found successfully!");
@@ -943,13 +942,13 @@ const VenuesPage = {
     }
   },
 
-  // Toggle to map view
+  
   toggleMapView: function () {
     this.isMapView = true;
     document.getElementById("map-container-wrapper").style.display = "block";
     document.getElementById("venues-list-wrapper").style.display = "none";
     
-    // Trigger map resize after container is visible
+    
     setTimeout(() => {
       if (MapService.map) {
         MapService.map.resize();
@@ -959,7 +958,7 @@ const VenuesPage = {
     this.render();
   },
 
-  // Toggle to list view
+  
   toggleListView: function () {
     this.isMapView = false;
     document.getElementById("map-container-wrapper").style.display = "none";
@@ -967,7 +966,7 @@ const VenuesPage = {
     this.render();
   },
 
-  // Update venues count display
+  
   updateVenuesCount: function () {
     const countElement = document.getElementById("venues-count");
     if (countElement) {
@@ -975,7 +974,7 @@ const VenuesPage = {
     }
   },
 
-  // Update pagination controls
+  
   updatePagination: function () {
     const totalPages = Math.ceil(this.filteredVenues.length / this.itemsPerPage);
     const paginationDiv = document.getElementById("pagination");
@@ -1003,52 +1002,52 @@ const VenuesPage = {
     }
   },
 
-  // Interactive Map Functions for Venue Location Selection
+
   venueLocationMap: null,
   selectedLocationMarker: null,
 
-  // Initialize the venue creation map with search functionality
+  
   initializeVenueLocationMap: async function() {
     try {
-      console.log("🗺️ Initializing venue creation map...");
+      console.log(" Initializing venue creation map...");
       
-      // Check if container exists
+      
       const container = document.getElementById("venue-location-map");
       if (!container) {
         console.error("❌ Map container 'venue-location-map' not found!");
         return;
       }
       
-      console.log("✅ Map container found, initializing AWS map...");
+      console.log(" Map container found, initializing AWS map...");
       
-      // Initialize AWS venue map
+      
       this.venueLocationMap = await MapService.initializeVenueMap("venue-location-map");
       
       if (!this.venueLocationMap) {
-        console.error("❌ Failed to initialize venue map - null returned");
+        console.error(" Failed to initialize venue map - null returned");
         return;
       }
       
-      console.log("✅ AWS map initialized, setting up location search...");
+      console.log(" AWS map initialized, setting up location search...");
       
-      // Set up location search functionality
+      
       this.setupLocationSearch();
       
-      console.log("✅ Location search setup complete, enabling location picker...");
+      console.log(" Location search setup complete, enabling location picker...");
       
-      // Enable location picker
+      
       MapService.enableVenueLocationPicker(this.venueLocationMap, (locationResult, marker) => {
         this.handleLocationSelected(locationResult, marker);
       });
 
-      console.log("✅ Venue creation map initialized successfully with all features!");
+      console.log(" Venue creation map initialized successfully with all features!");
     } catch (error) {
-      console.error("❌ Failed to initialize venue creation map:", error);
+      console.error(" Failed to initialize venue creation map:", error);
       this.showMapError(`Map initialization failed: ${error.message}`);
     }
   },
 
-  // Setup location search with autocomplete
+  
   setupLocationSearch: function() {
     const searchInput = document.getElementById('location-search');
     const searchResults = document.getElementById('search-results');
@@ -1060,18 +1059,18 @@ const VenuesPage = {
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim();
       
-      // Clear previous timeout
+      
       if (searchTimeout) {
         clearTimeout(searchTimeout);
       }
       
-      // Hide results if query too short
+      
       if (query.length < 3) {
         searchResults.style.display = 'none';
         return;
       }
       
-      // Debounce search
+      
       searchTimeout = setTimeout(async () => {
         try {
           const results = await MapService.searchLocation(query);
@@ -1082,7 +1081,7 @@ const VenuesPage = {
       }, 300);
     });
 
-    // Hide results when clicking outside
+    
     document.addEventListener('click', (e) => {
       if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.style.display = 'none';
@@ -1090,7 +1089,7 @@ const VenuesPage = {
     });
   },
 
-  // Display search results with modern styling
+
   displaySearchResults: function(results) {
     const searchResults = document.getElementById('search-results');
     if (!searchResults) return;
@@ -1110,31 +1109,31 @@ const VenuesPage = {
     searchResults.style.display = 'block';
   },
 
-  // Handle search result selection
+  
   selectSearchResult: function(resultJson) {
     try {
       const result = JSON.parse(resultJson.replace(/&#39;/g, "'"));
       
-      // Update search input
+      
       const searchInput = document.getElementById('location-search');
       if (searchInput) {
         searchInput.value = result.label;
       }
       
-      // Hide search results
+      
       const searchResults = document.getElementById('search-results');
       if (searchResults) {
         searchResults.style.display = 'none';
       }
       
-      // Fly to location on map
+      
       if (this.venueLocationMap && result.coordinates) {
         this.venueLocationMap.flyTo({
           center: result.coordinates,
           zoom: 15
         });
         
-        // Add marker
+        
         this.handleLocationSelected({
           coordinates: result.coordinates,
           lat: result.coordinates[1],
@@ -1150,22 +1149,22 @@ const VenuesPage = {
     }
   },
 
-  // Handle location selection from map or search with enhanced visuals
+  
   handleLocationSelected: function(locationResult, marker = null) {
-    console.log("📍 Location selected for venue:", locationResult);
+            console.log("Location selected for venue:", locationResult);
     
-    // Remove previous marker and pulse effect
+    
     if (this.selectedLocationMarker) {
       this.selectedLocationMarker.remove();
     }
     
-    // Remove existing pulse effect
+    
     if (this.venueLocationMap.getLayer('venue-location-pulse')) {
       this.venueLocationMap.removeLayer('venue-location-pulse');
       this.venueLocationMap.removeSource('venue-location-pulse');
     }
     
-    // Add enhanced marker if not provided
+    
     if (!marker && this.venueLocationMap) {
       marker = new window.maplibregl.Marker({ 
         color: '#22c55e',
@@ -1177,7 +1176,7 @@ const VenuesPage = {
     
     this.selectedLocationMarker = marker;
     
-    // Enhanced map animation to selected location
+    
     this.venueLocationMap.flyTo({
       center: locationResult.coordinates,
       zoom: 16,
@@ -1186,40 +1185,40 @@ const VenuesPage = {
       essential: true
     });
     
-    // Add pulsing effect around the location
+    
     setTimeout(() => {
       this.addLocationPulseEffect(locationResult.lng, locationResult.lat);
     }, 1000);
     
-    // Update form fields with all possible field IDs
+    
     const latInput = document.getElementById('venue-latitude') || document.getElementById('venueLatitude') || document.getElementById('latitude');
     const lngInput = document.getElementById('venue-longitude') || document.getElementById('venueLongitude') || document.getElementById('longitude'); 
     const addressInput = document.getElementById('venue-address') || document.getElementById('venueAddress') || document.getElementById('address');
     
     if (latInput) {
       latInput.value = locationResult.lat || locationResult.coordinates[1];
-      console.log('✅ Latitude updated:', latInput.value);
+      console.log(' Latitude updated:', latInput.value);
     }
     if (lngInput) {
       lngInput.value = locationResult.lng || locationResult.coordinates[0];
-      console.log('✅ Longitude updated:', lngInput.value);
+      console.log(' Longitude updated:', lngInput.value);
     }
     if (addressInput) {
       addressInput.value = locationResult.address;
-      console.log('✅ Address updated:', addressInput.value);
+      console.log(' Address updated:', addressInput.value);
     }
     
-    // Update search input if it exists
+    
     const searchInput = document.getElementById('location-search');
     if (searchInput && !searchInput.value) {
       searchInput.value = locationResult.address;
     }
     
-    // Show enhanced confirmation with animation
+    
     this.showLocationConfirmation(locationResult);
   },
 
-  // Show enhanced location confirmation with beautiful UI
+  
   showLocationConfirmation: function(locationResult) {
     const confirmationDiv = document.getElementById('location-confirmation');
     if (confirmationDiv) {
@@ -1291,27 +1290,27 @@ const VenuesPage = {
       `;
       confirmationDiv.style.display = 'block';
       
-      // Add animations
+      
       this.addLocationAnimations();
     }
   },
 
-  // Enable location picker manually
+  
   enableLocationPicker: function() {
     if (this.venueLocationMap) {
-      console.log("🖱️ Enabling manual location picker");
+      console.log(" Enabling manual location picker");
       MapService.enableVenueLocationPicker(this.venueLocationMap, (locationResult, marker) => {
         this.handleLocationSelected(locationResult, marker);
       });
     } else {
-      console.error("❌ Map not initialized");
+      console.error(" Map not initialized");
     }
   },
 
-  // Get current location
+  
   getCurrentLocation: async function() {
     try {
-      console.log("📱 Getting current location...");
+      console.log(" Getting current location...");
       
       const position = await new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
@@ -1329,9 +1328,9 @@ const VenuesPage = {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       
-      console.log("📍 Current location:", { lat, lng });
+      console.log(" Current location:", { lat, lng });
       
-      // Reverse geocode to get address
+      
       const locationInfo = await MapService.reverseGeocode(lng, lat);
       
       const locationResult = {
@@ -1343,7 +1342,7 @@ const VenuesPage = {
         region: locationInfo ? locationInfo.Place?.Region : null
       };
       
-      // Fly to location and add marker
+
       if (this.venueLocationMap) {
         this.venueLocationMap.flyTo({
           center: [lng, lat],
@@ -1359,7 +1358,7 @@ const VenuesPage = {
     }
   },
 
-  // Show map error with modern styling
+  
   showMapError: function(message) {
     const mapContainer = document.getElementById('venue-location-map');
     if (mapContainer) {
@@ -1400,7 +1399,7 @@ const VenuesPage = {
     }
   },
 
-  // Create a separate map instance for venue location selection
+  
   createVenueLocationMap: async function() {
     const apiKey = CONFIG.LOCATION.API_KEY;
     const region = CONFIG.LOCATION.REGION;
@@ -1416,51 +1415,51 @@ const VenuesPage = {
       zoom: CONFIG.APP.MAP_ZOOM
     });
 
-    // Add navigation controls
+    
     this.venueLocationMap.addControl(new maplibregl.NavigationControl(), "top-left");
 
-    // Wait for map to load
+    
     await new Promise((resolve) => {
       this.venueLocationMap.on("load", resolve);
     });
   },
 
-  // Enable location picker mode
+  
   enableVenueLocationPicker: function() {
     if (!this.venueLocationMap) {
       console.error("Map not initialized");
       return;
     }
 
-    console.log("📍 Enabling location picker mode");
+    console.log(" Enabling location picker mode");
     
-    // Update button state
+    
     const btn = document.getElementById("enable-location-picker-btn");
     if (btn) {
       btn.textContent = "🎯 Click on the map to select location";
       btn.style.background = "#28a745";
     }
 
-    // Change cursor
+    
     this.venueLocationMap.getCanvas().style.cursor = 'crosshair';
 
-    // Add click handler
+    
     const clickHandler = async (e) => {
       const { lng, lat } = e.lngLat;
-      console.log("📍 Location selected:", { lng, lat });
+      console.log(" Location selected:", { lng, lat });
 
       try {
-        // Remove previous marker
+        
         if (this.selectedLocationMarker) {
           this.selectedLocationMarker.remove();
         }
 
-        // Add new marker
+        
         this.selectedLocationMarker = new maplibregl.Marker({ color: '#ff6b6b' })
           .setLngLat([lng, lat])
           .addTo(this.venueLocationMap);
 
-        // Try to reverse geocode to get address
+        
         let address = `${lat}, ${lng}`;
         try {
           if (window.MapService && window.MapService.reverseGeocode) {
@@ -1473,26 +1472,26 @@ const VenuesPage = {
           }
         } catch (geocodeError) {
           console.warn("Reverse geocoding failed:", geocodeError);
-          // Fallback: try basic coordinate-to-area mapping
+          
           if (lat >= 1.2 && lat <= 1.5 && lng >= 103.6 && lng <= 104.0) {
             address = "Singapore";
           }
         }
 
-        // Update form fields
+
         this.updateVenueLocationFields(lat, lng, address);
 
-        // Show selected location info
+        
         this.showSelectedLocationInfo(address, lat, lng);
 
-        // Reset button and cursor
+        
         if (btn) {
           btn.textContent = "✅ Location Selected - Click again to change";
           btn.style.background = "#007cbf";
         }
         this.venueLocationMap.getCanvas().style.cursor = '';
 
-        // Remove click handler
+        
         this.venueLocationMap.off('click', clickHandler);
 
       } catch (error) {
@@ -1501,21 +1500,21 @@ const VenuesPage = {
       }
     };
 
-    // Add click handler
+    
     this.venueLocationMap.on('click', clickHandler);
   },
 
-  // Use current location for venue
+  
   useCurrentLocationForVenue: async function() {
     try {
-      console.log("📱 Getting current location...");
+              console.log("Getting current location...");
       const btn = document.getElementById("get-current-location-btn");
       if (btn) {
         btn.textContent = "📱 Getting location...";
         btn.disabled = true;
       }
 
-      // Get current position
+      
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -1527,12 +1526,12 @@ const VenuesPage = {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
 
-      // Remove previous marker
+      
       if (this.selectedLocationMarker) {
         this.selectedLocationMarker.remove();
       }
 
-      // Add enhanced marker at current location
+      
       this.selectedLocationMarker = new maplibregl.Marker({ 
         color: '#3b82f6',
         scale: 1.4 
@@ -1540,7 +1539,7 @@ const VenuesPage = {
         .setLngLat([lng, lat])
         .addTo(this.venueLocationMap);
 
-      // Enhanced fly animation to current location
+      
       this.venueLocationMap.flyTo({
         center: [lng, lat],
         zoom: 16,
@@ -1549,12 +1548,12 @@ const VenuesPage = {
         essential: true
       });
 
-      // Add pulsing effect for current location
+      
       setTimeout(() => {
         this.addLocationPulseEffect(lng, lat);
       }, 1000);
 
-      // Try to reverse geocode
+      
       let address = `${lat}, ${lng}`;
       try {
         if (window.MapService && window.MapService.reverseGeocode) {
@@ -1567,13 +1566,13 @@ const VenuesPage = {
         console.warn("Reverse geocoding failed:", geocodeError);
       }
 
-      // Update form fields
+
       this.updateVenueLocationFields(lat, lng, address);
 
-      // Show selected location info
+      
       this.showSelectedLocationInfo(address, lat, lng);
 
-      console.log("✅ Current location set for venue");
+      console.log(" Current location set for venue");
 
     } catch (error) {
       console.error("❌ Failed to get current location:", error);
@@ -1587,7 +1586,7 @@ const VenuesPage = {
     }
   },
 
-  // Search and select location
+  
   searchAndSelectLocation: async function() {
     const searchInput = document.getElementById("location-search");
     const searchBtn = document.getElementById("search-location-btn");
@@ -1600,14 +1599,14 @@ const VenuesPage = {
     const query = searchInput.value.trim();
 
     try {
-      console.log("🔍 Searching for location:", query);
+      console.log(" Searching for location:", query);
       
       if (searchBtn) {
         searchBtn.textContent = "Searching...";
         searchBtn.disabled = true;
       }
 
-      // Use direct geocoding API call (working endpoint)
+      
       const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
       
       const requestBody = {
@@ -1616,7 +1615,7 @@ const VenuesPage = {
         biasPosition: [103.8198, 1.3521]
       };
 
-      console.log("🔍 Direct geocoding request:", { url: geocodeEndpoint, body: requestBody });
+      console.log(" Direct geocoding request:", { url: geocodeEndpoint, body: requestBody });
 
       const response = await Utils.apiCall(geocodeEndpoint, {
         method: 'POST',
@@ -1627,19 +1626,19 @@ const VenuesPage = {
         body: JSON.stringify(requestBody)
       });
 
-      console.log("📍 Geocoding response:", response);
+              console.log("Geocoding response:", response);
 
       if (response && response.latitude && response.longitude) {
         const lng = response.longitude;
         const lat = response.latitude;
         const address = response.formatted || response.address || query + ", Singapore";
 
-        // Remove previous marker
+        
         if (this.selectedLocationMarker) {
           this.selectedLocationMarker.remove();
         }
 
-        // Add marker at search result with enhanced styling
+        
         this.selectedLocationMarker = new maplibregl.Marker({ 
           color: '#22c55e', 
           scale: 1.3 
@@ -1647,7 +1646,7 @@ const VenuesPage = {
           .setLngLat([lng, lat])
           .addTo(this.venueLocationMap);
 
-        // Enhanced fly animation to search result
+        
         this.venueLocationMap.flyTo({
           center: [lng, lat],
           zoom: 16,
@@ -1656,16 +1655,16 @@ const VenuesPage = {
           essential: true
         });
 
-        // Add pulsing animation to marker area
+        
         this.addLocationPulseEffect(lng, lat);
 
-        // Update form fields
+        
         this.updateVenueLocationFields(lat, lng, address);
 
-        // Show selected location info
+        
         this.showSelectedLocationInfo(address, lat, lng);
 
-        console.log("✅ Location found and selected:", address);
+        console.log(" Location found and selected:", address);
       } else {
         Utils.showError("No location found for that search. Please try a different search term.");
       }
@@ -1681,7 +1680,7 @@ const VenuesPage = {
     }
   },
 
-  // Update venue form location fields
+  
   updateVenueLocationFields: function(lat, lng, address) {
     const latInput = document.getElementById("venueLatitude");
     const lngInput = document.getElementById("venueLongitude");
@@ -1693,10 +1692,10 @@ const VenuesPage = {
       addressInput.value = address;
     }
 
-    console.log("📝 Form fields updated:", { lat, lng, address });
+    console.log(" Form fields updated:", { lat, lng, address });
   },
 
-  // Show enhanced location confirmation with animations
+  
   showSelectedLocationInfo: function(address, lat, lng) {
     const infoDiv = document.getElementById("selected-location-info");
     const textDiv = document.getElementById("selected-location-text");
@@ -1754,20 +1753,20 @@ const VenuesPage = {
       `;
       infoDiv.style.display = "block";
       
-      // Add CSS animations if not already present
+      
       this.addLocationAnimations();
     }
   },
 
-  // Add location pulse effect to map
+
   addLocationPulseEffect: function(lng, lat) {
-    // Remove existing pulse layer if it exists
+    
     if (this.venueLocationMap.getLayer('venue-location-pulse')) {
       this.venueLocationMap.removeLayer('venue-location-pulse');
       this.venueLocationMap.removeSource('venue-location-pulse');
     }
 
-    // Add pulsing circle around the selected location
+    
     this.venueLocationMap.addSource('venue-location-pulse', {
       type: 'geojson',
       data: {
@@ -1802,7 +1801,7 @@ const VenuesPage = {
       }
     });
 
-    // Animate the pulse
+    
     let pulseRadius = 20;
     const animatePulse = () => {
       pulseRadius = pulseRadius === 20 ? 35 : 20;
@@ -1815,18 +1814,18 @@ const VenuesPage = {
       ]);
     };
 
-    // Pulse every 1.5 seconds
+    
     const pulseInterval = setInterval(animatePulse, 1500);
     
-    // Clear interval after 10 seconds
+    
     setTimeout(() => {
       clearInterval(pulseInterval);
     }, 10000);
   },
 
-  // Add CSS animations for location UI
+  
   addLocationAnimations: function() {
-    // Check if animations are already added
+    
     if (document.getElementById('venue-location-animations')) return;
 
     const style = document.createElement('style');
@@ -1938,20 +1937,20 @@ const VenuesPage = {
     document.head.appendChild(style);
   },
 
-  // Clear selected location info
+  
   clearSelectedLocationInfo: function() {
     const infoDiv = document.getElementById("selected-location-info");
     if (infoDiv) {
       infoDiv.style.display = "none";
     }
 
-    // Clear any existing marker
+    
     if (this.selectedLocationMarker) {
       this.selectedLocationMarker.remove();
       this.selectedLocationMarker = null;
     }
 
-    // Reset location picker button
+    
     const btn = document.getElementById("enable-location-picker-btn");
     if (btn) {
       btn.textContent = "📍 Click on Map to Select Location";
@@ -1959,14 +1958,14 @@ const VenuesPage = {
     }
   },
 
-  // Navigate to venue details page
+  
   goToVenueDetails: function(venueId) {
     if (venueId) {
       window.location.href = `venue-details.html?id=${venueId}`;
     }
   },
 
-  // Show map error message
+  
   showMapError: function(message) {
     const mapContainer = document.getElementById("venue-location-map");
     if (mapContainer) {
@@ -1981,7 +1980,7 @@ const VenuesPage = {
   },
 };
 
-// Initialize when DOM is ready
+
 document.addEventListener("DOMContentLoaded", () => {
   VenuesPage.init();
 });

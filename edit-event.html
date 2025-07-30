@@ -473,8 +473,8 @@
         // Event image upload handling
         document.addEventListener('DOMContentLoaded', function() {
             // Simple authentication check with detailed logging
-            console.log('🔧 Starting edit event page initialization...');
-            console.log('🔐 Authentication status:', Utils.isAuthenticated());
+            console.log(' Starting edit event page initialization...');
+            console.log(' Authentication status:', Utils.isAuthenticated());
             
             if (!Utils.isAuthenticated()) {
                 console.error('❌ User not authenticated, redirecting to login');
@@ -482,7 +482,7 @@
                 return;
             }
             
-            console.log('✅ User authenticated, initializing edit event');
+            console.log(' User authenticated, initializing edit event');
             
             // Add error handling for initialization
             try {

@@ -297,7 +297,7 @@
                         await this.loadVenueDetails(venueId);
                         
                     } catch (error) {
-                        console.error('❌ Failed to initialize venue details:', error);
+                        console.error(' Failed to initialize venue details:', error);
                         this.showError('Failed to initialize page');
                     }
                 },
@@ -309,7 +309,7 @@
                 
                 async loadVenueDetails(venueId) {
                     try {
-                        console.log('🏪 Loading venue details for ID:', venueId);
+                        console.log(' Loading venue details for ID:', venueId);
                         
                         const response = await Utils.apiCall(
                             CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES + '/' + venueId), 
@@ -319,14 +319,14 @@
                             }
                         );
                         
-                        console.log('✅ Venue details loaded:', response);
+                        console.log(' Venue details loaded:', response);
                         
                         // Handle wrapped response - parse JSON string from message field
                         let venueData = response;
                         if (response.message && typeof response.message === 'string') {
                             try {
                                 venueData = JSON.parse(response.message);
-                                console.log('📊 Parsed venue data from message field:', venueData);
+                                console.log(' Parsed venue data from message field:', venueData);
                             } catch (parseError) {
                                 console.error('❌ Failed to parse venue data from message:', parseError);
                                 venueData = response;
@@ -336,7 +336,7 @@
                         this.venue = venueData.venue || venueData.Item || venueData;
                         
                         if (this.venue && (this.venue.venueID || this.venue.venueId)) {
-                            console.log('✅ Processing venue:', this.venue);
+                            console.log(' Processing venue:', this.venue);
                             this.renderVenueDetails();
                             await this.initializeMap();
                         } else {
@@ -364,7 +364,7 @@
                     // Build image URL
                     let imageHtml = '';
                     if (this.venue.imageUrl) {
-                        console.log('🖼️ Processing venue image URL:', this.venue.imageUrl);
+                        console.log('Processing venue image URL:', this.venue.imageUrl);
                         // Handle both S3 URLs and regular URLs
                         const imageUrl = this.venue.imageUrl.startsWith('http') 
                             ? this.venue.imageUrl 
@@ -434,14 +434,14 @@
                 
                 async initializeMap() {
                     try {
-                        console.log('🗺️ Initializing venue map...');
+                        console.log(' Initializing venue map...');
                         
                         // Get venue coordinates
                         let coordinates = [103.8198, 1.3521]; // Default Singapore
                         
                         if (this.venue.longitude && this.venue.latitude) {
                             coordinates = [parseFloat(this.venue.longitude), parseFloat(this.venue.latitude)];
-                            console.log('✅ Using venue coordinates:', coordinates);
+                            console.log(' Using venue coordinates:', coordinates);
                         } else if (this.venue.lng && this.venue.lat) {
                             coordinates = [this.venue.lng, this.venue.lat];
                         } else if (this.venue.coordinates && Array.isArray(this.venue.coordinates)) {
@@ -456,7 +456,7 @@
                             zoom: 15
                         });
                         
-                        console.log('✅ Map initialized, adding venue marker...');
+                        console.log(' Map initialized, adding venue marker...');
                         
                         // Add venue marker with popup
                         const marker = new window.maplibregl.Marker({ 
@@ -475,8 +475,8 @@
                         
                         // Show popup automatically
                         marker.getPopup().addTo(this.map);
-                        
-                        console.log('✅ Venue map initialized successfully with marker');
+                    
+                        console.log(' Venue map initialized successfully with marker');
                         
                     } catch (error) {
                         console.error('❌ Failed to initialize venue map:', error);

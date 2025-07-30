@@ -1,14 +1,11 @@
-// Edit Event Module for Local Gigs App
 const EditEvent = {
     currentEventId: null,
     originalEventData: null,
     venues: [],
     selectedEventImage: null,
 
-    // Initialize edit event page
     init: function() {
         try {
-            // Get event ID from URL parameters
             this.currentEventId = this.getEventIdFromUrl();
             
             if (!this.currentEventId) {
@@ -21,13 +18,10 @@ const EditEvent = {
 
             console.log('Initializing edit event with ID:', this.currentEventId);
             
-            // Load the event data
             this.loadEventData();
             
-            // Load venues for dropdown
             this.loadVenues();
             
-            // Setup form handling
             this.setupFormHandling();
             
         } catch (error) {
@@ -43,7 +37,6 @@ const EditEvent = {
 
     async loadEventData() {
         try {
-            // Check authentication first
             if (!Utils.isAuthenticated()) {
                 console.error('User not authenticated, redirecting to login');
                 Utils.showError('Please log in to edit events', 'edit-event-messages');
@@ -53,7 +46,6 @@ const EditEvent = {
                 return;
             }
 
-            // Get user data from token (more reliable)
             const userData = Utils.getUserFromToken();
             console.log('Current user data from token:', userData);
             
@@ -69,7 +61,7 @@ const EditEvent = {
             console.log('Loading event data for ID:', this.currentEventId);
 
             const eventUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS, this.currentEventId);
-            console.log('🔗 Event API URL:', eventUrl);
+            console.log('Event API URL:', eventUrl);
             
             const response = await Utils.apiCall(eventUrl, {
                 method: 'GET',
@@ -78,12 +70,10 @@ const EditEvent = {
 
             console.log('Loaded event data:', response);
             
-            // Handle different response formats
             let eventData = null;
             if (response.event) {
                 eventData = response.event;
             } else if (response.message) {
-                // Handle stringified JSON in message field
                 try {
                     if (typeof response.message === 'string') {
                         eventData = JSON.parse(response.message);
@@ -91,11 +81,10 @@ const EditEvent = {
                         eventData = response.message;
                     }
                 } catch (parseError) {
-                    console.error("❌ Failed to parse event message:", parseError);
+                    console.error("Failed to parse event message:", parseError);
                     throw new Error('Failed to parse event data');
                 }
             } else if (response.eventID || response.name) {
-                // Direct event object
                 eventData = response;
             } else {
                 throw new Error('Invalid event data format received');
@@ -162,7 +151,7 @@ const EditEvent = {
             // Update preview
             updatePreview();
 
-            console.log('✅ Form populated with event data');
+            console.log(' Form populated with event data');
         } catch (error) {
             console.error('Error populating form:', error);
             Utils.showError('Error displaying event data', 'edit-event-messages');
@@ -171,14 +160,14 @@ const EditEvent = {
 
     async loadVenues() {
         try {
-            console.log("🏪 Loading venues from API");
+            console.log(" Loading venues from API");
 
             const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
             const response = await Utils.apiCall(venuesUrl, {
                 method: 'GET',
                 headers: CONFIG.getAuthHeaders()
             });
-            console.log("✅ Venues loaded:", response);
+            console.log(" Venues loaded:", response);
 
             // Handle different response formats
             let venues = [];
@@ -241,7 +230,7 @@ const EditEvent = {
         // Update preview after venues are loaded
         updatePreview();
 
-        console.log(`✅ Populated venue dropdown with ${this.venues.length} venues`);
+        console.log(`Populated venue dropdown with ${this.venues.length} venues`);
     },
 
     setupFormHandling() {
@@ -292,7 +281,7 @@ const EditEvent = {
             let imageUrl = this.originalEventData.imageUrl;
             if (window.uploadedEventImageUrl) {
                 imageUrl = window.uploadedEventImageUrl;
-                console.log("✅ Using uploaded image URL:", imageUrl);
+                console.log(" Using uploaded image URL:", imageUrl);
             }
             // Check if image was removed (preview is hidden and no uploaded URL)
             else {
@@ -311,7 +300,7 @@ const EditEvent = {
             }
 
             // Submit to API
-            console.log("📤 Updating event in API...");
+            console.log(" Updating event in API...");
             const eventUrl = CONFIG.buildApiUrl(`events/${this.currentEventId}`);
             const response = await Utils.apiCall(eventUrl, {
                 method: 'PUT',
@@ -319,7 +308,7 @@ const EditEvent = {
                 body: JSON.stringify(formData)
             });
 
-            console.log("✅ Event updated successfully:", response);
+            console.log(" Event updated successfully:", response);
             Utils.showSuccess("Event updated successfully! Redirecting to events...", "edit-event-messages");
 
             // Redirect after success
@@ -350,14 +339,14 @@ const EditEvent = {
         try {
             Utils.showLoading(deleteBtn, "Deleting...");
 
-            console.log("🗑️ Deleting event from API...");
+            console.log("Deleting event from API...");
             const eventUrl = CONFIG.buildApiUrl(`events/${this.currentEventId}`);
             const response = await Utils.apiCall(eventUrl, {
                 method: 'DELETE',
                 headers: CONFIG.getAuthHeaders()
             });
 
-            console.log("✅ Event deleted successfully:", response);
+            console.log("Event deleted successfully:", response);
             Utils.showSuccess("Event deleted successfully! Redirecting to events...", "edit-event-messages");
 
             // Redirect after success
@@ -413,7 +402,7 @@ const EditEvent = {
             return { isValid: false, message: "Event date and time must be in the future." };
         }
 
-        console.log('✅ Form validation passed');
+        console.log(' Form validation passed');
         return { isValid: true };
     },
 
@@ -430,8 +419,8 @@ const EditEvent = {
             return venueId && venueId.toString() === venueID.toString();
         });
         
-        console.log('🏪 Selected venue details:', selectedVenue);
-        console.log('📝 Form data venue ID:', venueID);
+        console.log(' Selected venue details:', selectedVenue);
+        console.log(' Form data venue ID:', venueID);
 
         return {
             eventID: this.currentEventId,
@@ -445,19 +434,19 @@ const EditEvent = {
 
     async uploadEventImage(eventID) {
         try {
-            console.log('📸 Starting image upload for event:', eventID);
+            console.log(' Starting image upload for event:', eventID);
             
             if (!selectedEventImage) {
-                console.log('⚠️ No image selected for upload');
+                console.log(' No image selected for upload');
                 return null;
             }
 
             const imageUrl = await Utils.uploadImage(selectedEventImage, 'events', eventID);
-            console.log('✅ Image uploaded successfully (parsed):', imageUrl);
+            console.log(' Image uploaded successfully (parsed):', imageUrl);
             
             return imageUrl;
         } catch (error) {
-            console.error('❌ Image upload failed:', error);
+            console.error(' Image upload failed:', error);
             throw new Error('Failed to upload event image');
         }
     },

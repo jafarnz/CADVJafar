@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Use current authentication system
+    
     const isAuthenticated = Utils && Utils.isAuthenticated ? Utils.isAuthenticated() : false;
     const userData = Utils && Utils.getUserFromToken ? Utils.getUserFromToken() : null;
 
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
 
     if (isAuthenticated && userData) {
-        // User is logged in
+        
         if (authLinks) authLinks.style.display = 'none';
         if (userInfo) userInfo.style.display = 'block';
         if (usernameDisplay) usernameDisplay.textContent = userData.preferredUsername || userData.username || 'User';
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (Utils && Utils.logout) {
                     Utils.logout();
                 } else {
-                    // Fallback logout
+                    
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('id_token');
                     localStorage.removeItem('user_data');
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     } else {
-        // User is not logged in
+        
         if (authLinks) authLinks.style.display = 'block';
         if (userInfo) userInfo.style.display = 'none';
     }

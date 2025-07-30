@@ -1,5 +1,4 @@
-# Apache .htaccess file for Local Gigs App URL Rewriting
-# This file handles routing issues when pages are accessed without .html extension
+# my RUTER KEPT BUGGING AND IDK WHY I HAD TO SK CHATGPT FOR HELP FOR THIS SORRY
 
 RewriteEngine On
 

@@ -1,4 +1,4 @@
-// Events page functionality for Local Gigs App
+
 const EventsPage = {
   events: [],
   venues: [],
@@ -8,34 +8,27 @@ const EventsPage = {
   isMapView: false,
   mapInitialized: false,
 
-  // Initialize the events page
   init: async function () {
     console.log("Initializing events page...");
 
-    // Check authentication
+
     if (!Utils.requireAuth()) {
       return;
     }
 
-    // Set up event listeners
     this.setupEventListeners();
 
-    // Load data
     await this.loadAllData();
 
-    // Apply filters and render
     this.applyFilters();
     this.render();
 
-    // Check if returning from venue creation
     this.checkReturnFromVenueCreation();
 
     console.log("Events page initialized successfully");
   },
 
-  // Set up all event listeners
   setupEventListeners: function () {
-    // Logout button
     const logoutBtn = document.getElementById("logout-button");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", (e) => {
@@ -44,7 +37,6 @@ const EventsPage = {
       });
     }
 
-    // Search input
     const searchInput = document.getElementById("search-input");
     if (searchInput) {
       searchInput.addEventListener(
@@ -57,7 +49,6 @@ const EventsPage = {
       );
     }
 
-    // Genre filter
     const genreFilter = document.getElementById("genre-filter");
     if (genreFilter) {
       genreFilter.addEventListener("change", () => {
@@ -67,7 +58,6 @@ const EventsPage = {
       });
     }
 
-    // Date filter
     const dateFilter = document.getElementById("date-filter");
     if (dateFilter) {
       dateFilter.addEventListener("change", () => {
@@ -77,7 +67,6 @@ const EventsPage = {
       });
     }
 
-    // Sort select
     const sortSelect = document.getElementById("sort-select");
     if (sortSelect) {
       sortSelect.addEventListener("change", () => {
@@ -86,7 +75,6 @@ const EventsPage = {
       });
     }
 
-    // View toggle buttons
     const toggleViewBtn = document.getElementById("toggle-view-btn");
     const listViewBtn = document.getElementById("list-view-btn");
 
@@ -102,7 +90,6 @@ const EventsPage = {
       });
     }
 
-    // Create event button and modal
     const createEventBtn = document.getElementById("create-event-btn");
     const createEventModal = document.getElementById("create-event-modal");
     const closeEventModal = document.getElementById("close-event-modal");
@@ -128,7 +115,6 @@ const EventsPage = {
       });
     }
 
-    // Venue selection and creation
     const eventVenueSelect = document.getElementById("eventVenue");
     const createCustomVenueBtn = document.getElementById(
       "create-custom-venue-btn",
@@ -146,7 +132,7 @@ const EventsPage = {
       });
     }
 
-    // Event details modal
+
     const eventDetailsModal = document.getElementById("event-details-modal");
     const closeDetailsModal = document.getElementById("close-details-modal");
 
@@ -156,7 +142,7 @@ const EventsPage = {
       });
     }
 
-    // Create venue modal (inline)
+
     const createVenueModal = document.getElementById("create-venue-modal");
     const closeCreateVenueModal = document.getElementById(
       "close-create-venue-modal",
@@ -185,7 +171,7 @@ const EventsPage = {
       });
     }
 
-    // Pagination
+
     const prevPageBtn = document.getElementById("prev-page");
     const nextPageBtn = document.getElementById("next-page");
 
@@ -210,7 +196,7 @@ const EventsPage = {
       });
     }
 
-    // Close modals when clicking outside
+
     window.addEventListener("click", (e) => {
       if (e.target === createEventModal) {
         createEventModal.style.display = "none";
@@ -224,19 +210,19 @@ const EventsPage = {
     });
   },
 
-  // Load all events and venues data
+
   loadAllData: async function () {
     try {
       console.log("Loading events and venues...");
 
-      // Load events
+
       const eventsUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.EVENTS);
       const eventsResponse = await Utils.apiCall(eventsUrl, {
         method: "GET",
         headers: CONFIG.getAuthHeaders(),
       });
 
-      // Handle different response formats for events
+
       if (Array.isArray(eventsResponse)) {
         this.events = eventsResponse;
       } else if (
@@ -273,14 +259,14 @@ const EventsPage = {
         this.events = [];
       }
 
-      // Load venues
+
       const venuesUrl = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES);
       const venuesResponse = await Utils.apiCall(venuesUrl, {
         method: "GET",
         headers: CONFIG.getAuthHeaders(),
       });
 
-      // Handle different response formats for venues
+
       if (Array.isArray(venuesResponse)) {
         this.venues = venuesResponse;
       } else if (
@@ -330,9 +316,9 @@ const EventsPage = {
     }
   },
 
-  // Apply search and filter criteria
+
   applyFilters: function () {
-    // Ensure events is an array before proceeding
+
     if (!Array.isArray(this.events)) {
       console.warn(
         "Events is not an array, initializing as empty array:",
@@ -353,7 +339,7 @@ const EventsPage = {
 
     let filtered = [...this.events];
 
-    // Apply search filter
+
     if (searchTerm) {
       filtered = filtered.filter(
         (event) =>
@@ -363,7 +349,7 @@ const EventsPage = {
       );
     }
 
-    // Apply genre filter
+
     if (genreFilter) {
       filtered = filtered.filter(
         (event) =>
@@ -372,12 +358,12 @@ const EventsPage = {
       );
     }
 
-    // Apply date filter
+
     if (dateFilter) {
       filtered = filtered.filter((event) => event.eventDate === dateFilter);
     }
 
-    // Apply sorting
+
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "date-asc":
@@ -396,7 +382,7 @@ const EventsPage = {
     this.filteredEvents = filtered;
   },
 
-  // Render the events list or map
+
   render: function () {
     if (this.isMapView) {
       this.renderMapView();
@@ -407,7 +393,7 @@ const EventsPage = {
     this.updatePagination();
   },
 
-  // Render list view
+
   renderListView: function () {
     const eventsGrid = document.getElementById("events-grid");
     if (!eventsGrid) return;
@@ -441,7 +427,7 @@ const EventsPage = {
     this.addEventCardListeners();
   },
 
-  // Render map view
+
   renderMapView: async function () {
     if (!this.mapInitialized) {
       try {
@@ -473,28 +459,28 @@ const EventsPage = {
     }
   },
 
-  // Render events and venues on map with proper data passing
+
   renderEventsAndVenuesOnMap: async function () {
     try {
-      console.log("🗺️ Loading venues and event pins...");
+      console.log(" Loading venues and event pins...");
 
-      // First load and show venue markers
+
       await MapService.loadVenues();
       MapService.addVenueMarkers();
 
-      // Then add event pins with our events data
+
       let eventPinsCount = 0;
       const validEvents = this.filteredEvents.filter((event) => {
         const venue = this.venues.find((v) => v.venueID === event.venueID);
         return venue && venue.latitude && venue.longitude;
       });
 
-      console.log(`📍 Adding ${validEvents.length} event pins to map...`);
+      console.log(` Adding ${validEvents.length} event pins to map...`);
 
       for (const event of validEvents) {
         const venue = this.venues.find((v) => v.venueID === event.venueID);
         if (venue && venue.latitude && venue.longitude) {
-          // Create event marker
+
           const eventDate = new Date(event.eventDate);
           const isUpcoming = eventDate >= new Date();
 
@@ -551,7 +537,7 @@ const EventsPage = {
     }
   },
 
-  // Create HTML for event card
+
   createEventCard: function (event) {
     const venue = this.venues.find((v) => v.venueID === event.venueID);
     const eventDate = new Date(event.eventDate);
@@ -603,7 +589,7 @@ const EventsPage = {
     `;
   },
 
-  // Render join button based on event status and user join status
+
   renderJoinButton: function (event, isUpcoming) {
     if (!isUpcoming) {
       return `<button class="event-btn secondary" disabled>⏰ Past Event</button>`;
@@ -618,9 +604,9 @@ const EventsPage = {
     }
   },
 
-  // Add event listeners to event cards
+
   addEventCardListeners: function () {
-    // View details buttons
+
     document.querySelectorAll(".view-details-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -629,7 +615,7 @@ const EventsPage = {
       });
     });
 
-    // Edit event buttons
+
     document.querySelectorAll(".edit-event-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -638,7 +624,7 @@ const EventsPage = {
       });
     });
 
-    // Join event buttons
+
     document.querySelectorAll(".join-btn:not([disabled])").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -647,7 +633,7 @@ const EventsPage = {
       });
     });
 
-    // Event card click for details
+
     document.querySelectorAll(".event-card").forEach((card) => {
       card.addEventListener("click", () => {
         const eventId = card.getAttribute("data-event-id");
@@ -655,17 +641,17 @@ const EventsPage = {
       });
     });
 
-    // Update button states based on joined status
+
     this.updateEventButtonStates();
   },
 
-  // Show event details with venue map
+
   showEventDetails: function (eventId) {
-    // Redirect to event details page
+
     window.location.href = `event-details.html?id=${eventId}`;
   },
 
-  // Join an event
+
   joinEvent: async function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
@@ -675,20 +661,20 @@ const EventsPage = {
       return;
     }
 
-    // Check authentication
+    
     if (!Utils.isAuthenticated()) {
       Utils.showMessage("Please login to join events", "error");
       window.location.href = "login.html";
       return;
     }
 
-    // Check if already joined
+    
     if (Utils.isEventJoined(eventId)) {
       Utils.showMessage(`You've already joined "${event.name}"`, "warning");
       return;
     }
 
-    // Check if event is in the past
+    
     const eventDateTime = new Date(`${event.eventDate}T${event.eventTime}`);
     const now = new Date();
 
@@ -697,7 +683,7 @@ const EventsPage = {
       return;
     }
 
-    // Show loading state on join button
+    
     const joinBtn = document.querySelector(`[onclick*="${eventId}"].join-btn`);
     const originalText = joinBtn ? joinBtn.textContent : "";
     if (joinBtn) {
@@ -706,12 +692,12 @@ const EventsPage = {
     }
 
     try {
-      // Use new Utils API to join event
+      
       const success = await Utils.addJoinedEvent(event);
 
       if (success) {
-        console.log("✅ Successfully joined event");
-        // Update button states
+        console.log(" Successfully joined event");
+        
         this.updateEventButtonStates();
       } else {
         Utils.showMessage(
@@ -723,7 +709,7 @@ const EventsPage = {
       console.error("❌ Failed to join event:", error);
       Utils.showMessage("Failed to join event. Please try again.", "error");
     } finally {
-      // Reset button state
+      
       if (joinBtn) {
         joinBtn.disabled = false;
         joinBtn.textContent = originalText;
@@ -731,9 +717,9 @@ const EventsPage = {
     }
   },
 
-  // Show join notification popup
+  
   showJoinNotification: function (event) {
-    // Create notification element
+    
     const notification = document.createElement("div");
     notification.className = "join-notification";
     notification.innerHTML = `
@@ -747,7 +733,7 @@ const EventsPage = {
       </div>
     `;
 
-    // Add styles
+    
     notification.style.cssText = `
       position: fixed;
       top: 20px;
@@ -830,10 +816,10 @@ const EventsPage = {
     `;
     document.head.appendChild(style);
 
-    // Add to page
+    
     document.body.appendChild(notification);
 
-    // Auto-remove after 5 seconds
+    
     setTimeout(() => {
       if (notification.parentElement) {
         notification.style.animation = "slideInRight 0.5s ease-in reverse";
@@ -846,7 +832,7 @@ const EventsPage = {
     }, 5000);
   },
 
-  // Update event button states based on joined status
+
   updateEventButtonStates: function () {
     document.querySelectorAll(".join-btn").forEach((btn) => {
       const eventId = btn.getAttribute("data-event-id");
@@ -859,7 +845,7 @@ const EventsPage = {
     });
   },
 
-  // Leave an event
+  
   leaveEvent: async function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
@@ -876,10 +862,10 @@ const EventsPage = {
 
     if (confirm(`Are you sure you want to leave "${event.name}"?`)) {
       try {
-        // Remove from API first
+        
         const currentUser = Utils.getCurrentUser();
         if (currentUser && currentUser.user_id) {
-          console.log("📡 Sending leave request to API...");
+          console.log(" Sending leave request to API...");
 
           const leaveUrl = CONFIG.buildApiUrl(
             `user-events/${currentUser.user_id}/${eventId}`,
@@ -889,10 +875,10 @@ const EventsPage = {
             headers: CONFIG.getAuthHeaders(),
           });
 
-          console.log("✅ Successfully left event in API");
+          console.log(" Successfully left event in API");
         }
 
-        // Remove from local storage
+        
         Utils.removeJoinedEvent(eventId);
         Utils.showSuccess(`You've left "${event.name}"`);
         this.updateEventButtonStates();
@@ -903,7 +889,7 @@ const EventsPage = {
     }
   },
 
-  // Edit an event
+  
   editEvent: function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
@@ -913,11 +899,11 @@ const EventsPage = {
       return;
     }
 
-    // Redirect to edit event page
+    
     window.location.href = `edit-event.html?id=${eventId}`;
   },
 
-  // Open event location in Google Maps
+  
   openEventInGoogleMaps: function (eventId) {
     const event = this.events.find(
       (e) => e.eventID.toString() === eventId.toString(),
@@ -940,11 +926,11 @@ const EventsPage = {
     const address = venue.address || "";
 
     if (lat && lng) {
-      // Use coordinates for precise location
+      
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${encodeURIComponent(eventName + " at " + venueName)}`;
       window.open(googleMapsUrl, "_blank");
     } else if (address) {
-      // Fallback to address search
+      
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ", Singapore")}`;
       window.open(googleMapsUrl, "_blank");
     } else {
@@ -952,13 +938,13 @@ const EventsPage = {
     }
   },
 
-  // Toggle to map view
+  
   toggleMapView: function () {
     this.isMapView = true;
     document.getElementById("map-container-wrapper").style.display = "block";
     document.getElementById("events-list-wrapper").style.display = "none";
 
-    // Trigger map resize after container is visible
+    
     setTimeout(() => {
       if (MapService.map) {
         MapService.map.resize();
@@ -968,7 +954,7 @@ const EventsPage = {
     this.render();
   },
 
-  // Toggle to list view
+
   toggleListView: function () {
     this.isMapView = false;
     document.getElementById("map-container-wrapper").style.display = "none";
@@ -976,7 +962,7 @@ const EventsPage = {
     this.render();
   },
 
-  // Update events count display
+  
   updateEventsCount: function () {
     const countElement = document.getElementById("events-count");
     if (countElement) {
@@ -984,7 +970,7 @@ const EventsPage = {
     }
   },
 
-  // Update pagination controls
+  
   updatePagination: function () {
     const totalPages = Math.ceil(
       this.filteredEvents.length / this.itemsPerPage,
@@ -1155,7 +1141,7 @@ const EventsPage = {
     if (!venueSelect) return;
 
     try {
-      console.log("🏛️ Loading venues for dropdown...");
+      console.log(" Loading venues for dropdown...");
       venueSelect.innerHTML = '<option value="">Loading venues...</option>';
 
       // Load venues from API
@@ -1167,7 +1153,7 @@ const EventsPage = {
         },
       );
 
-      console.log("✅ Venues loaded:", response);
+      console.log(" Venues loaded:", response);
 
       // Handle wrapped response
       const venues =
@@ -1190,7 +1176,7 @@ const EventsPage = {
           venueSelect.appendChild(option);
         });
 
-        console.log(`✅ Added ${venues.length} venues to dropdown`);
+        console.log(` Added ${venues.length} venues to dropdown`);
       } else {
         console.warn("⚠️ Venues response not in expected format:", response);
         venueSelect.innerHTML = '<option value="">No venues available</option>';
@@ -1231,7 +1217,7 @@ const EventsPage = {
         }
 
         venuePreview.style.display = "block";
-        console.log("✅ Venue preview updated:", venue.name);
+        console.log(" Venue preview updated:", venue.name);
       } catch (error) {
         console.error("❌ Failed to parse venue data:", error);
         venuePreview.style.display = "none";
@@ -1297,7 +1283,7 @@ const EventsPage = {
 
       // Clear stored data
       sessionStorage.removeItem("pendingEventData");
-      console.log("✅ Event form data restored");
+      console.log(" Event form data restored");
     } catch (error) {
       console.error("❌ Failed to restore event form data:", error);
     }
@@ -1451,7 +1437,7 @@ const EventsPage = {
   // Initialize inline venue location map
   initializeCreateVenueLocationMap: async function () {
     try {
-      console.log("🗺️ Initializing inline venue location map...");
+      console.log(" Initializing inline venue location map...");
 
       // Enhanced availability check with retry logic
       let retryCount = 0;
@@ -1509,7 +1495,7 @@ const EventsPage = {
         );
         if (enablePickerBtn) {
           enablePickerBtn.addEventListener("click", () => {
-            console.log("📍 Location picker enabled");
+            console.log(" Location picker enabled");
             map.getCanvas().style.cursor = "crosshair";
 
             // Add visual feedback
@@ -1557,7 +1543,7 @@ const EventsPage = {
               // Reset cursor
               map.getCanvas().style.cursor = "";
 
-              console.log("📍 Location selected:", { lat, lng });
+              console.log(" Location selected:", { lat, lng });
             });
           });
         }
@@ -1617,7 +1603,7 @@ const EventsPage = {
                   currentLocationBtn.textContent = "📱 Use My Location";
                   currentLocationBtn.disabled = false;
 
-                  console.log("📱 Current location set:", { lat, lng });
+                  console.log(" Current location set:", { lat, lng });
                 },
                 (error) => {
                   console.error("Geolocation error:", error);
@@ -1648,7 +1634,7 @@ const EventsPage = {
               searchBtn.disabled = true;
 
               // Simple geocoding simulation - in real app would use AWS Location Service
-              console.log("🔍 Searching for:", query);
+              console.log(" Searching for:", query);
 
               // For demo, center on Singapore if searching
               const lat = 1.3521 + (Math.random() - 0.5) * 0.1;
@@ -1711,7 +1697,7 @@ const EventsPage = {
           });
         }
 
-        console.log("✅ Inline venue location map initialized successfully");
+        console.log(" Inline venue location map initialized successfully");
       } else {
         throw new Error("Failed to initialize map");
       }

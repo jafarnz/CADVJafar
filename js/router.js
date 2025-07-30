@@ -1,4 +1,4 @@
-// Router.js - Handle URL rewriting and navigation for Local Gigs App
+// my ROUTING KEPT BUGGING AND IDK WHY I HAD TO SK CHATGPT FOR HELP FOR THIS
 const Router = {
   init: function() {
     this.handleCurrentURL();
@@ -37,7 +37,7 @@ const Router = {
     // Check if current path needs redirection
     if (pathMappings[currentPath]) {
       const newURL = pathMappings[currentPath] + (currentHash || '');
-      console.log('🔄 Redirecting from', currentPath, 'to', newURL);
+      console.log(' Redirecting from', currentPath, 'to', newURL);
       window.location.replace(newURL);
       return;
     }
@@ -50,7 +50,7 @@ const Router = {
 
       if (validPages.includes(pageName)) {
         const newURL = `/${pageName}.html` + (currentHash || '');
-        console.log('🔄 Redirecting from', currentPath, 'to', newURL);
+        console.log(' Redirecting from', currentPath, 'to', newURL);
         window.location.replace(newURL);
         return;
       }
@@ -83,7 +83,7 @@ const Router = {
           targetURL = targetURL.slice(0, -1) + '.html';
         }
 
-        console.log('🔄 Navigation intercepted:', href, '→', targetURL);
+        console.log(' Navigation intercepted:', href, '→', targetURL);
         window.location.href = targetURL;
       }
     });

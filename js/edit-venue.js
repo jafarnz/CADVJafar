@@ -1,4 +1,3 @@
-// Edit Venue functionality
 const EditVenue = {
     map: null,
     marker: null,
@@ -8,7 +7,6 @@ const EditVenue = {
     
     async init() {
         try {
-            // Get venue ID from URL
             this.currentVenueId = this.getVenueIdFromUrl();
             
             if (!this.currentVenueId) {
@@ -21,13 +19,10 @@ const EditVenue = {
 
             console.log('Initializing edit venue with ID:', this.currentVenueId);
             
-            // Load the venue data
             await this.loadVenueData();
             
-            // Initialize map
             this.initializeMap();
             
-            // Setup form handling
             this.setupFormHandling();
             
         } catch (error) {
@@ -43,7 +38,6 @@ const EditVenue = {
 
     async loadVenueData() {
         try {
-            // Simple authentication check - just use what edit-event.js uses
             if (!Utils.isAuthenticated()) {
                 window.location.href = 'login.html';
                 return;
@@ -59,12 +53,10 @@ const EditVenue = {
 
             console.log('Loaded venue data:', response);
             
-            // Handle different response formats
             let venueData = null;
             if (response.venue) {
                 venueData = response.venue;
             } else if (response.message) {
-                // Handle stringified JSON in message field
                 try {
                     if (typeof response.message === 'string') {
                         venueData = JSON.parse(response.message);
@@ -76,7 +68,6 @@ const EditVenue = {
                     throw new Error('Failed to parse venue data');
                 }
             } else if (response.venueID || response.name) {
-                // Direct venue object
                 venueData = response;
             } else {
                 throw new Error('Invalid venue data format received');
@@ -98,16 +89,13 @@ const EditVenue = {
 
     populateForm(venueData) {
         try {
-            // Clear any previously uploaded image URL when loading existing data
             window.uploadedVenueImageUrl = null;
             
-            // Basic venue info
             document.getElementById('venueName').value = venueData.name || '';
             document.getElementById('venueType').value = venueData.type || '';
             document.getElementById('venueCapacity').value = venueData.capacity || '';
             document.getElementById('venueDescription').value = venueData.description || '';
 
-            // Location data
             if (venueData.latitude && venueData.longitude) {
                 this.selectedLocation = {
                     lat: venueData.latitude,
@@ -118,7 +106,6 @@ const EditVenue = {
                 this.updateLocationDisplay();
             }
 
-            // Image handling - check both imageUrl and image_url fields
             const imageUrl = venueData.imageUrl || venueData.image_url;
             if (imageUrl) {
                 const venueImagePreview = document.getElementById('venueImagePreview');
@@ -126,7 +113,6 @@ const EditVenue = {
                 const removeVenueBtn = document.getElementById('removeVenuePhotoBtn');
 
                 if (venueImagePreview && venuePlaceholder) {
-                    // Resolve the full image URL
                     const fullImageUrl = Utils.resolveImageUrl(imageUrl, 'venues', venueData.venueID);
                     venueImagePreview.src = fullImageUrl;
                     venueImagePreview.style.display = 'block';
@@ -149,7 +135,6 @@ const EditVenue = {
         try {
             console.log('Initializing edit venue map');
             
-            // Use the same AWS map implementation as create venue
             this.initializeAWSMap();
             
         } catch (error) {
@@ -160,19 +145,16 @@ const EditVenue = {
 
     async initializeAWSMap() {
         try {
-            console.log('🗺️ Initializing AWS map for venue editing');
+            console.log(' Initializing AWS map for venue editing');
             
-            // Default center - Singapore
             let center = [103.8198, 1.3521];
             let zoom = 11;
 
-            // If we have venue location, center on it
             if (this.selectedLocation) {
                 center = [this.selectedLocation.lng, this.selectedLocation.lat];
                 zoom = 15;
             }
 
-            // Initialize AWS venue map using MapService
             this.map = await MapService.initializeVenueMap('venue-map', {
                 center: center,
                 zoom: zoom
@@ -182,15 +164,13 @@ const EditVenue = {
                 throw new Error('Failed to initialize AWS map');
             }
 
-            // Add existing marker if we have location
             if (this.selectedLocation) {
                 this.addMarker(this.selectedLocation.lng, this.selectedLocation.lat);
             }
             
-            // Enable location selection
             this.enableLocationSelection();
 
-            console.log('✅ AWS venue map initialized successfully');
+            console.log(' AWS venue map initialized successfully');
             
         } catch (error) {
             console.error('❌ Failed to initialize AWS map:', error);
@@ -235,7 +215,6 @@ const EditVenue = {
                 const { lng, lat } = e.lngLat;
                 this.setLocation(lng, lat);
                 
-                // Reset selection mode
                 isSelecting = false;
                 if (selectBtn) {
                     selectBtn.textContent = '📍 Select New Location on Map';
@@ -247,12 +226,10 @@ const EditVenue = {
     },
 
     addMarker(lng, lat) {
-        // Remove existing marker
         if (this.marker) {
             this.marker.remove();
         }
 
-        // Create new marker
         this.marker = new maplibregl.Marker({ color: '#007bff' })
             .setLngLat([lng, lat])
             .addTo(this.map);
@@ -262,10 +239,8 @@ const EditVenue = {
         try {
             this.selectedLocation = { lng, lat };
             
-            // Add marker
             this.addMarker(lng, lat);
             
-            // Try to get address (optional)
             try {
                 const address = await this.reverseGeocode(lat, lng);
                 this.selectedLocation.address = address;
@@ -284,7 +259,6 @@ const EditVenue = {
 
     async reverseGeocode(lat, lng) {
         try {
-            // Use MapService for reverse geocoding like other parts of the app
             if (window.MapService && window.MapService.reverseGeocode) {
                 const locationInfo = await window.MapService.reverseGeocode(lng, lat);
                 if (locationInfo && locationInfo.Place && locationInfo.Place.Label) {
@@ -297,7 +271,6 @@ const EditVenue = {
             console.warn('AWS reverse geocoding failed:', error);
         }
         
-        // Fallback to coordinate display
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     },
 
@@ -334,17 +307,14 @@ const EditVenue = {
                 updateBtn.textContent = 'Updating...';
             }
 
-            // Collect form data
             const formData = this.collectFormData();
             
-            // Validate required fields
             if (!this.validateFormData(formData)) {
                 return;
             }
 
             console.log('Updating venue with data:', formData);
 
-            // Update venue
             await this.updateVenue(formData);
 
         } catch (error) {
@@ -370,13 +340,11 @@ const EditVenue = {
             capacity: formData.get('capacity') ? parseInt(formData.get('capacity')) : null
         };
 
-        // Add location data if available
         if (this.selectedLocation) {
             data.latitude = this.selectedLocation.lat;
             data.longitude = this.selectedLocation.lng;
             data.address = this.selectedLocation.address;
         } else if (this.originalVenueData) {
-            // Keep original location if no new location selected
             data.latitude = this.originalVenueData.latitude;
             data.longitude = this.originalVenueData.longitude;
             data.address = this.originalVenueData.address;
@@ -429,12 +397,10 @@ const EditVenue = {
 
             let imageUrl = this.originalVenueData?.imageUrl || this.originalVenueData?.image_url;
 
-            // Use uploaded image URL if available (immediate upload)
             if (window.uploadedVenueImageUrl) {
                 console.log('Using previously uploaded image URL:', window.uploadedVenueImageUrl);
                 imageUrl = window.uploadedVenueImageUrl;
             }
-            // Check if image was removed (preview is hidden and no uploaded URL)
             else {
                 const venueImagePreview = document.getElementById('venueImagePreview');
                 const isImageDisplayed = venueImagePreview && venueImagePreview.style.display !== 'none';
@@ -445,7 +411,6 @@ const EditVenue = {
                 }
             }
 
-            // Prepare API payload using imageUrl (not image_url)
             const payload = {
                 ...venueData,
                 imageUrl: imageUrl
@@ -466,7 +431,6 @@ const EditVenue = {
 
             Utils.showMessage('Venue updated successfully!', 'success');
             
-            // Redirect after short delay
             setTimeout(() => {
                 window.location.href = 'venues.html';
             }, 1500);
@@ -479,7 +443,6 @@ const EditVenue = {
     }
 };
 
-// Export for use in other scripts
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = EditVenue;
 }

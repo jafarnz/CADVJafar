@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageDiv = document.getElementById('message');
     const usernameInput = document.getElementById('username');
 
-    // Get username from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('username');
     if (username) {

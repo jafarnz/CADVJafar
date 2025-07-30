@@ -1,44 +1,30 @@
-// Configuration file for Local Gigs App
 const CONFIG = {
-  // API Gateway Configuration
   API: {
     BASE_URL: "https://dxotswm9sh.execute-api.us-east-1.amazonaws.com",
     ENDPOINTS: {
-      // Auth endpoints
       SIGNUP: "/auth/signup",
       LOGIN: "/auth/login",
       CONFIRM: "/auth/confirm",
       RESEND_CONFIRMATION: "/auth/resend-confirmation",
 
-      // Geocoding endpoints
       GEOCODE: "/geocode",
       REVERSE_GEOCODE: "/reverse-geocode",
-      PLACES_SEARCH: "/places/search",
 
-      // Location services endpoints
       LOCATION: "/location",
 
-      // User endpoints
       USERS: "/users",
       USER_BY_ID: "/users",
 
-      // Event endpoints
       EVENTS: "/events",
       EVENT_BY_ID: "/events",
 
-      // Venue endpoints
       VENUES: "/venues",
       VENUE_BY_ID: "/venues",
 
-      // Upload endpoint
       UPLOAD: "/upload",
     },
   },
 
-  // AWS Cognito Configuration
-  // NOTE: You MUST replace the IDENTITY_POOL_ID below with your actual AWS Cognito Identity Pool ID
-  // This is required for AWS Location Service to work properly
-  // Example: "us-east-1:12345678-1234-1234-1234-123456789012"
   COGNITO: {
     CLIENT_ID: "m9kv9bgjlbctat24f36ar236b",
     USER_POOL_ID: "us-east-1_vY3ORmav8",
@@ -46,26 +32,23 @@ const CONFIG = {
     REGION: "us-east-1",
   },
 
-  // Amazon Location Service Configuration
-  // NOTE: Using API Key method with AWS standard styles
   LOCATION: {
-    PLACE_INDEX_NAME: "LocalGigsPlaces", // Must exist in AWS Location Service
+    PLACE_INDEX_NAME: "LocalGigsPlaces",
     REGION: "us-east-1",
-    API_KEY: "v1.public.eyJqdGkiOiIwOGNmNmYwNy03NmUyLTRjMWUtOTllYi00M2JmMjk3MzcwZDAifTC7LOivLklvf_slA88w5njIcP4QXqhEVIdAwEwAXMzHGyson0LsiaV8VBsLL-XHwEzp6Bv8pP1V6UxyYi2A58GutcpTkfhU7XwCkW366-fe4ECXmlSQh0Ntdw8-2J02n-HVW3teNO8GZHtCPYL_ifGcsjmXfBZ0MjCBqrk1AMiGEYkyYOI4vF0haSGYnz2600AVfDab81Q2VYaYkz74vrvtZs-5lqETn8ejzpbNxv0aAGfFcgGVD0lmoNTXre6unG37VkcCrQ7PgKxeh9yxAEpVxiEHJi7Avgi9wtBeHWQEiuyLjJbONpsZ6Y_6YmAoXowWGbMXOGnx6bXiCTwUcSI.ZWU0ZWIzMTktMWRhNi00Mzg0LTllMzYtNzlmMDU3MjRmYTkx", // API key from AWS Location Service
+    API_KEY:
+      "v1.public.eyJqdGkiOiIwOGNmNmYwNy03NmUyLTRjMWUtOTllYi00M2JmMjk3MzcwZDAifTC7LOivLklvf_slA88w5njIcP4QXqhEVIdAwEwAXMzHGyson0LsiaV8VBsLL-XHwEzp6Bv8pP1V6UxyYi2A58GutcpTkfhU7XwCkW366-fe4ECXmlSQh0Ntdw8-2J02n-HVW3teNO8GZHtCPYL_ifGcsjmXfBZ0MjCBqrk1AMiGEYkyYOI4vF0haSGYnz2600AVfDab81Q2VYaYkz74vrvtZs-5lqETn8ejzpbNxv0aAGfFcgGVD0lmoNTXre6unG37VkcCrQ7PgKxeh9yxAEpVxiEHJi7Avgi9wtBeHWQEiuyLjJbONpsZ6Y_6YmAoXowWGbMXOGnx6bXiCTwUcSI.ZWU0ZWIzMTktMWRhNi00Mzg0LTllMzYtNzlmMDU3MjRmYTkx",
   },
 
-  // App Configuration
   APP: {
     NAME: "Local Gigs",
     VERSION: "1.0.0",
     DEFAULT_COORDINATES: {
-      LAT: 1.3521, // Singapore default
+      LAT: 1.3521,
       LNG: 103.8198,
     },
     MAP_ZOOM: 11,
   },
 
-  // User preferences options
   PREFERENCES: {
     GENRES: [
       "rock",
@@ -84,7 +67,6 @@ const CONFIG = {
     ],
   },
 
-  // Local Storage Keys
   STORAGE_KEYS: {
     ACCESS_TOKEN: "localGigs_accessToken",
     ID_TOKEN: "localGigs_idToken",
@@ -93,7 +75,6 @@ const CONFIG = {
     SIGNUP_USERNAME: "localGigs_signupUsername",
   },
 
-  // API Headers
   getAuthHeaders: function () {
     const token = localStorage.getItem(this.STORAGE_KEYS.ACCESS_TOKEN);
     return {
@@ -102,7 +83,6 @@ const CONFIG = {
     };
   },
 
-  // API Headers without auth (for login/signup)
   getBasicHeaders: function () {
     return {
       "Content-Type": "application/json",
@@ -111,20 +91,13 @@ const CONFIG = {
 
   // Helper method to build full API URLs
   buildApiUrl: function (endpoint, pathParam = null) {
-    // Ensure there's a slash between BASE_URL and endpoint
-    let url = this.API.BASE_URL;
-    if (!url.endsWith('/') && !endpoint.startsWith('/')) {
-      url += '/';
-    }
-    url += endpoint;
-    
+    let url = this.API.BASE_URL + endpoint;
     if (pathParam) {
       url += "/" + pathParam;
     }
     return url;
   },
 
-  // Validate AWS configuration
   validateAWSConfig: function () {
     const errors = [];
 
@@ -134,14 +107,12 @@ const CONFIG = {
       errors.push("Invalid Identity Pool ID format");
     }
 
-    // Check if placeholder values are still being used
     if (this.COGNITO.IDENTITY_POOL_ID.includes("12345678")) {
       errors.push(
         "Please replace placeholder Identity Pool ID with actual value",
       );
     }
 
-    // Check required Location Service settings
     if (!this.LOCATION.PLACE_INDEX_NAME || !this.LOCATION.API_KEY) {
       errors.push("Location Service place index name and API key are required");
     }
@@ -164,7 +135,6 @@ const CONFIG = {
     return Math.floor(Math.random() * 9000) + 1000; // 4-digit random number
   },
 
-  // Get Location Service configuration
   getLocationConfig: function () {
     return {
       region: this.LOCATION.REGION,
@@ -173,26 +143,6 @@ const CONFIG = {
     };
   },
 
-  // Initialize AWS SDK for Location Service
-  initializeAWS: function() {
-    if (typeof window !== 'undefined' && window.AWS) {
-      // Configure AWS SDK
-      window.AWS.config.update({
-        region: this.LOCATION.REGION,
-        credentials: new window.AWS.CognitoIdentityCredentials({
-          IdentityPoolId: this.COGNITO.IDENTITY_POOL_ID
-        })
-      });
-      
-      console.log("✅ AWS SDK configured for Location Service");
-      return true;
-    } else {
-      console.warn("⚠️ AWS SDK not available");
-      return false;
-    }
-  },
-
-  // Validation rules
   VALIDATION: {
     PASSWORD_MIN_LENGTH: 8,
     USERNAME_MIN_LENGTH: 3,

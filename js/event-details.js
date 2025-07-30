@@ -1,4 +1,4 @@
-// Event Details Page JavaScript
+
 class EventDetailsPage {
     constructor() {
         this.eventData = null;
@@ -6,10 +6,10 @@ class EventDetailsPage {
         this.eventID = null;
         this.map = null;
         
-        // Store instance reference for global access
+        
         EventDetailsPage.instance = this;
         
-        // Initialize when DOM is ready
+        
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
@@ -18,9 +18,9 @@ class EventDetailsPage {
     }
 
     init() {
-        console.log('🎯 Initializing Event Details Page...');
+        console.log(' Initializing Event Details Page...');
         
-        // Get event ID from URL
+    
         this.eventID = this.getEventIdFromUrl();
         
         if (!this.eventID) {
@@ -49,7 +49,7 @@ class EventDetailsPage {
 
     async loadEventDetails() {
         try {
-            console.log(`📡 Loading event details for ID: ${this.eventID}`);
+            console.log(` Loading event details for ID: ${this.eventID}`);
             
             // Show loading state
             this.showLoading();
@@ -61,7 +61,7 @@ class EventDetailsPage {
                 headers: CONFIG.getAuthHeaders()
             });
 
-            console.log('✅ Event data loaded:', eventResponse);
+            console.log(' Event data loaded:', eventResponse);
 
             // Parse event data
             if (eventResponse.event) {
@@ -93,7 +93,7 @@ class EventDetailsPage {
 
     async loadVenueDetails(venueID) {
         try {
-            console.log(`📡 Loading venue details for ID: ${venueID}`);
+            console.log(` Loading venue details for ID: ${venueID}`);
             
             const venueUrl = CONFIG.buildApiUrl(`venues/${venueID}`);
             const venueResponse = await Utils.apiCall(venueUrl, {
@@ -101,7 +101,7 @@ class EventDetailsPage {
                 headers: CONFIG.getAuthHeaders()
             });
 
-            console.log('✅ Venue data loaded:', venueResponse);
+            console.log(' Venue data loaded:', venueResponse);
 
             // Parse venue data
             if (venueResponse.venue) {
@@ -122,14 +122,14 @@ class EventDetailsPage {
 
     renderEventDetails() {
         try {
-            console.log('🎨 Rendering event details...');
+            console.log(' Rendering event details...');
 
-            // Hide loading and show content
+          
             document.getElementById('loadingIndicator').style.display = 'none';
             document.getElementById('errorContainer').style.display = 'none';
             document.getElementById('eventDetailsContent').style.display = 'block';
 
-            // Render event information
+           
             this.renderEventInfo();
             this.renderVenueInfo();
             this.updateJoinButton();
@@ -212,7 +212,7 @@ class EventDetailsPage {
         }
 
         try {
-            console.log('🎯 Joining event...');
+            console.log(' Joining event...');
             
             const joinBtn = document.getElementById('joinEventBtn');
             const originalContent = joinBtn.innerHTML;
@@ -227,7 +227,7 @@ class EventDetailsPage {
             if (success) {
                 this.updateJoinButton();
                 Utils.showMessage('Successfully joined event!', 'success');
-                console.log('✅ Successfully joined event');
+                console.log(' Successfully joined event');
             } else {
                 Utils.showMessage('Failed to join event. You may have already joined.', 'error');
                 joinBtn.disabled = false;
@@ -253,7 +253,7 @@ class EventDetailsPage {
         }
 
         try {
-            console.log('🗺️ Initializing AWS event map...');
+            console.log(' Initializing AWS event map...');
             
             const coordinates = [
                 parseFloat(this.venueData.longitude),
@@ -292,7 +292,7 @@ class EventDetailsPage {
             // Show popup automatically
             marker.getPopup().addTo(this.map);
 
-            console.log('✅ AWS map initialized successfully with venue marker');
+            console.log(' AWS map initialized successfully with venue marker');
 
         } catch (error) {
             console.error('❌ Failed to initialize AWS map:', error);
@@ -371,11 +371,11 @@ class EventDetailsPage {
     }
 }
 
-// Initialize when the page loads
+
 new EventDetailsPage();
 
-// Global initMap function for Google Maps callback
+
 function initMap() {
-    console.log('🗺️ Google Maps API loaded');
-    // The map will be initialized by EventDetailsPage when needed
+    console.log(' Google Maps API loaded');
+    
 }

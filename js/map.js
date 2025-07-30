@@ -7,7 +7,7 @@ const MapService = {
     userLocationMarker: null,
     isInitialized: false,
 
-    // Initialize the map using AWS standard styles
+    
     init: async function(containerId = "map") {
         try {
             const container = document.getElementById(containerId);
@@ -16,23 +16,23 @@ const MapService = {
                 return false;
             }
 
-            console.log("🗺️ Starting map initialization with AWS standard styles...");
+            console.log(" Starting map initialization with AWS standard styles...");
 
-            // Initialize AWS SDK
+            
             CONFIG.initializeAWS();
 
-            // Check API key configuration
+            
             if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
                 throw new Error("API Key not configured. Please set CONFIG.LOCATION.API_KEY");
             }
 
-            // Load required libraries
+            
             await this.loadMapLibreGL();
 
-            // Initialize with AWS standard map style
+            
             await this.initializeWithAWSStyles(containerId);
 
-            console.log("✅ Map initialized successfully");
+            console.log("Map initialized successfully");
             return true;
         } catch (error) {
             console.error("❌ Map initialization failed:", error);
@@ -41,20 +41,20 @@ const MapService = {
         }
     },
 
-    // Load MapLibre GL library
+    
     loadMapLibreGL: function() {
         return new Promise((resolve, reject) => {
-            // Check if already loaded
+            
             if (window.maplibregl) {
-                console.log("✅ MapLibre GL already loaded");
+                console.log("MapLibre GL already loaded");
                 resolve();
                 return;
             }
 
-            // If not loaded via CDN, try to load it dynamically
-            console.log("🔄 Loading MapLibre GL library...");
             
-            // Load CSS first
+            console.log("Loading MapLibre GL library...");
+            
+            
             if (!document.querySelector('link[href*="maplibre-gl"]')) {
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
@@ -62,12 +62,12 @@ const MapService = {
                 document.head.appendChild(link);
             }
 
-            // Load JS
+            
             if (!document.querySelector('script[src*="maplibre-gl"]')) {
                 const script = document.createElement('script');
                 script.src = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
                 script.onload = () => {
-                    console.log("✅ MapLibre GL loaded successfully");
+                    console.log("MapLibre GL loaded successfully");
                     resolve();
                 };
                 script.onerror = () => {
@@ -75,13 +75,13 @@ const MapService = {
                 };
                 document.head.appendChild(script);
             } else {
-                // Script tag exists, wait a bit for it to load
+                
                 let attempts = 0;
                 const checkLoad = () => {
                     if (window.maplibregl) {
-                        console.log("✅ MapLibre GL loaded successfully");
+                        console.log("MapLibre GL loaded successfully");
                         resolve();
-                    } else if (attempts < 50) { // 5 seconds max
+                    } else if (attempts < 50) { 
                         attempts++;
                         setTimeout(checkLoad, 100);
                     } else {
@@ -93,24 +93,24 @@ const MapService = {
         });
     },
 
-    // Initialize map with AWS standard styles (following AWS guide exactly)
+    
     initializeWithAWSStyles: async function(containerId) {
         try {
-            console.log("🔐 Initializing with AWS standard styles...");
+            console.log("Initializing with AWS standard styles...");
 
-            // Use AWS standard style following the official guide exactly
+           
             const apiKey = CONFIG.LOCATION.API_KEY;
             const region = CONFIG.LOCATION.REGION;
-            const style = "Standard";  // AWS provided style
-            const colorScheme = "Light";  // Light or Dark
+            const style = "Standard";  
+            const colorScheme = "Light";  
 
-            // Create style URL following AWS guide format
+            
             const styleUrl = `https://maps.geo.${region}.amazonaws.com/v2/styles/${style}/descriptor?key=${apiKey}&color-scheme=${colorScheme}`;
 
-            console.log("🗺️ Creating map with AWS standard style...");
-            console.log("🔗 Style URL:", styleUrl);
+            console.log("Creating map with AWS standard style...");
+            console.log("Style URL:", styleUrl);
 
-            // Create map exactly as shown in AWS guide
+            
             const mapConfig = {
                 container: containerId,
                 style: styleUrl,
@@ -121,7 +121,7 @@ const MapService = {
                 zoom: CONFIG.APP.MAP_ZOOM
             };
 
-            console.log("📍 Map configuration:", {
+            console.log("Map configuration:", {
                 region: region,
                 style: style,
                 colorScheme: colorScheme,
@@ -129,13 +129,13 @@ const MapService = {
                 zoom: mapConfig.zoom
             });
 
-            // Create map instance
+           
             this.map = new maplibregl.Map(mapConfig);
 
-            // Add navigation controls as shown in AWS guide
+            
             this.map.addControl(new maplibregl.NavigationControl(), "top-left");
 
-            // Add geolocation control
+           
             this.map.addControl(
                 new maplibregl.GeolocateControl({
                     positionOptions: {
@@ -146,26 +146,26 @@ const MapService = {
                 "top-left",
             );
 
-            // Set up event handlers
+           
             this.setupEventHandlers();
 
-            // Wait for map to load
+            
             await this.waitForMapLoad();
 
             this.isInitialized = true;
-            console.log("✅ Map fully initialized with AWS standard style");
+            console.log(" Map fully initialized with AWS standard style");
         } catch (error) {
-            console.error("❌ Failed to initialize map with AWS styles:", error);
+            console.error(" Failed to initialize map with AWS styles:", error);
             throw error;
         }
     },
 
-    // AWS-only map initialization for venue creation
+    
     initializeVenueMap: async function(containerId, options = {}) {
         try {
-            console.log(`🗺️ Initializing AWS venue map for container: ${containerId}`);
+            console.log(` Initializing AWS venue map for container: ${containerId}`);
 
-            // Check if MapLibre GL is available
+            
             if (!window.maplibregl) {
                 await this.loadMapLibreGL();
             }
@@ -175,28 +175,28 @@ const MapService = {
                 throw new Error(`Map container '${containerId}' not found`);
             }
 
-            // Validate AWS configuration
+            
             if (!CONFIG.LOCATION.API_KEY || CONFIG.LOCATION.API_KEY === 'YOUR_API_KEY_HERE') {
                 throw new Error("AWS Location Service API Key not configured");
             }
 
-            // Default options
+            
             const defaultOptions = {
-                center: [103.8198, 1.3521], // Singapore default
+                center: [103.8198, 1.3521], 
                 zoom: 11
             };
 
-            // Merge options
+            
             const mapOptions = { ...defaultOptions, ...options };
 
-            // AWS Location Service style ONLY
+            
             const apiKey = CONFIG.LOCATION.API_KEY;
             const region = CONFIG.LOCATION.REGION;
             const mapStyle = `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${apiKey}&color-scheme=Light`;
             
-            console.log("🔐 Using AWS Location Service style ONLY");
+            console.log(" Using AWS Location Service style ONLY");
 
-            // Create the map
+            
             const map = new window.maplibregl.Map({
                 container: containerId,
                 style: mapStyle,
@@ -204,10 +204,10 @@ const MapService = {
                 zoom: mapOptions.zoom
             });
 
-            // Add navigation controls
+            
             map.addControl(new window.maplibregl.NavigationControl(), 'top-left');
             
-            // Add search control for location finding
+            
             map.addControl(new window.maplibregl.GeolocateControl({
                 positionOptions: {
                     enableHighAccuracy: true
@@ -215,7 +215,7 @@ const MapService = {
                 trackUserLocation: true
             }), 'top-left');
 
-            // Wait for map to load
+            
             await new Promise((resolve, reject) => {
                 const timeout = setTimeout(() => {
                     reject(new Error("AWS Map load timeout after 15 seconds"));
@@ -223,13 +223,13 @@ const MapService = {
 
                 map.on('load', () => {
                     clearTimeout(timeout);
-                    console.log("✅ AWS Map loaded successfully");
+                    console.log(" AWS Map loaded successfully");
                     resolve();
                 });
 
                 map.on('error', (error) => {
                     clearTimeout(timeout);
-                    console.error("❌ AWS Map error:", error);
+                    console.error(" AWS Map error:", error);
                     reject(error);
                 });
             });
@@ -237,31 +237,31 @@ const MapService = {
             return map;
 
         } catch (error) {
-            console.error("❌ Failed to initialize AWS venue map:", error);
+            console.error(" Failed to initialize AWS venue map:", error);
             this.showMapError(containerId, `AWS Location Service Error: ${error.message}`);
             throw error;
         }
     },
 
-    // Location search using your Lambda geocoding service (like Postman)
+    
     searchLocation: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching location via Lambda geocoding service:", query);
+            console.log(" Searching location via Lambda geocoding service:", query);
 
             if (!query || query.trim().length < 3) {
                 return [];
             }
 
-            // Use your existing /geocode endpoint (this one exists)
+            
             const searchEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
-                address: query.trim() + ", Singapore",  // Lambda expects 'address', not 'Text'
+                address: query.trim() + ", Singapore",  
                 maxResults: 10,
                 biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
-            console.log("🔍 Lambda geocode search request:", { url: searchEndpoint, body: requestBody });
+            console.log("Lambda geocode search request:", { url: searchEndpoint, body: requestBody });
 
             const response = await Utils.apiCall(searchEndpoint, {
                 method: 'POST',
@@ -272,14 +272,14 @@ const MapService = {
                 body: JSON.stringify(requestBody)
             });
 
-            console.log("🎯 Lambda geocode search results:", response);
+            console.log(" Lambda geocode search results:", response);
             
-            // Handle wrapped JSON response format
+
             let searchResults = [];
             
             if (response.message) {
                 try {
-                    // Parse the wrapped JSON message
+                    
                     const parsed = JSON.parse(response.message);
                     if (parsed.latitude && parsed.longitude) {
                         searchResults = [{
@@ -294,7 +294,7 @@ const MapService = {
                     console.error("Failed to parse wrapped JSON response:", parseError);
                 }
             } else if (response.latitude && response.longitude) {
-                // Direct response format
+                
                 searchResults = [{
                     label: response.formatted || response.address,
                     coordinates: [response.longitude, response.latitude],
@@ -305,14 +305,14 @@ const MapService = {
             }
             
             if (searchResults.length > 0) {
-                console.log("📍 Parsed search results:", searchResults);
+                console.log(" Parsed search results:", searchResults);
                 return searchResults;
             }
         } catch (error) {
-            console.error("❌ Location search via Lambda failed:", error);
+            console.error(" Location search via Lambda failed:", error);
             
-            // Use simplified fallback as last resort
-            console.warn("🔄 Using simplified search fallback");
+            
+            console.warn(" Using simplified search fallback");
             return [{
                 label: query + ", Singapore",
                 coordinates: [103.8198, 1.3521],
@@ -323,28 +323,28 @@ const MapService = {
         }
     },
 
-    // Enable location picker for venue creation
+    
     enableVenueLocationPicker: function(map, callback) {
-        console.log("📍 Enabling venue location picker");
+        console.log(" Enabling venue location picker");
         
-        // Change cursor to crosshair
+        
         map.getCanvas().style.cursor = 'crosshair';
 
-        // Add click handler for location picking
+        
         const pickLocationHandler = async (e) => {
-            // Get precise coordinates from the click event
+            
             const { lng, lat } = e.lngLat;
             
-            // Log the exact click coordinates for debugging
-            console.log("📍 Raw click coordinates:", { lng, lat });
-            console.log("📍 Click event details:", {
+            
+            console.log(" Raw click coordinates:", { lng, lat });
+            console.log(" Click event details:", {
                 originalEvent: e.originalEvent,
                 lngLat: e.lngLat,
                 point: e.point
             });
 
             try {
-                // Reverse geocode to get address
+                
                 const locationInfo = await this.reverseGeocode(lng, lat);
                 
                 const result = {
@@ -356,7 +356,7 @@ const MapService = {
                     region: locationInfo ? locationInfo.Place?.Region : null
                 };
 
-                // Add venue marker at exact coordinates
+                
                 const marker = new window.maplibregl.Marker({ 
                     color: '#ff6b6b',
                     scale: 1.2
@@ -364,15 +364,15 @@ const MapService = {
                 .setLngLat([lng, lat])
                 .addTo(map);
 
-                // Remove click handler and reset cursor
+                
                 map.off('click', pickLocationHandler);
                 map.getCanvas().style.cursor = '';
 
-                console.log("✅ Venue location selected with precise coordinates:", result);
+                console.log(" Venue location selected with precise coordinates:", result);
                 callback(result, marker);
 
             } catch (error) {
-                console.error("❌ Failed to get venue location info:", error);
+                console.error(" Failed to get venue location info:", error);
                 callback({
                     coordinates: [lng, lat],
                     lat: lat,
@@ -384,13 +384,13 @@ const MapService = {
             }
         };
 
-        // Add the click handler
+        
         map.on('click', pickLocationHandler);
 
-        console.log("✅ Venue location picker enabled - click on map to select location");
+        console.log(" Venue location picker enabled - click on map to select location");
     },
 
-    // Add marker to map with modern styling
+
     addMarker: function(map, options) {
         if (!map || !window.maplibregl) return null;
 
@@ -409,12 +409,12 @@ const MapService = {
             marker.addTo(map);
             return marker;
         } catch (error) {
-            console.error("❌ Failed to add marker:", error);
+            console.error(" Failed to add marker:", error);
             return null;
         }
     },
 
-    // Show modern error message in map container
+    
     showMapError: function(containerId, message) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -460,11 +460,11 @@ const MapService = {
         `;
     },
 
-    // Wait for map to fully load
+    
     waitForMapLoad: function() {
         return new Promise((resolve, reject) => {
             if (this.map.loaded()) {
-                console.log("✅ Map already loaded");
+                console.log(" Map already loaded");
                 resolve();
                 return;
             }
@@ -474,7 +474,7 @@ const MapService = {
 
             this.map.on("load", () => {
                 if (!errorOccurred) {
-                    console.log("✅ Map tiles loaded successfully");
+                    console.log(" Map tiles loaded successfully");
                     clearTimeout(loadTimeout);
                     resolve();
                 }
@@ -483,12 +483,12 @@ const MapService = {
             this.map.on("error", (error) => {
                 if (!errorOccurred) {
                     errorOccurred = true;
-                    console.error("❌ Map loading error:", error);
+                    console.error(" Map loading error:", error);
                     clearTimeout(loadTimeout);
                     
                     let errorMessage = "Unknown map error";
                     
-                    // Check for different types of errors
+                    
                     if (error.error) {
                         const errMsg = error.error.message || error.error.toString();
                         
@@ -505,7 +505,7 @@ const MapService = {
                         errorMessage = error.message;
                     }
                     
-                    console.error("🔍 Detailed error analysis:", {
+                    console.error(" Detailed error analysis:", {
                         error: error,
                         mapName: CONFIG.LOCATION.MAP_NAME,
                         region: CONFIG.LOCATION.REGION,
@@ -516,7 +516,7 @@ const MapService = {
                 }
             });
 
-            // Timeout after 30 seconds
+            
             loadTimeout = setTimeout(() => {
                 if (!errorOccurred) {
                     errorOccurred = true;
@@ -527,14 +527,14 @@ const MapService = {
         });
     },
 
-    // Set up map event handlers
+            
     setupEventHandlers: function() {
         this.map.on("load", () => {
-            console.log("🎯 Map loaded successfully");
+            console.log(" Map loaded successfully");
         });
 
         this.map.on("error", (error) => {
-            console.error("❌ Map error:", error);
+            console.error(" Map error:", error);
             
             let errorMessage = "AWS Location Service encountered an error.";
             if (error.error && error.error.message) {
@@ -551,11 +551,11 @@ const MapService = {
         });
 
         this.map.on("click", (e) => {
-            console.log("🖱️ Map clicked at:", e.lngLat);
+            console.log(" Map clicked at:", e.lngLat);
         });
     },
 
-    // Add a marker to the map
+    
     addMarker: function(lng, lat, options = {}) {
         if (!this.isInitialized) {
             console.warn("Map not initialized, cannot add marker");
@@ -570,7 +570,7 @@ const MapService = {
         return marker;
     },
 
-    // Add a popup marker
+    
     addPopupMarker: function(lng, lat, content, options = {}) {
         if (!this.isInitialized) {
             console.warn("Map not initialized, cannot add popup marker");
@@ -588,13 +588,13 @@ const MapService = {
         return marker;
     },
 
-    // Clear all markers
+    
     clearMarkers: function() {
         this.markers.forEach((marker) => marker.remove());
         this.markers = [];
     },
 
-    // Fly to location
+    
     flyTo: function(lng, lat, zoom = 14) {
         if (!this.isInitialized) {
             console.warn("Map not initialized, cannot fly to location");
@@ -609,7 +609,7 @@ const MapService = {
         });
     },
 
-    // Get user's current location
+    
     getUserLocation: function() {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
@@ -636,47 +636,47 @@ const MapService = {
         });
     },
 
-    // Add user location marker
+    
     addUserLocationMarker: async function() {
         try {
             const location = await this.getUserLocation();
 
-            // Remove existing user location marker
+            
             if (this.userLocationMarker) {
                 this.userLocationMarker.remove();
             }
 
-            // Add new user location marker
+            
             this.userLocationMarker = this.addMarker(location.lng, location.lat, {
                 color: "#007cbf",
             });
 
-            // Fly to user location
+            
             this.flyTo(location.lng, location.lat, 15);
 
-            console.log("📍 User location marker added:", location);
+            console.log(" User location marker added:", location);
             return location;
         } catch (error) {
-            console.error("❌ Failed to get user location:", error);
+            console.error(" Failed to get user location:", error);
             throw error;
         }
     },
 
-    // Search for places using your Lambda places search service
+    
     searchPlaces: async function(query, biasPosition = null) {
         try {
-            console.log("🔍 Searching for places via Lambda service:", query);
+            console.log(" Searching for places via Lambda service:", query);
 
-            // Use your existing /geocode endpoint (this one exists)
+            
             const placesEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
             const requestBody = {
-                address: query + ", Singapore",  // Lambda expects 'address', not 'Text'
+                address: query + ", Singapore",  
                 maxResults: 10,
                 biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
-            console.log("🔍 Lambda places search request:", { url: placesEndpoint, body: requestBody });
+            console.log(" Lambda places search request:", { url: placesEndpoint, body: requestBody });
 
             const response = await Utils.apiCall(placesEndpoint, {
                 method: 'POST',
@@ -687,9 +687,9 @@ const MapService = {
                 body: JSON.stringify(requestBody)
             });
 
-            console.log("🎯 Lambda places search results:", response);
+            console.log(" Lambda places search results:", response);
             
-            // Transform response to expected format (Lambda returns different structure)
+            
             if (response.latitude && response.longitude) {
                 return [{
                     Place: {
@@ -720,10 +720,10 @@ const MapService = {
                 }));
             }
         } catch (error) {
-            console.error("❌ Places search via Lambda failed:", error);
+            console.error(" Places search via Lambda failed:", error);
             
             // Fallback to simple result
-            console.warn("🔄 Using simplified places search fallback");
+            console.warn(" Using simplified places search fallback");
             return [{
                 Place: {
                     Label: query + ", Singapore",
@@ -739,10 +739,10 @@ const MapService = {
         }
     },
 
-    // Reverse geocoding using AWS Location Services
+    
     reverseGeocode: async function(lng, lat) {
         try {
-            console.log("🔄 Reverse geocoding:", { lng, lat });
+            console.log(" Reverse geocoding:", { lng, lat });
 
             const url = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.REVERSE_GEOCODE);
             const response = await Utils.apiCall(url, {
@@ -755,7 +755,7 @@ const MapService = {
             });
 
             if (response && response.address) {
-                console.log("📍 Reverse geocoding result:", response.address);
+                console.log(" Reverse geocoding result:", response.address);
                 return {
                     Place: {
                         Label: response.address
@@ -767,12 +767,12 @@ const MapService = {
             throw new Error("No address found");
 
         } catch (error) {
-            console.warn("🚨 Reverse geocoding failed:", error);
+            console.warn(" Reverse geocoding failed:", error);
             
-            // Simple fallback - just return coordinates
+            
             const locationName = `${lat}, ${lng}`;
             
-            console.log("📍 Reverse geocoding result (coordinate fallback):", locationName);
+            console.log(" Reverse geocoding result (coordinate fallback):", locationName);
             
             return {
                 Place: {
@@ -783,21 +783,21 @@ const MapService = {
         }
     },
 
-    // Geocode address using your Lambda geocoding service
+    
     geocodeAddress: async function(address, biasPosition = null) {
         try {
-            console.log("🏠 Geocoding address via Lambda service:", address);
+            console.log(" Geocoding address via Lambda service:", address);
 
-            // Use your existing /geocode endpoint (this one exists)
-            const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
             
+            const geocodeEndpoint = CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.GEOCODE);
+
             const requestBody = {
-                address: address + ", Singapore",  // Lambda expects 'address', not 'Text'
+                address: address + ", Singapore",  
                 maxResults: 1,
                 biasPosition: biasPosition ? [biasPosition.lng, biasPosition.lat] : [103.8198, 1.3521]
             };
 
-            console.log("🏠 Lambda geocode request:", { url: geocodeEndpoint, body: requestBody });
+            console.log(" Lambda geocode request:", { url: geocodeEndpoint, body: requestBody });
 
             const response = await Utils.apiCall(geocodeEndpoint, {
                 method: 'POST',
@@ -808,7 +808,7 @@ const MapService = {
                 body: JSON.stringify(requestBody)
             });
 
-            console.log("📍 Lambda geocoding result:", response);
+            console.log(" Lambda geocoding result:", response);
             
             // Handle wrapped JSON response format
             let coordinates = null;
@@ -837,7 +837,7 @@ const MapService = {
             }
             
             if (coordinates) {
-                console.log("📍 Parsed coordinates:", coordinates);
+                console.log(" Parsed coordinates:", coordinates);
                 return coordinates;
             }
             
@@ -845,13 +845,13 @@ const MapService = {
             throw new Error("No geocoding results");
             
         } catch (error) {
-            console.error("❌ Geocoding via Lambda failed:", error);
+            console.error(" Geocoding via Lambda failed:", error);
             
             // Fallback to default Singapore coordinates
             const lat = 1.3521;
             const lng = 103.8198;
             
-            console.log("📍 Geocoding result (fallback):", { lat, lng, address });
+            console.log(" Geocoding result (fallback):", { lat, lng, address });
             
             return {
                 lat: lat,
@@ -863,7 +863,7 @@ const MapService = {
 
     // Location picker for venue/event creation
     enableLocationPicker: function(callback) {
-        console.log("📍 Enabling location picker mode");
+        console.log(" Enabling location picker mode");
         
         if (!this.isInitialized) {
             console.error("Map not initialized");
@@ -879,8 +879,8 @@ const MapService = {
             const { lng, lat } = e.lngLat;
             
             // Log the exact click coordinates for debugging
-            console.log("📍 Raw click coordinates:", { lng, lat });
-            console.log("📍 Click event details:", {
+            console.log(" Raw click coordinates:", { lng, lat });
+            console.log(" Click event details:", {
                 originalEvent: e.originalEvent,
                 lngLat: e.lngLat,
                 point: e.point
@@ -908,11 +908,11 @@ const MapService = {
                 this.map.off('click', pickLocationHandler);
                 this.map.getCanvas().style.cursor = '';
 
-                console.log("✅ Location picker result with precise coordinates:", result);
+                console.log(" Location picker result with precise coordinates:", result);
                 callback(result, marker);
 
             } catch (error) {
-                console.error("❌ Failed to get location info:", error);
+                console.error(" Failed to get location info:", error);
                 callback({
                     coordinates: [lng, lat],
                     address: 'Unknown location',
@@ -925,20 +925,20 @@ const MapService = {
         // Add the click handler
         this.map.on('click', pickLocationHandler);
 
-        console.log("✅ Location picker enabled - click on map to select location");
+        console.log(" Location picker enabled - click on map to select location");
     },
 
     // Disable location picker
     disableLocationPicker: function() {
         this.map.getCanvas().style.cursor = '';
         this.map.off('click'); // Remove all click handlers
-        console.log("✅ Location picker disabled");
+        console.log(" Location picker disabled");
     },
 
     // Venue functions using your Lambda APIs
     loadVenues: async function() {
         try {
-            console.log("🏪 Loading venues from Lambda API");
+            console.log(" Loading venues from Lambda API");
 
             const response = await Utils.apiCall(
                 CONFIG.buildApiUrl(CONFIG.API.ENDPOINTS.VENUES), 
@@ -948,7 +948,7 @@ const MapService = {
                 }
             );
 
-            console.log("✅ Venues loaded:", response);
+            console.log(" Venues loaded:", response);
 
             // Handle wrapped response
             const venues = response.venues || response.message?.venues || response.Items || response;
@@ -958,18 +958,18 @@ const MapService = {
                 this.addVenueMarkers();
                 return venues;
             } else {
-                console.warn("⚠️ Venues response not in expected format:", response);
+                console.warn(" Venues response not in expected format:", response);
                 return [];
             }
         } catch (error) {
-            console.error("❌ Failed to load venues:", error);
+            console.error(" Failed to load venues:", error);
             this.displayMapError(`Failed to load venues: ${error.message}`);
             return [];
         }
     },
 
     addVenueMarkers: function() {
-        console.log("📍 Adding venue markers");
+        console.log(" Adding venue markers");
         
         // Clear existing venue markers
         this.clearVenueMarkers();
@@ -990,7 +990,7 @@ const MapService = {
             }
 
             if (!coordinates) {
-                console.warn("⚠️ Venue missing coordinates:", venue);
+                console.warn(" Venue missing coordinates:", venue);
                 return;
             }
 
@@ -1009,7 +1009,7 @@ const MapService = {
             this.venueMarkers.push(marker);
         });
 
-        console.log(`✅ Added ${this.venueMarkers.length} venue markers`);
+        console.log(` Added ${this.venueMarkers.length} venue markers`);
     },
 
     createVenuePopup: function(venue) {
@@ -1027,7 +1027,7 @@ const MapService = {
     },
 
     selectVenue: function(venueId) {
-        console.log("🎯 Venue selected:", venueId);
+        console.log(" Venue selected:", venueId);
         const venue = this.venues.find(v => v.venueId === venueId || v.id === venueId);
         if (venue) {
             // Emit custom event for other parts of the app to listen to
@@ -1052,19 +1052,19 @@ const MapService = {
         }
 
         try {
-            console.log("🎯 Adding event pins to map...");
+            console.log(" Adding event pins to map...");
             
             // Load event pins using the EventPinsService
             if (typeof EventPinsService !== 'undefined') {
                 const pinsCount = await EventPinsService.initEventPins(this.map);
-                console.log(`✅ Added ${pinsCount} event pins to map`);
+                console.log(` Added ${pinsCount} event pins to map`);
                 return pinsCount;
             } else {
                 console.warn("EventPinsService not available - make sure event-pins.js is loaded");
                 return 0;
             }
         } catch (error) {
-            console.error("❌ Failed to add event pins:", error);
+            console.error(" Failed to add event pins:", error);
             return 0;
         }
     },
@@ -1073,13 +1073,13 @@ const MapService = {
     clearEventPins: function() {
         if (typeof EventPinsService !== 'undefined') {
             EventPinsService.clearEventMarkers();
-            console.log("🧹 Cleared event pins from map");
+            console.log("Cleared event pins from map");
         }
     },
 
     // Update event pins (refresh data)
     updateEventPins: async function() {
-        console.log("🔄 Updating event pins...");
+        console.log(" Updating event pins...");
         this.clearEventPins();
         return await this.addEventPins();
     },
@@ -1087,7 +1087,7 @@ const MapService = {
     // Show both venue markers and event pins
     showVenuesAndEvents: async function() {
         try {
-            console.log("🗺️ Loading venues and event pins...");
+            console.log(" Loading venues and event pins...");
             
             // Load venues first
             await this.loadVenues();
@@ -1096,10 +1096,10 @@ const MapService = {
             // Then add event pins
             const pinsCount = await this.addEventPins();
             
-            console.log(`✅ Map loaded with ${this.venueMarkers.length} venues and ${pinsCount} event pins`);
+            console.log(` Map loaded with ${this.venueMarkers.length} venues and ${pinsCount} event pins`);
             return { venues: this.venueMarkers.length, events: pinsCount };
         } catch (error) {
-            console.error("❌ Failed to load venues and events:", error);
+            console.error(" Failed to load venues and events:", error);
             return { venues: 0, events: 0 };
         }
     },
